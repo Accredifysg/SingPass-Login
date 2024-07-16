@@ -6,16 +6,13 @@ use Exception;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Jose\Component\Core\JWKSet;
 
 final class getSingPassTokenService
 {
     /**
      * Handles the POST Request to SingPass's token endpoint
      *
-     * @param $code
      *
-     * @return mixed
      *
      * @throws FileNotFoundException
      */

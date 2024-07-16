@@ -8,7 +8,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class JweDecryptionFailedException extends HttpException
 {
-    public function __construct(int $statusCode = 500, string $message = 'JWE Decryption Failed', Exception $previous = null, array $headers = [], ?int $code = 0)
+    public function __construct(int $statusCode = 500, string $message = 'JWE Decryption Failed', ?Exception $previous = null, array $headers = [], ?int $code = 0)
     {
         parent::__construct($statusCode, $message, $previous, $headers, $code);
     }

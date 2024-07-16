@@ -4,15 +4,15 @@ use Accredifysg\SingPassLogin\Http\Controllers\GetJwksEndpointController;
 use Accredifysg\SingPassLogin\Http\Controllers\PostSingPassCallbackController;
 
 return [
-    'client_id'             => env('SINGPASS_CLIENT_ID'),
-    'client_secret'         => env('SINGPASS_CLIENT_SECRET'),
-    'redirect_uri'          => env('SINGPASS_REDIRECT_URI'),
-    'script_source'         => env('SINGPASS_SCRIPT_SOURCE'),
-    'domain'                => env('SINGPASS_DOMAIN'),
-    'discovery_endpoint'    => env('SINGPASS_DISCOVERY_ENDPOINT'),
-    'signing_kid'           => env('SINGPASS_SIGNING_KID'),
-    'private_exponent'      => env('SINGPASS_PRIVATE_EXPONENT'),
-    'encryption_key'        => env('SINGPASS_ENCRYPTION_KEY'),
+    'client_id' => env('SINGPASS_CLIENT_ID'),
+    'client_secret' => env('SINGPASS_CLIENT_SECRET'),
+    'redirect_uri' => env('SINGPASS_REDIRECT_URI'),
+    'script_source' => env('SINGPASS_SCRIPT_SOURCE'),
+    'domain' => env('SINGPASS_DOMAIN'),
+    'discovery_endpoint' => env('SINGPASS_DISCOVERY_ENDPOINT'),
+    'signing_kid' => env('SINGPASS_SIGNING_KID'),
+    'private_exponent' => env('SINGPASS_PRIVATE_EXPONENT'),
+    'encryption_key' => env('SINGPASS_ENCRYPTION_KEY'),
 
     // Default routes
     'enable_default_singpass_routes' => env('SINGPASS_USE_DEFAULT_ROUTES', true),

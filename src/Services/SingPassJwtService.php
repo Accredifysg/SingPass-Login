@@ -39,7 +39,6 @@ final class SingPassJwtService
     /**
      * Gets the key to sign the Assertion with based on what is set in the ENV
      *
-     * @return JWK|JWKSet
      *
      * @throws FileNotFoundException
      */
@@ -49,15 +48,12 @@ final class SingPassJwtService
         $signingKey = $jwkSets->get(config('services.singpass-login.signingKid'));
         $signingKeyArray = $signingKey->all();
         $signingKeyArray['d'] = config('services.singpass-login.privateExponent');
+
         return JWKFactory::createFromValues($signingKeyArray);
     }
 
     /**
      * Generate the client assertion needed to retrieve a token to use for subsequent calls
-     *
-     * @param $jwk
-     *
-     * @return string
      */
     public static function generateClientAssertion($jwk): string
     {
@@ -91,9 +87,7 @@ final class SingPassJwtService
     /**
      * Decrypts the JWE that was returned from SingPass's token endpoint
      *
-     * @param $token
      *
-     * @return string|null
      *
      * @throws JweDecryptionFailedException
      */
@@ -142,10 +136,7 @@ final class SingPassJwtService
     /**
      * Decrypts the JWT that was encrypted within the JWE token
      *
-     * @param $token
-     * @param $keySet
      *
-     * @return mixed
      *
      * @throws JwtDecodeFailedException
      */
@@ -184,7 +175,6 @@ final class SingPassJwtService
     /**
      * Verifies they payload to ensure it is valid
      *
-     * @param string $payload
      *
      * @return void
      *
@@ -197,7 +187,7 @@ final class SingPassJwtService
         $exp = $payload->exp;
         $now = Carbon::now()->timestamp;
         if ($iat > $now || $exp < $now) {
-            throw new JwtPayloadException(400,'Token times are invalid');
+            throw new JwtPayloadException(400, 'Token times are invalid');
         }
 
         // Check if the client_id of the relaying party is SingPass
@@ -211,7 +201,7 @@ final class SingPassJwtService
         $iss = $payload->iss;
         $singpassDomain = config('services.singpass-login.domain');
         if ($iss !== $singpassDomain) {
-            throw new JwtPayloadException(400,'Came from wrong principal');
+            throw new JwtPayloadException(400, 'Came from wrong principal');
         }
     }
 }

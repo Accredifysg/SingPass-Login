@@ -10,10 +10,12 @@ use Accredifysg\SingPassLogin\Services\getSingPassTokenService;
 use Accredifysg\SingPassLogin\Services\OpenIdDiscoveryService;
 use Accredifysg\SingPassLogin\Services\SingPassJwtService;
 
-class SingPassLogin {
-    public function __construct(private string $code, private string $state){}
+class SingPassLogin
+{
+    public function __construct(private string $code, private string $state) {}
 
-    public function handleCallback() {
+    public function handleCallback(): void
+    {
         OpenIdDiscoveryService::cacheOpenIdDiscovery();
         $jweToken = getSingPassTokenService::getToken($this->code);
         $jwtToken = SingPassJwtService::jweDecrypt($jweToken);
@@ -25,13 +27,14 @@ class SingPassLogin {
         event(new SingPassSuccessfulLoginEvent($singPassUser));
     }
 
-    private function getSingPassUser(string $payload) {
+    private function getSingPassUser(string $payload): SingPassUser
+    {
         // Get NRIC and UUID
         $sub = $payload->sub;
         $subParts = explode(',', $sub);
         $nric = substr($subParts[0], 2);
         $uuid = substr($subParts[1], 2);
-        if ($nric === null || $uuid === null) {
+        if ($nric === '' || $uuid === '') {
             throw new JwtPayloadException(400, 'Cannot get IC and UUID');
         }
 

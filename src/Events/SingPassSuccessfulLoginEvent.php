@@ -3,24 +3,19 @@
 namespace Accredifysg\SingPassLogin\Events;
 
 use Accredifysg\SingPassLogin\Models\SingPassUser;
+
 /**
  * Class SingPassSuccessfulLoginEvent
- *
- * @package Accredifysg\SingPassLogin\Events
  */
 class SingPassSuccessfulLoginEvent
 {
     /**
      * The SingPass user.
-     *
-     * @var SingPassUser
      */
     public SingPassUser $user;
 
     /**
      * SingPassSuccessfulLoginEvent constructor.
-     *
-     * @param SingPassUser $user
      */
     public function __construct(SingPassUser $user)
     {

@@ -4,8 +4,8 @@ namespace Accredifysg\SingPassLogin;
 
 use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
 use Accredifysg\SingPassLogin\Listeners\SingPassSuccessfulLoginListener;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\ServiceProvider;
 
 class SingPassLoginServiceProvider extends ServiceProvider
 {
@@ -18,7 +18,7 @@ class SingPassLoginServiceProvider extends ServiceProvider
     {
         // Publish configuration file
         $this->publishes([
-            __DIR__ . '/../config/SingPass-Login.php' => config_path('SingPass-Login.php'),
+            __DIR__.'/../config/SingPass-Login.php' => config_path('SingPass-Login.php'),
         ], 'config');
 
         $this->publishes([
@@ -26,7 +26,7 @@ class SingPassLoginServiceProvider extends ServiceProvider
         ], 'jwks');
 
         // Load routes
-        $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
 
         // Register event and listener
         Event::listen(
@@ -44,7 +44,7 @@ class SingPassLoginServiceProvider extends ServiceProvider
     {
         // Merge configuration file
         $this->mergeConfigFrom(
-            __DIR__ . '/../config/SingPass-Login.php',
+            __DIR__.'/../config/SingPass-Login.php',
             'singpass-login'
         );
     }

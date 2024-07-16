@@ -21,6 +21,7 @@ class SingPassSuccessfulLoginListener
         }
 
         Auth::login($user);
+
         return redirect()->intended(RouteServiceProvider::HOME);
     }
 }

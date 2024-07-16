@@ -12,7 +12,6 @@ final class OpenIdDiscoveryService
     /**
      * Calls the SingPass Discovery Endpoint and stores the results in the cache for 1 hour
      *
-     * @return void
      * @throws OpenIdDiscoveryException
      */
     public static function cacheOpenIdDiscovery(): void

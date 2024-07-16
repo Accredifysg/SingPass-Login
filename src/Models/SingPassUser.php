@@ -6,23 +6,16 @@ class SingPassUser
 {
     /**
      * The UUID of the user returned by SingPass
-     *
-     * @var string
      */
     protected string $uuid;
 
     /**
      * The NRIC of the user returned by SingPass
-     *
-     * @var string
      */
     protected string $nric;
 
     /**
      * SingPassUser Constructor
-     *
-     * @param string $uuid
-     * @param string $nric
      */
     public function __construct(string $uuid, string $nric)
     {
@@ -32,8 +25,6 @@ class SingPassUser
 
     /**
      * Gets the user's UUID
-     *
-     * @return string
      */
     public function getUuid(): string
     {
@@ -42,8 +33,6 @@ class SingPassUser
 
     /**
      * Gets the user's NRIC
-     *
-     * @return string
      */
     public function getNric(): string
     {

@@ -2,12 +2,12 @@
     "name": "accredifysg/singpass-login",
     "autoload": {
         "psr-4": {
-            "Accredifysg\\SingPass-Login\\": "src/"
+            "Accredifysg\\SingPass-Login\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Accredifysg\\SingPass-Login\\Tests\\": "tests/"
+            "Accredifysg\\SingPass-Login\\Tests\\": "tests"
         }
     },
     "require": {
