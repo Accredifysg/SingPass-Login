@@ -1,0 +1,123 @@
+name: Jira Transition
+
+on:
+  workflow_call:
+    inputs:
+      status:
+        type: string
+        required: true
+      environment-name:
+        type: string
+        required: false
+    secrets:
+      jira-base-url:
+        required: true
+      jira-user-email:
+        required: true
+      jira-api-token:
+        required: true
+      jira-client-id:
+        required: true
+      jira-client-secret:
+        required: true
+
+jobs:
+  jira:
+    name: Jira Setup
+    runs-on: ubuntu-latest
+    steps:
+      # Jira Login
+      - name: Jira login
+        uses: atlassian/gajira-login@v2.0.0
+        env:
+          JIRA_BASE_URL: ${{ secrets.jira-base-url }}
+          JIRA_USER_EMAIL: ${{ secrets.jira-user-email }}
+          JIRA_API_TOKEN: ${{ secrets.jira-api-token }}
+
+      # Get Jira Issue Keys
+      - name: Find in pull request title
+        id: jira_key
+        if: (github.event_name == 'pull_request')
+        uses: kherP/gajira-find-issue-key@v1.0.3
+        with:
+          string: ${{ github.event.pull_request.title }}
+          from: ""
+
+      # Get Jira Issue Keys from commit messages and join them
+      - name: Find in commit messages
+        id: jira_keys
+        if: (github.event_name == 'push' && inputs.environment-name != '')
+        uses: actions/github-script@v6
+        with:
+          result-encoding: string
+          script: |
+            const regexp = /DT1-\d*/gm;
+            const commits = ${{ toJSON(github.event.commits) }}
+            return commits.map(c => [...c.message.matchAll(regexp)].map(b => b[0]).join(',')).join(',')
+
+      # Consolidate issue keys
+      - name: Consolidate Issue Keys
+        uses: haya14busa/action-cond@v1
+        id: issue_keys
+        with:
+          cond: ${{ steps.jira_keys.outputs.result == '' }}
+          if_true: "${{ steps.jira_key.outputs.issue }}"
+          if_false: "${{ steps.jira_keys.outputs.result }}"
+
+      # Set issue matrix
+      - name: Set matrix
+        id: set_matrix
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const commits = "${{ steps.issue_keys.outputs.value }}"
+            const array = commits.split(',');
+            return [...new Set(array)];
+
+      # Set Build State
+      - name: Successful Build
+        run: echo "STATE=successful" >> $GITHUB_ENV
+
+      # Set Build State
+      - name: Failed Build
+        if: failure()
+        run: echo "STATE=failed" >> $GITHUB_ENV
+
+      # Add build information
+      - name: Jira Integration
+        if: ${{ always() }}
+        uses: rohit-gohri/jira-ci-cd-integration@v0
+        with:
+          state: ${{ env.STATE }}
+          jira_instance: "accredify"
+          client_id: ${{ secrets.jira-client-id }}
+          client_secret: ${{ secrets.jira-client-secret }}
+          environment: ${{ inputs.environment-name }}
+    outputs:
+      matrix: ${{ steps.set_matrix.outputs.result }}
+
+  jira_transition:
+    name: Jira Transition
+    needs: jira
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ticket: ${{ fromJson(needs.jira.outputs.matrix) }}
+    steps:
+      # Jira Login
+      - name: Jira login
+        if: ${{ matrix.ticket != '' }}
+        uses: atlassian/gajira-login@v2.0.0
+        env:
+          JIRA_BASE_URL: ${{ secrets.jira-base-url }}
+          JIRA_USER_EMAIL: ${{ secrets.jira-user-email }}
+          JIRA_API_TOKEN: ${{ secrets.jira-api-token }}
+
+      # Transition issue on Jira
+      - name: Transit Issue
+        if: ${{ matrix.ticket != '' }}
+        id: transition
+        uses: atlassian/gajira-transition@v3
+        with:
+          issue: "${{ matrix.ticket }}"
+          transition: "${{ inputs.status }}"
