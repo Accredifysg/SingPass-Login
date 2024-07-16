@@ -17,8 +17,6 @@ use Jose\Component\Core\JWK;
 use Jose\Component\Core\JWKSet;
 use Jose\Component\Encryption\Algorithm\ContentEncryption\A256CBCHS512;
 use Jose\Component\Encryption\Algorithm\KeyEncryption\ECDHESA256KW;
-use Jose\Component\Encryption\Compression\CompressionMethodManager;
-use Jose\Component\Encryption\Compression\Deflate;
 use Jose\Component\Encryption\JWEDecrypter;
 use Jose\Component\Encryption\JWELoader;
 use Jose\Component\Encryption\JWETokenSupport;
@@ -93,19 +91,12 @@ final class SingPassJwtService
      */
     public static function jweDecrypt($token): ?string
     {
-        $keyEncryptionAlgorithmManager = new AlgorithmManager([
+        $algorithmManager = new AlgorithmManager([
             new ECDHESA256KW(),
-        ]);
-
-        $contentEncryptionAlgorithmManager = new AlgorithmManager([
             new A256CBCHS512(),
         ]);
 
-        $compressionMethodManager = new CompressionMethodManager([
-            new Deflate(),
-        ]);
-
-        $jweDecrypter = new JWEDecrypter($keyEncryptionAlgorithmManager, $contentEncryptionAlgorithmManager, $compressionMethodManager);
+        $jweDecrypter = new JWEDecrypter($algorithmManager);
 
         $privateKey = str_replace('\\n', "\n", config('services.singpass-login.encryption_key'));
         $key = JWKFactory::createFromKey($privateKey);
