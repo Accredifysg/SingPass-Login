@@ -7,7 +7,6 @@ return [
     'client_id' => env('SINGPASS_CLIENT_ID'),
     'client_secret' => env('SINGPASS_CLIENT_SECRET'),
     'redirect_uri' => env('SINGPASS_REDIRECT_URI'),
-    'script_source' => env('SINGPASS_SCRIPT_SOURCE'),
     'domain' => env('SINGPASS_DOMAIN'),
     'discovery_endpoint' => env('SINGPASS_DISCOVERY_ENDPOINT'),
     'signing_kid' => env('SINGPASS_SIGNING_KID'),

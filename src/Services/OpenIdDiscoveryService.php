@@ -17,7 +17,7 @@ final class OpenIdDiscoveryService
     public static function cacheOpenIdDiscovery(): void
     {
         Cache::remember('openId', now()->addHour(), static function () {
-            $response = Http::get(config('services.singpass-login.discoveryEndpoint'))->body();
+            $response = Http::get(config('services.singpass-login.discovery_endpoint'))->body();
 
             try {
                 return json_decode($response, false, 512, JSON_THROW_ON_ERROR);

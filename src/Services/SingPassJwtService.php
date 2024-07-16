@@ -46,9 +46,9 @@ final class SingPassJwtService
         } catch (Exception) {
             throw new JwksInvalidException;
         }
-        $signingKey = $jwkSets->get(config('services.singpass-login.signingKid'));
+        $signingKey = $jwkSets->get(config('services.singpass-login.signing_kid'));
         $signingKeyArray = $signingKey->all();
-        $signingKeyArray['d'] = config('services.singpass-login.privateExponent');
+        $signingKeyArray['d'] = config('services.singpass-login.private_exponent');
 
         return JWKFactory::createFromValues($signingKeyArray);
     }
