@@ -171,7 +171,7 @@ final class SingPassJwtService
      *
      * @throws JwtPayloadException
      */
-    public static function verifyPayload(string $payload)
+    public static function verifyPayload($payload)
     {
         // Check if token has expired
         $iat = $payload->iat;
