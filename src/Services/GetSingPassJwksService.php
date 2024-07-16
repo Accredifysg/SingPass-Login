@@ -13,8 +13,6 @@ final class getSingPassJwksService
     /**
      * Handles GET request to the SingPass JWKS Endpoint
      *
-     * @return void
-     *
      * @throws SingPassJwksException
      */
     public static function getSingPassJwks(): JWKSet

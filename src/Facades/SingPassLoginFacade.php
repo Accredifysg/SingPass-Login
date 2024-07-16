@@ -2,15 +2,16 @@
 
 namespace Accredifysg\SingPassLogin\Facades;
 
+use Accredifysg\SingPassLogin\SingPassLogin;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @see \Accredifysg\SingPassLogin\SingPassLogin
+ * @see SingPassLogin
  */
 class SingPassLoginFacade extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return \Accredifysg\SingPassLogin\SingPassLogin::class;
+        return SingPassLogin::class;
     }
 }

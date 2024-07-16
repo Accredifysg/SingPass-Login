@@ -14,7 +14,7 @@ class SingPassLoginServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function boot()
+    public function boot(): void
     {
         // Publish configuration file
         $this->publishes([
@@ -40,7 +40,7 @@ class SingPassLoginServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function register()
+    public function register(): void
     {
         // Merge configuration file
         $this->mergeConfigFrom(

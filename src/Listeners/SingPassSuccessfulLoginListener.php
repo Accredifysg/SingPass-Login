@@ -5,11 +5,13 @@ namespace Accredifysg\SingPassLogin\Listeners;
 use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Foundation\Auth\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 
 class SingPassSuccessfulLoginListener
 {
-    public function handle(SingPassSuccessfulLoginEvent $event)
+    public function handle(SingPassSuccessfulLoginEvent $event): RedirectResponse
     {
         $singPassUser = $event->getSingPassUser();
         $nric = $singPassUser->getNric();

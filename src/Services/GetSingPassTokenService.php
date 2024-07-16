@@ -2,8 +2,9 @@
 
 namespace Accredifysg\SingPassLogin\Services;
 
+use Accredifysg\SingPassLogin\Exceptions\SingPassTokenException;
 use Exception;
-use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
@@ -12,11 +13,9 @@ final class getSingPassTokenService
     /**
      * Handles the POST Request to SingPass's token endpoint
      *
-     *
-     *
-     * @throws FileNotFoundException
+     * @throws ConnectionException
      */
-    public static function getToken($code): mixed
+    public static function getToken(string $code): mixed
     {
         $clientId = config('services.singpass-login.clientId');
         $redirectUrl = config('services.singpass-login.redirectionUrl');
@@ -39,7 +38,7 @@ final class getSingPassTokenService
 
         try {
             return json_decode($response, false, 512, JSON_THROW_ON_ERROR)->id_token;
-        } catch (Exception $e) {
+        } catch (Exception) {
             throw new SingPassTokenException;
         }
     }

@@ -10,7 +10,7 @@ use Accredifysg\SingPassLogin\Services\getSingPassTokenService;
 use Accredifysg\SingPassLogin\Services\OpenIdDiscoveryService;
 use Accredifysg\SingPassLogin\Services\SingPassJwtService;
 
-class SingPassLogin
+readonly class SingPassLogin
 {
     public function __construct(private string $code, private string $state) {}
 
@@ -27,7 +27,7 @@ class SingPassLogin
         event(new SingPassSuccessfulLoginEvent($singPassUser));
     }
 
-    private function getSingPassUser(string $payload): SingPassUser
+    private function getSingPassUser($payload): SingPassUser
     {
         // Get NRIC and UUID
         $sub = $payload->sub;

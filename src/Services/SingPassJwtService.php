@@ -3,11 +3,11 @@
 namespace Accredifysg\SingPassLogin\Services;
 
 use Accredifysg\SingPassLogin\Exceptions\JweDecryptionFailedException;
+use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
 use Accredifysg\SingPassLogin\Exceptions\JwtDecodeFailedException;
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Carbon\Carbon;
 use Exception;
-use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Jose\Component\Checker\AlgorithmChecker;
@@ -37,12 +37,15 @@ final class SingPassJwtService
     /**
      * Gets the key to sign the Assertion with based on what is set in the ENV
      *
-     *
-     * @throws FileNotFoundException
+     * @return JWK|JWKSet
      */
     public static function getSigningJwk(): JWK|JWKSet
     {
-        $jwkSets = JWKSet::createFromJson(File::get(storage_path('jwks/jwks.json')));
+        try {
+            $jwkSets = JWKSet::createFromJson(File::get(storage_path('jwks/jwks.json')));
+        } catch (Exception) {
+            throw new JwksInvalidException;
+        }
         $signingKey = $jwkSets->get(config('services.singpass-login.signingKid'));
         $signingKeyArray = $signingKey->all();
         $signingKeyArray['d'] = config('services.singpass-login.privateExponent');
@@ -166,12 +169,11 @@ final class SingPassJwtService
     /**
      * Verifies they payload to ensure it is valid
      *
+     * @param $payload
      *
      * @return void
-     *
-     * @throws JwtPayloadException
      */
-    public static function verifyPayload($payload)
+    public static function verifyPayload($payload): void
     {
         // Check if token has expired
         $iat = $payload->iat;
