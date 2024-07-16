@@ -20,11 +20,11 @@
         "web-token/jwt-framework": "^4.0.1"
     },
     "require-dev": {
-        "phpunit/phpunit": "^9.5",
-        "laravel/pint": "^1.6",
+        "orchestra/testbench": "^9.2",
+        "phpunit/phpunit": "^11.2",
+        "laravel/pint": "^1.16",
         "mockery/mockery": "^1.6",
-        "fakerphp/faker": "^1.23",
-        "orchestra/testbench": "^8.18"
+        "fakerphp/faker": "^1.23"
     },
     "extra": {
         "laravel": {
