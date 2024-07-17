@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Jose\Component\Core\JWKSet;
 
-final class getSingPassJwksService
+final class GetSingPassJwksService
 {
     /**
      * Handles GET request to the SingPass JWKS Endpoint
