@@ -36,17 +36,30 @@ final class SingPassJwtService
 {
     /**
      * Gets the key to sign the Assertion with based on what is set in the ENV
-     *
-     * @return JWK|JWKSet
      */
     public static function getSigningJwk(): JWK|JWKSet
     {
         try {
-            $jwkSets = JWKSet::createFromJson(File::get(storage_path('jwks/jwks.json')));
+            $jwks = File::get(storage_path('jwks/jwks.json'));
         } catch (Exception) {
-            throw new JwksInvalidException;
+            throw new JwksInvalidException(500, 'JWKS JSON file could not be retrieved.');
         }
-        $signingKey = $jwkSets->get(config('services.singpass-login.signing_kid'));
+
+        try {
+            $jwkSets = JWKSet::createFromJson($jwks);
+        } catch (Exception) {
+            throw new JwksInvalidException(500, 'JWKS JSON Invalid.');
+        }
+
+        try {
+            $signingKey = $jwkSets->get(config('services.singpass-login.signing_kid'));
+        } catch (Exception) {
+            throw new JwksInvalidException(500, 'Signing key not found.');
+        }
+
+        if (config('services.singpass-login.private_exponent') === null) {
+            throw new JwksInvalidException(500, 'Private exponent not set.');
+        }
         $signingKeyArray = $signingKey->all();
         $signingKeyArray['d'] = config('services.singpass-login.private_exponent');
 
@@ -168,10 +181,6 @@ final class SingPassJwtService
 
     /**
      * Verifies they payload to ensure it is valid
-     *
-     * @param $payload
-     *
-     * @return void
      */
     public static function verifyPayload($payload): void
     {

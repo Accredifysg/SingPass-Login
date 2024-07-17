@@ -8,7 +8,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
-final class getSingPassTokenService
+final class GetSingPassTokenService
 {
     /**
      * Handles the POST Request to SingPass's token endpoint

@@ -6,7 +6,7 @@ use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Accredifysg\SingPassLogin\Models\SingPassUser;
 use Accredifysg\SingPassLogin\Services\GetSingPassJwksService;
-use Accredifysg\SingPassLogin\Services\getSingPassTokenService;
+use Accredifysg\SingPassLogin\Services\GetSingPassTokenService;
 use Accredifysg\SingPassLogin\Services\OpenIdDiscoveryService;
 use Accredifysg\SingPassLogin\Services\SingPassJwtService;
 use Exception;
@@ -18,7 +18,7 @@ readonly class SingPassLogin
     public function handleCallback(): void
     {
         OpenIdDiscoveryService::cacheOpenIdDiscovery();
-        $jweToken = getSingPassTokenService::getToken($this->code);
+        $jweToken = GetSingPassTokenService::getToken($this->code);
         $jwtToken = SingPassJwtService::jweDecrypt($jweToken);
         $jwksKeyset = GetSingPassJwksService::getSingPassJwks();
         $payload = SingPassJwtService::jwtDecode($jwtToken, $jwksKeyset);
