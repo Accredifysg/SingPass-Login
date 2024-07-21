@@ -107,8 +107,6 @@ final class SingPassJwtService
     /**
      * Decrypts the JWE that was returned from SingPass's token endpoint
      *
-     *
-     *
      * @throws JweDecryptionFailedException
      */
     public static function jweDecrypt($token): ?string
@@ -154,8 +152,6 @@ final class SingPassJwtService
     /**
      * Decrypts the JWT that was encrypted within the JWE token
      *
-     *
-     *
      * @throws JwtDecodeFailedException
      */
     public static function jwtDecode($token, $keySet): mixed
@@ -170,8 +166,17 @@ final class SingPassJwtService
             new JwsCompactSerializer(),
         ]);
 
-        $kid = $serializerManager->unserialize($token)->getSignature(0)->getProtectedHeaderParameter('kid');
-        $key = JWKFactory::createFromKeySet($keySet, $kid);
+        try {
+            $kid = $serializerManager->unserialize($token)->getSignature(0)->getProtectedHeaderParameter('kid');
+        } catch (InvalidArgumentException) {
+            throw new JwtDecodeFailedException(500, 'JWT supplied is invalid.');
+        }
+
+        try {
+            $key = JWKFactory::createFromKeySet($keySet, $kid);
+        } catch (InvalidArgumentException) {
+            throw new JwtDecodeFailedException(500, 'Keyset does not contain KID from JWT.');
+        }
 
         $headerCheckerManager = new HeaderCheckerManager([
             new AlgorithmChecker(['ES256']),
