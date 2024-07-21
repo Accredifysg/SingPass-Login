@@ -1,5 +1,7 @@
 <?php
 
+namespace Accredifysg\SingPassLogin\Tests\Unit\Services\SingPassJwtService;
+
 use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
 use Accredifysg\SingPassLogin\Services\SingPassJwtService;
 use Illuminate\Support\Facades\Config;

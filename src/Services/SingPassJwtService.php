@@ -10,12 +10,14 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
+use InvalidArgumentException;
 use Jose\Component\Checker\AlgorithmChecker;
 use Jose\Component\Checker\HeaderCheckerManager;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;
 use Jose\Component\Core\JWKSet;
 use Jose\Component\Encryption\Algorithm\ContentEncryption\A256CBCHS512;
+use Jose\Component\Encryption\Algorithm\KeyEncryption\A256KW;
 use Jose\Component\Encryption\Algorithm\KeyEncryption\ECDHESA256KW;
 use Jose\Component\Encryption\JWEDecrypter;
 use Jose\Component\Encryption\JWELoader;
@@ -85,13 +87,17 @@ final class SingPassJwtService
             'exp' => time() + 119,
         ]);
 
-        $jws = $jwsBuilder->create()
-            ->withPayload($payload)
-            ->addSignature($jwk, [
-                'typ' => 'JWT',
-                'alg' => 'ES512',
-                'kid' => config('services.singpass-login.signingKid'),
-            ])->build();
+        try {
+            $jws = $jwsBuilder->create()
+                ->withPayload($payload)
+                ->addSignature($jwk, [
+                    'typ' => 'JWT',
+                    'alg' => 'ES512',
+                    'kid' => config('services.singpass-login.signingKid'),
+                ])->build();
+        } catch (Exception) {
+            throw new JwksInvalidException(500, 'JWKS JSON Invalid.');
+        }
 
         $serializer = new JwsCompactSerializer();
 
@@ -108,14 +114,19 @@ final class SingPassJwtService
     public static function jweDecrypt($token): ?string
     {
         $algorithmManager = new AlgorithmManager([
+            new A256KW(),
             new ECDHESA256KW(),
             new A256CBCHS512(),
         ]);
 
         $jweDecrypter = new JWEDecrypter($algorithmManager);
 
-        $privateKey = str_replace('\\n', "\n", config('services.singpass-login.encryption_key'));
-        $key = JWKFactory::createFromKey($privateKey);
+        try {
+            $privateKey = str_replace('\\n', "\n", config('services.singpass-login.encryption_key'));
+            $key = JWKFactory::createFromKey($privateKey);
+        } catch (InvalidArgumentException) {
+            throw new JweDecryptionFailedException(500, 'Private key could not be decrypted.');
+        }
 
         $serializerManager = new JWESerializerManager([
             new CompactSerializer(),
