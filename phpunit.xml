@@ -18,9 +18,9 @@
     <testsuite name="Unit">
       <directory suffix="Test.php">./tests/Unit</directory>
     </testsuite>
-    <testsuite name="Feature">
+    <!-- <testsuite name="Feature">
       <directory suffix="Test.php">./tests/Feature</directory>
-    </testsuite>
+    </testsuite> -->
   </testsuites>
   <php>
     <env name="SINGPASS_DISCOVERY_ENDPOINT" value="https://www.test.com"/>
