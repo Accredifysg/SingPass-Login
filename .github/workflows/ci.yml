@@ -23,9 +23,9 @@ jobs:
     #   coverage: ${{ steps.coverage.outputs.coverage }}
 
     steps:
-    #   # Checkout Code (current branch)
-    #   - name: Checkout
-    #     uses: actions/checkout@v2
+      # Checkout Code (current branch)
+      - name: Checkout
+        uses: actions/checkout@v4
 
     #   # Install PHP
     #   - name: Setup PHP, with composer and extensions
