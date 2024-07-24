@@ -22,7 +22,7 @@ jobs:
     # outputs:
     #   coverage: ${{ steps.coverage.outputs.coverage }}
 
-    # steps:
+    steps:
     #   # Checkout Code (current branch)
     #   - name: Checkout
     #     uses: actions/checkout@v2
