@@ -4,8 +4,8 @@ namespace Accredifysg\SingPassLogin\Http\Controllers;
 
 use Accredifysg\SingPassLogin\SingPassLogin;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Request;
 
 class PostSingPassCallbackController extends Controller
 {
