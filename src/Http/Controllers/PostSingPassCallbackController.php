@@ -3,7 +3,6 @@
 namespace Accredifysg\SingPassLogin\Http\Controllers;
 
 use Accredifysg\SingPassLogin\SingPassLogin;
-use App\Providers\RouteServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Request;
@@ -14,6 +13,6 @@ class PostSingPassCallbackController extends Controller
     {
         $singPassLogin->handleCallback();
 
-        return redirect()->intended(RouteServiceProvider::HOME);
+        return redirect()->intended();
     }
 }

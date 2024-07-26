@@ -3,7 +3,6 @@
 namespace Accredifysg\SingPassLogin\Listeners;
 
 use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
-use App\Providers\RouteServiceProvider;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +23,6 @@ class SingPassSuccessfulLoginListener
 
         Auth::login($user);
 
-        return redirect()->intended(RouteServiceProvider::HOME);
+        return redirect()->intended();
     }
 }
