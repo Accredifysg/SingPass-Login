@@ -60,6 +60,7 @@ class JwtDecodeTest extends TestCase
 
         // Expect the JwtDecodeFailedException to be thrown
         $this->expectException(JwtDecodeFailedException::class);
+        $this->expectExceptionMessage('JWT supplied is invalid.');
 
         // Call the method
         SingPassJwtService::jwtDecode($invalidJwt, $keySet);
@@ -95,6 +96,7 @@ class JwtDecodeTest extends TestCase
 
         // Expect the JwtDecodeFailedException to be thrown
         $this->expectException(JwtDecodeFailedException::class);
+        $this->expectExceptionMessage('Keyset does not contain KID from JWT.');
 
         // Call the method
         SingPassJwtService::jwtDecode($jwt, $wrongKeySet);

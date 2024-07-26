@@ -188,11 +188,7 @@ final class SingPassJwtService
 
         $jws = $jwsLoader->loadAndVerifyWithKey($token, $key, $signature);
 
-        try {
-            return json_decode($jws->getPayload(), false, 512, JSON_THROW_ON_ERROR);
-        } catch (Exception) {
-            throw new JwtDecodeFailedException;
-        }
+        return json_decode($jws->getPayload(), false);
     }
 
     /**

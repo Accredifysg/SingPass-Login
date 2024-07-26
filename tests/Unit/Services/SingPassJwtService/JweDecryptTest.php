@@ -45,7 +45,7 @@ class JweDecryptTest extends TestCase
         $this->assertEquals($payload, $decryptedPayload);
     }
 
-    public function test_jwe_decrypt_failure()
+    public function test_jwe_decrypt_failure_bad_token()
     {
         // Mock configuration values
         $privateKey = str_replace('\\n', "\n", 'test-private-key');
@@ -59,6 +59,27 @@ class JweDecryptTest extends TestCase
 
         // Call the method
         SingPassJwtService::jweDecrypt($invalidJwe);
+    }
+
+    public function test_jwe_decrypt_failure()
+    {
+        // Create new key
+        $key = JWKFactory::createECKey('P-521');
+        $key2 = JWKFactory::createECKey('P-521');
+        $pem = ECKey::convertToPEM($key);
+
+        // Mock configuration values
+        Config::set('services.singpass-login.encryption_key', $pem);
+
+        // Create a mock JWE token
+        $payload = 'test-payload';
+        $jwe = $this->createMockJWE($key2, $payload);
+
+        // Expect the JweDecryptionFailedException to be thrown
+        $this->expectException(JweDecryptionFailedException::class);
+
+        // Call the method
+        SingPassJwtService::jweDecrypt($jwe);
     }
 
     private function createMockJWE(JWK $key, string $payload): string
