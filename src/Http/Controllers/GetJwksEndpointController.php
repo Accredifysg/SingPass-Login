@@ -5,9 +5,9 @@ namespace Accredifysg\SingPassLogin\Http\Controllers;
 use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Request;
 
 class GetJwksEndpointController extends Controller
 {
