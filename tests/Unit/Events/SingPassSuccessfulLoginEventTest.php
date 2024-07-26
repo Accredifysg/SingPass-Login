@@ -4,7 +4,7 @@ namespace Accredifysg\SingPassLogin\Tests\Unit\Events;
 
 use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
 use Accredifysg\SingPassLogin\Models\SingPassUser;
-use Orchestra\Testbench\TestCase;
+use Accredifysg\SingPassLogin\Tests\TestCase;
 
 class SingPassSuccessfulLoginEventTest extends TestCase
 {

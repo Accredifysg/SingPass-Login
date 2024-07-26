@@ -4,10 +4,10 @@ namespace Accredifysg\SingPassLogin\Tests\Unit\Services;
 
 use Accredifysg\SingPassLogin\Exceptions\SingPassJwksException;
 use Accredifysg\SingPassLogin\Services\GetSingPassJwksService;
+use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Jose\Component\Core\JWKSet;
-use Orchestra\Testbench\TestCase;
 
 class GetSingPassJwksServiceTest extends TestCase
 {

@@ -5,11 +5,11 @@ namespace Accredifysg\SingPassLogin\Tests\Unit\Services;
 use Accredifysg\SingPassLogin\Exceptions\SingPassTokenException;
 use Accredifysg\SingPassLogin\Services\GetSingPassTokenService;
 use Accredifysg\SingPassLogin\Services\SingPassJwtService;
+use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Mockery;
-use Orchestra\Testbench\TestCase;
 
 class GetSingPassTokenServiceTest extends TestCase
 {

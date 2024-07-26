@@ -5,7 +5,7 @@ namespace Accredifysg\SingPassLogin\Tests\Unit;
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Accredifysg\SingPassLogin\Models\SingPassUser;
 use Accredifysg\SingPassLogin\SingPassLogin;
-use Orchestra\Testbench\TestCase;
+use Accredifysg\SingPassLogin\Tests\TestCase;
 use ReflectionMethod;
 
 class GetSingPassUserTest extends TestCase

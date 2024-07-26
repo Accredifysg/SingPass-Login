@@ -4,9 +4,9 @@ namespace Accredifysg\SingPassLogin\Tests\Unit\Services\SingPassJwtService;
 
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Accredifysg\SingPassLogin\Services\SingPassJwtService;
+use Accredifysg\SingPassLogin\Tests\TestCase;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
-use Orchestra\Testbench\TestCase;
 
 class VerifyPayloadTest extends TestCase
 {

@@ -4,10 +4,10 @@ namespace Accredifysg\SingPassLogin\Tests\Unit\Services\SingPassJwtService;
 
 use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
 use Accredifysg\SingPassLogin\Services\SingPassJwtService;
+use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Jose\Component\Core\JWK;
-use Orchestra\Testbench\TestCase;
 
 class GetSigningJwkTest extends TestCase
 {

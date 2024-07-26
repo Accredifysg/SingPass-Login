@@ -4,10 +4,10 @@ namespace Accredifysg\SingPassLogin\Tests\Unit\Services;
 
 use Accredifysg\SingPassLogin\Exceptions\OpenIdDiscoveryException;
 use Accredifysg\SingPassLogin\Services\OpenIdDiscoveryService;
+use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
-use Orchestra\Testbench\TestCase;
 
 class OpenIdDiscoveryServiceTest extends TestCase
 {

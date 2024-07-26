@@ -4,10 +4,10 @@ namespace Accredifysg\SingPassLogin\Tests\Unit\Services\SingPassJwtService;
 
 use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
 use Accredifysg\SingPassLogin\Services\SingPassJwtService;
+use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Support\Facades\Cache;
 use Jose\Component\Core\JWK;
 use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerializer;
-use Orchestra\Testbench\TestCase;
 
 class GenerateClientAssertionTest extends TestCase
 {
