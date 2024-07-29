@@ -106,7 +106,7 @@ class JwtDecodeTest extends TestCase
     private function createMockJWT(JWK $key, string $payload): string
     {
         $algorithmManager = new AlgorithmManager([
-            new ES256(),
+            new ES256,
         ]);
 
         $jwsBuilder = new JWSBuilder(
@@ -122,7 +122,7 @@ class JwtDecodeTest extends TestCase
             ])
             ->build();
 
-        $serializer = new JwsCompactSerializer();
+        $serializer = new JwsCompactSerializer;
 
         return $serializer->serialize($jws, 0);
     }

@@ -26,10 +26,10 @@ class PostSingPassCallbackControllerTest extends TestCase
         Redirect::shouldReceive('intended')->once()->andReturn($redirectMock);
 
         // Create an instance of the controller
-        $controller = new PostSingPassCallbackController();
+        $controller = new PostSingPassCallbackController;
 
         // Call the __invoke method
-        $response = $controller->__invoke(new Request(), $singPassLoginMock);
+        $response = $controller->__invoke(new Request, $singPassLoginMock);
 
         // Assert that the response is a RedirectResponse
         $this->assertInstanceOf(RedirectResponse::class, $response);
@@ -45,14 +45,14 @@ class PostSingPassCallbackControllerTest extends TestCase
             ->willThrowException(new \Exception('Test exception'));
 
         // Create an instance of the controller
-        $controller = new PostSingPassCallbackController();
+        $controller = new PostSingPassCallbackController;
 
         // Expect an exception to be thrown
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Test exception');
 
         // Call the __invoke method
-        $controller->__invoke(new Request(), $singPassLoginMock);
+        $controller->__invoke(new Request, $singPassLoginMock);
     }
 
     protected function getPackageProviders($app)

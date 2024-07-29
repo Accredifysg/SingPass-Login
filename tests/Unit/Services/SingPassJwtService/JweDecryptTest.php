@@ -84,9 +84,9 @@ class JweDecryptTest extends TestCase
     private function createMockJWE(JWK $key, string $payload): string
     {
         $algorithmManager = new AlgorithmManager([
-            new ECDHESA256KW(),
-            new A256KW(),
-            new A256CBCHS512(),
+            new ECDHESA256KW,
+            new A256KW,
+            new A256CBCHS512,
         ]);
 
         $jweBuilder = new JWEBuilder(
@@ -103,7 +103,7 @@ class JweDecryptTest extends TestCase
             ->addRecipient($key)
             ->build();
 
-        $serializer = new CompactSerializer();
+        $serializer = new CompactSerializer;
 
         return $serializer->serialize($jwe, 0);
     }

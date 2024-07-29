@@ -18,7 +18,7 @@ class SingPassSuccessfulLoginListener
         $user = User::where('nric', '=', $nric)->first();
 
         if (! $user) {
-            throw new ModelNotFoundException();
+            throw new ModelNotFoundException;
         }
 
         Auth::login($user);

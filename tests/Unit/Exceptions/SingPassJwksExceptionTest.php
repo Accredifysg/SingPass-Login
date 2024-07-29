@@ -11,13 +11,13 @@ class SingPassJwksExceptionTest extends TestCase
 {
     public function testExceptionInheritance()
     {
-        $exception = new SingPassJwksException();
+        $exception = new SingPassJwksException;
         $this->assertInstanceOf(HttpException::class, $exception);
     }
 
     public function testDefaultValues()
     {
-        $exception = new SingPassJwksException();
+        $exception = new SingPassJwksException;
         $this->assertEquals(500, $exception->getStatusCode());
         $this->assertEquals('GET request to SingPass JWKS endpoint failed', $exception->getMessage());
     }

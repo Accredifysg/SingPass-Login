@@ -11,13 +11,13 @@ class JwtPayloadExceptionTest extends TestCase
 {
     public function testExceptionInheritance()
     {
-        $exception = new JwtPayloadException();
+        $exception = new JwtPayloadException;
         $this->assertInstanceOf(HttpException::class, $exception);
     }
 
     public function testDefaultValues()
     {
-        $exception = new JwtPayloadException();
+        $exception = new JwtPayloadException;
         $this->assertEquals(500, $exception->getStatusCode());
         $this->assertEquals('The JWT Payload is invalid', $exception->getMessage());
     }

@@ -17,7 +17,8 @@ class GetJwksEndpointController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         try {
-            echo (File::get(storage_path('jwks/jwks.json')));
+            echo File::get(storage_path('jwks/jwks.json'));
+
             return response()->json(json_decode(File::get(storage_path('jwks/jwks.json')), true, 512, JSON_THROW_ON_ERROR));
         } catch (Exception) {
             throw new JwksInvalidException;

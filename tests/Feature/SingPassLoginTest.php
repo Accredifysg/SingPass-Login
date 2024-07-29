@@ -86,7 +86,7 @@ class SingPassLoginTest extends TestCase
         $getSingPassJwksService = Mockery::mock(GetSingPassJwksServiceInterface::class);
 
         // Set expectation to throw an exception
-        $openIdDiscoveryService->shouldReceive('cacheOpenIdDiscovery')->once()->andThrow(new OpenIdDiscoveryException());
+        $openIdDiscoveryService->shouldReceive('cacheOpenIdDiscovery')->once()->andThrow(new OpenIdDiscoveryException);
 
         // Create an instance of SingPassLogin
         $singPassLogin = new SingPassLogin(

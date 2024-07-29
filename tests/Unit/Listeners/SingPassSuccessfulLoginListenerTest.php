@@ -24,7 +24,7 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
         $this->loadLaravelMigrations();
         $this->artisan('migrate');
         // Migrate
-        include_once __DIR__ . '/../../../database/migrations/add_nric_to_users_table.php';
+        include_once __DIR__.'/../../../database/migrations/add_nric_to_users_table.php';
         (new \AddNricToUsers)->up();
     }
 
@@ -44,7 +44,7 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
         $event = new SingPassSuccessfulLoginEvent($singPassUser);
 
         // Create the listener
-        $listener = new SingPassSuccessfulLoginListener();
+        $listener = new SingPassSuccessfulLoginListener;
 
         // Call the handle method
         $response = $listener->handle($event);
@@ -70,7 +70,7 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
         $event = new SingPassSuccessfulLoginEvent($singPassUser);
 
         // Create the listener
-        $listener = new SingPassSuccessfulLoginListener();
+        $listener = new SingPassSuccessfulLoginListener;
 
         // Expect an exception
         $this->expectException(ModelNotFoundException::class);
