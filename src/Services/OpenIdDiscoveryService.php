@@ -18,12 +18,16 @@ final class OpenIdDiscoveryService implements OpenIdDiscoveryServiceInterface
     public function cacheOpenIdDiscovery(): void
     {
         Cache::remember('openId', now()->addHour(), static function () {
-            $response = Http::get(config('services.singpass-login.discovery_endpoint'))->body();
+            $response = Http::get(config('services.singpass-login.discovery_endpoint'));
+
+            if ($response->failed()) {
+                throw new OpenIdDiscoveryException($response->status());
+            }
 
             try {
-                return json_decode($response, false, 512, JSON_THROW_ON_ERROR);
+                return json_decode($response->body(), false, 512, JSON_THROW_ON_ERROR);
             } catch (Exception) {
-                throw new OpenIdDiscoveryException;
+                throw new OpenIdDiscoveryException(500, 'Open ID Discovery response parse failure.');
             }
         });
     }

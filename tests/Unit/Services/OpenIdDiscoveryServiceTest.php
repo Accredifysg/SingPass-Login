@@ -35,7 +35,7 @@ class OpenIdDiscoveryServiceTest extends TestCase
         $this->assertEquals($cacheObject, Cache::get('openId'));
     }
 
-    public function test_cache_open_id_discovery_exception()
+    public function test_cache_open_id_discovery_json_exception()
     {
         // Mock the HTTP response to return invalid JSON
         Http::fake([
@@ -44,6 +44,22 @@ class OpenIdDiscoveryServiceTest extends TestCase
 
         // Expect the OpenIdDiscoveryException to be thrown
         $this->expectException(OpenIdDiscoveryException::class);
+        $this->expectExceptionMessage('Open ID Discovery response parse failure.');
+
+        // Call the method
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery();
+    }
+
+    public function test_cache_open_id_discovery_exception()
+    {
+        // Mock the HTTP response to return invalid JSON
+        Http::fake([
+            'https://example.com/discovery' => Http::response('invalid json', 500),
+        ]);
+
+        // Expect the OpenIdDiscoveryException to be thrown
+        $this->expectException(OpenIdDiscoveryException::class);
+        $this->expectExceptionMessage('Open ID Discovery call failed');
 
         // Call the method
         (new OpenIdDiscoveryService)->cacheOpenIdDiscovery();

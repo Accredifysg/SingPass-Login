@@ -3,6 +3,7 @@
 namespace Accredifysg\SingPassLogin\Tests\Unit;
 
 use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
+use Accredifysg\SingPassLogin\Exceptions\OpenIdDiscoveryException;
 use Accredifysg\SingPassLogin\Interfaces\GetSingPassJwksServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\GetSingPassTokenServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\OpenIdDiscoveryServiceInterface;
@@ -85,7 +86,7 @@ class HandleCallbackTest extends TestCase
         $getSingPassJwksService = Mockery::mock(GetSingPassJwksServiceInterface::class);
 
         // Set expectation to throw an exception
-        $openIdDiscoveryService->shouldReceive('cacheOpenIdDiscovery')->once()->andThrow(new \Exception('Test exception'));
+        $openIdDiscoveryService->shouldReceive('cacheOpenIdDiscovery')->once()->andThrow(new OpenIdDiscoveryException());
 
         // Create an instance of SingPassLogin
         $singPassLogin = new SingPassLogin(
@@ -98,8 +99,8 @@ class HandleCallbackTest extends TestCase
         );
 
         // Expect an exception
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Test exception');
+        $this->expectException(OpenIdDiscoveryException::class);
+        $this->expectExceptionMessage('Open ID Discovery call failed');
 
         // Call the method
         $singPassLogin->handleCallback();
