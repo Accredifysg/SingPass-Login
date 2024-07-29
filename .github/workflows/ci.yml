@@ -22,7 +22,7 @@ jobs:
     steps:
       # Checkout Code (current branch)
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       # Install PHP
       - name: Setup PHP, with composer and extensions
