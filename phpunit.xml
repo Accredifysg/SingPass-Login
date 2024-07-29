@@ -16,10 +16,10 @@
   </coverage>
   <testsuites>
     <testsuite name="Unit">
-      <directory suffix="Test.php">./tests/Unit</directory>
+      <directory suffix="Test.php">tests/Unit</directory>
     </testsuite>
     <testsuite name="Feature">
-      <directory suffix="Test.php">./tests/Feature</directory>
+      <directory suffix="Test.php">tests/Feature</directory>
     </testsuite>
   </testsuites>
   <php>
@@ -27,10 +27,10 @@
   </php>
   <source>
     <include>
-      <directory suffix=".php">./src/**</directory>
+      <directory suffix=".php">src</directory>
     </include>
     <exclude>
-      <directory suffix="Test.php">./tests/**</directory>
+      <directory suffix="Test.php">tests</directory>
     </exclude>
   </source>
 </phpunit>
