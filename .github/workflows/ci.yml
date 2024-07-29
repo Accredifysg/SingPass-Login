@@ -5,6 +5,9 @@ on:
       coverage:
         description: "Code coverage value"
         value: ${{ jobs.ci.outputs.coverage }}
+    secrets:
+      SONAR_TOKEN:
+        required: false
 
 jobs:
   ci:
