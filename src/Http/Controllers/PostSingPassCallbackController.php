@@ -2,14 +2,14 @@
 
 namespace Accredifysg\SingPassLogin\Http\Controllers;
 
-use Accredifysg\SingPassLogin\SingPassLogin;
+use Accredifysg\SingPassLogin\Interfaces\SingPassLoginInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 class PostSingPassCallbackController extends Controller
 {
-    public function __invoke(Request $request, SingPassLogin $singPassLogin): RedirectResponse
+    public function __invoke(Request $request, SingPassLoginInterface $singPassLogin): RedirectResponse
     {
         $singPassLogin->handleCallback();
 

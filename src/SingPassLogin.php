@@ -8,10 +8,11 @@ use Accredifysg\SingPassLogin\Interfaces\GetSingPassJwksServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\GetSingPassTokenServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\OpenIdDiscoveryServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\SingPassLoginInterface;
 use Accredifysg\SingPassLogin\Models\SingPassUser;
 use Exception;
 
-readonly class SingPassLogin
+readonly class SingPassLogin implements SingPassLoginInterface
 {
     public function __construct(
         private string $code,

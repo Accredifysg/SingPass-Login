@@ -1,6 +1,6 @@
 <?php
 
-namespace Accredifysg\SingPassLogin\Tests\Unit;
+namespace Accredifysg\SingPassLogin\Tests\Feature;
 
 use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
 use Accredifysg\SingPassLogin\Exceptions\OpenIdDiscoveryException;
@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Event;
 use Jose\Component\Core\JWKSet;
 use Mockery;
 
-class HandleCallbackTest extends TestCase
+class SingPassLoginTest extends TestCase
 {
     protected function tearDown(): void
     {
