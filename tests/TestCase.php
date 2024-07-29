@@ -11,7 +11,6 @@ use Orchestra\Testbench\Concerns\WithWorkbench;
 class TestCase extends \Orchestra\Testbench\TestCase
 {
     use RefreshDatabase;
-    use WithWorkbench;
 
     protected $enablesPackageDiscoveries = true;
 

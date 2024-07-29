@@ -8,12 +8,15 @@ use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
 
 class GetJwksEndpointControllerTest extends TestCase
 {
     public function setUp(): void
     {
         parent::setUp();
+
+        Storage::fake('default_disk');
 
         // Create a mock JWKS file
         $this->mockJwksContent = [
