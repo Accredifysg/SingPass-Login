@@ -24,4 +24,4 @@ class AddNricToUsers extends Migration
             $table->dropColumn('nric');
         });
     }
-};
+}

@@ -11,13 +11,13 @@ class OpenIdDiscoveryExceptionTest extends TestCase
 {
     public function testExceptionInheritance()
     {
-        $exception = new OpenIdDiscoveryException();
+        $exception = new OpenIdDiscoveryException;
         $this->assertInstanceOf(HttpException::class, $exception);
     }
 
     public function testDefaultValues()
     {
-        $exception = new OpenIdDiscoveryException();
+        $exception = new OpenIdDiscoveryException;
         $this->assertEquals(500, $exception->getStatusCode());
         $this->assertEquals('Open ID Discovery call failed', $exception->getMessage());
     }

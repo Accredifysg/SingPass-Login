@@ -11,13 +11,13 @@ class JweDecryptionFailedExceptionTest extends TestCase
 {
     public function testExceptionInheritance()
     {
-        $exception = new JweDecryptionFailedException();
+        $exception = new JweDecryptionFailedException;
         $this->assertInstanceOf(HttpException::class, $exception);
     }
 
     public function testDefaultValues()
     {
-        $exception = new JweDecryptionFailedException();
+        $exception = new JweDecryptionFailedException;
         $this->assertEquals(500, $exception->getStatusCode());
         $this->assertEquals('JWE Decryption Failed', $exception->getMessage());
     }

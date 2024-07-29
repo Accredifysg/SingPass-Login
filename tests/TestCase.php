@@ -5,7 +5,6 @@ namespace Accredifysg\SingPassLogin\Tests;
 use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Orchestra\Testbench\Attributes\WithMigration;
-use Orchestra\Testbench\Concerns\WithWorkbench;
 
 #[WithMigration]
 class TestCase extends \Orchestra\Testbench\TestCase

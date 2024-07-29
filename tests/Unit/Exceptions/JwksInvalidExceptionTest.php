@@ -11,13 +11,13 @@ class JwksInvalidExceptionTest extends TestCase
 {
     public function testExceptionInheritance()
     {
-        $exception = new JwksInvalidException();
+        $exception = new JwksInvalidException;
         $this->assertInstanceOf(HttpException::class, $exception);
     }
 
     public function testDefaultValues()
     {
-        $exception = new JwksInvalidException();
+        $exception = new JwksInvalidException;
         $this->assertEquals(500, $exception->getStatusCode());
         $this->assertEquals('JWKS Invalid', $exception->getMessage());
     }

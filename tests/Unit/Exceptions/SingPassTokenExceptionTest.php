@@ -11,13 +11,13 @@ class SingPassTokenExceptionTest extends TestCase
 {
     public function testExceptionInheritance()
     {
-        $exception = new SingPassTokenException();
+        $exception = new SingPassTokenException;
         $this->assertInstanceOf(HttpException::class, $exception);
     }
 
     public function testDefaultValues()
     {
-        $exception = new SingPassTokenException();
+        $exception = new SingPassTokenException;
         $this->assertEquals(500, $exception->getStatusCode());
         $this->assertEquals('GET request to SingPass Token endpoint failed', $exception->getMessage());
     }

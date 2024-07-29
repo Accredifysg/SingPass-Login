@@ -11,13 +11,13 @@ class JwtDecodeFailedExceptionTest extends TestCase
 {
     public function testExceptionInheritance()
     {
-        $exception = new JwtDecodeFailedException();
+        $exception = new JwtDecodeFailedException;
         $this->assertInstanceOf(HttpException::class, $exception);
     }
 
     public function testDefaultValues()
     {
-        $exception = new JwtDecodeFailedException();
+        $exception = new JwtDecodeFailedException;
         $this->assertEquals(500, $exception->getStatusCode());
         $this->assertEquals('JWT Decoding Failed', $exception->getMessage());
     }

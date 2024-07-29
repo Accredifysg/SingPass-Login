@@ -75,7 +75,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
     public static function generateClientAssertion($jwk): string
     {
         $algorithmManager = new AlgorithmManager([
-            new ES512(),
+            new ES512,
         ]);
 
         $jwsBuilder = new JWSBuilder($algorithmManager);
@@ -100,7 +100,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
             throw new JwksInvalidException(500, 'JWKS JSON Invalid.');
         }
 
-        $serializer = new JwsCompactSerializer();
+        $serializer = new JwsCompactSerializer;
 
         return $serializer->serialize($jws, 0);
     }
@@ -113,9 +113,9 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
     public function jweDecrypt($jweToken): string
     {
         $algorithmManager = new AlgorithmManager([
-            new A256KW(),
-            new ECDHESA256KW(),
-            new A256CBCHS512(),
+            new A256KW,
+            new ECDHESA256KW,
+            new A256CBCHS512,
         ]);
 
         $jweDecrypter = new JWEDecrypter($algorithmManager);
@@ -128,7 +128,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
         }
 
         $serializerManager = new JWESerializerManager([
-            new CompactSerializer(),
+            new CompactSerializer,
         ]);
 
         $jwe = $serializerManager->unserialize($jweToken);
@@ -137,7 +137,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
             $headerCheckerManager = new HeaderCheckerManager([
                 new AlgorithmChecker(['ECDH-ES+A256KW']),
             ], [
-                new JWETokenSupport(),
+                new JWETokenSupport,
             ]);
 
             $jweLoader = new JWELoader($serializerManager, $jweDecrypter, $headerCheckerManager);
@@ -158,13 +158,13 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
     public function jwtDecode(string $jwtToken, JWKSet $jwksKeyset): array
     {
         $algorithmManager = new AlgorithmManager([
-            new ES256(),
+            new ES256,
         ]);
 
         $jwsVerifier = new JWSVerifier($algorithmManager);
 
         $serializerManager = new JWSSerializerManager([
-            new JwsCompactSerializer(),
+            new JwsCompactSerializer,
         ]);
 
         try {
@@ -182,7 +182,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
         $headerCheckerManager = new HeaderCheckerManager([
             new AlgorithmChecker(['ES256']),
         ], [
-            new JWSTokenSupport(),
+            new JWSTokenSupport,
         ]);
 
         $jwsLoader = new JWSLoader($serializerManager, $jwsVerifier, $headerCheckerManager);

@@ -47,7 +47,7 @@ class GenerateClientAssertionTest extends TestCase
         $this->assertNotEmpty($clientAssertion);
 
         // Further validate the JWS structure
-        $serializer = new JwsCompactSerializer();
+        $serializer = new JwsCompactSerializer;
         $jws = $serializer->unserialize($clientAssertion);
 
         $this->assertEquals(1, $jws->countSignatures());
