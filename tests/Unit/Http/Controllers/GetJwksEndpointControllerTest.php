@@ -27,6 +27,7 @@ class GetJwksEndpointControllerTest extends TestCase
         ];
 
         File::put(storage_path('jwks/jwks.json'), json_encode($this->mockJwksContent));
+        echo (File::get(storage_path('jwks/jwks.json')));
     }
 
     protected function tearDown(): void
