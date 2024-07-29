@@ -7,11 +7,12 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Accredifysg\\SingPassLogin\\Tests\\": "tests"
+            "Accredifysg\\SingPassLogin\\Tests\\": "tests",
+            "Accredifysg\\SingPassLogin\\Database\\Factories\\": "database/factories"
         }
     },
     "require": {
-        "php": "^8.2",
+        "php": "^8.3",
         "ext-gmp": "*",
         "ext-json": "*",
         "ext-openssl": "*",
@@ -36,5 +37,18 @@
                 "SingPassLogin": "Accredifysg\\SingPass-Login\\Facades\\SingPassLoginFacade"
             }
         }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "@clear",
+            "@prepare"
+        ],
+        "lint": [
+            "@php vendor/bin/pint",
+            "@php vendor/bin/phpstan analyse"
+        ],
+        "test": [
+            "@php vendor/bin/phpunit"
+        ]
     }
 }
