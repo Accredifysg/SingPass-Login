@@ -6,17 +6,14 @@ use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
 use Accredifysg\SingPassLogin\Http\Controllers\GetJwksEndpointController;
 use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
 use Accredifysg\SingPassLogin\Tests\TestCase;
-use Illuminate\Support\Facades\File;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class GetJwksEndpointControllerTest extends TestCase
 {
     public function setUp(): void
     {
         parent::setUp();
-
-        Storage::fake('default_disk');
 
         // Create a mock JWKS file
         $this->mockJwksContent = [
@@ -26,9 +23,9 @@ class GetJwksEndpointControllerTest extends TestCase
                     'kid' => '1',
                     'use' => 'sig',
                     'n' => 'someModulus',
-                    'e' => 'AQAB'
-                ]
-            ]
+                    'e' => 'AQAB',
+                ],
+            ],
         ];
 
         File::put(storage_path('jwks/jwks.json'), json_encode($this->mockJwksContent));
@@ -46,7 +43,7 @@ class GetJwksEndpointControllerTest extends TestCase
 
     public function testInvokeReturnsJwks()
     {
-        $controller = new GetJwksEndpointController();
+        $controller = new GetJwksEndpointController;
         $response = $controller->__invoke(request());
 
         $this->assertInstanceOf(JsonResponse::class, $response);
@@ -61,7 +58,7 @@ class GetJwksEndpointControllerTest extends TestCase
 
         $this->expectException(JwksInvalidException::class);
 
-        $controller = new GetJwksEndpointController();
+        $controller = new GetJwksEndpointController;
         $controller->__invoke(request());
     }
 
@@ -72,14 +69,19 @@ class GetJwksEndpointControllerTest extends TestCase
 
         $this->expectException(JwksInvalidException::class);
 
-        $controller = new GetJwksEndpointController();
+        $controller = new GetJwksEndpointController;
         $controller->__invoke(request());
     }
 
     protected function getPackageProviders($app)
     {
         return [
-            SingPassLoginServiceProvider::class
+            SingPassLoginServiceProvider::class,
         ];
+    }
+
+    protected function getEnvironmentSetUp($app)
+    {
+        $app->useStoragePath(realpath(__DIR__.'/../../../../storage'));
     }
 }
