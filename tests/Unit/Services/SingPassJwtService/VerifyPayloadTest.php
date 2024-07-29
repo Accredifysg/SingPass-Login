@@ -27,7 +27,7 @@ class VerifyPayloadTest extends TestCase
 
         // Create a valid payload
         $now = Carbon::now()->timestamp;
-        $payload = (object) [
+        $payload = [
             'iat' => $now - 60, // Issued 1 minute ago
             'exp' => $now + 60, // Expires in 1 minute
             'aud' => $clientId,
@@ -35,7 +35,7 @@ class VerifyPayloadTest extends TestCase
         ];
 
         // Call the method
-        SingPassJwtService::verifyPayload($payload);
+        (new SingPassJwtService)->verifyPayload($payload);
 
         // If no exception is thrown, the test passes
         $this->assertTrue(true);
@@ -51,7 +51,7 @@ class VerifyPayloadTest extends TestCase
 
         // Create an expired payload
         $now = Carbon::now()->timestamp;
-        $payload = (object) [
+        $payload = [
             'iat' => $now - 120, // Issued 2 minutes ago
             'exp' => $now - 60,  // Expired 1 minute ago
             'aud' => $clientId,
@@ -63,7 +63,7 @@ class VerifyPayloadTest extends TestCase
         $this->expectExceptionMessage('Token times are invalid');
 
         // Call the method
-        SingPassJwtService::verifyPayload($payload);
+        (new SingPassJwtService)->verifyPayload($payload);
     }
 
     public function test_verify_payload_wrong_client_id()
@@ -76,7 +76,7 @@ class VerifyPayloadTest extends TestCase
 
         // Create a payload with the wrong client ID
         $now = Carbon::now()->timestamp;
-        $payload = (object) [
+        $payload = [
             'iat' => $now - 60, // Issued 1 minute ago
             'exp' => $now + 60, // Expires in 1 minute
             'aud' => 'wrong-client-id',
@@ -88,7 +88,7 @@ class VerifyPayloadTest extends TestCase
         $this->expectExceptionMessage('Wrong client ID');
 
         // Call the method
-        SingPassJwtService::verifyPayload($payload);
+        (new SingPassJwtService)->verifyPayload($payload);
     }
 
     public function test_verify_payload_wrong_principal()
@@ -101,7 +101,7 @@ class VerifyPayloadTest extends TestCase
 
         // Create a payload with the wrong principal
         $now = Carbon::now()->timestamp;
-        $payload = (object) [
+        $payload = [
             'iat' => $now - 60, // Issued 1 minute ago
             'exp' => $now + 60, // Expires in 1 minute
             'aud' => $clientId,
@@ -113,6 +113,6 @@ class VerifyPayloadTest extends TestCase
         $this->expectExceptionMessage('Came from wrong principal');
 
         // Call the method
-        SingPassJwtService::verifyPayload($payload);
+        (new SingPassJwtService)->verifyPayload($payload);
     }
 }

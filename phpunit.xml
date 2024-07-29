@@ -4,16 +4,16 @@
         bootstrap="vendor/autoload.php"
         backupGlobals="false"
         colors="true"
-        processIsolation="false"
+        processIsolation="true"
         stopOnFailure="false"
         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.2/phpunit.xsd"
         cacheDirectory=".phpunit.cache"
         backupStaticProperties="false">
-<!--  <coverage>-->
-<!--    <report>-->
-<!--      <clover outputFile="coverage/clover.xml"/>-->
-<!--    </report>-->
-<!--  </coverage>-->
+  <coverage>
+    <report>
+      <clover outputFile="coverage/clover.xml"/>
+    </report>
+  </coverage>
   <testsuites>
     <testsuite name="Unit">
       <directory suffix="Test.php">./tests/Unit</directory>

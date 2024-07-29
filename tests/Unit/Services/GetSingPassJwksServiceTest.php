@@ -40,7 +40,7 @@ class GetSingPassJwksServiceTest extends TestCase
         ]);
 
         // Call the method
-        $jwks = GetSingPassJwksService::getSingPassJwks();
+        $jwks = (new GetSingPassJwksService)->getSingPassJwks();
 
         // Assert the method returns a JWKSet object
         $this->assertInstanceOf(JWKSet::class, $jwks);
@@ -60,6 +60,6 @@ class GetSingPassJwksServiceTest extends TestCase
         $this->expectException(SingPassJwksException::class);
 
         // Call the method
-        GetSingPassJwksService::getSingPassJwks();
+        (new GetSingPassJwksService)->getSingPassJwks();
     }
 }

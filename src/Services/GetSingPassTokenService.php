@@ -3,19 +3,20 @@
 namespace Accredifysg\SingPassLogin\Services;
 
 use Accredifysg\SingPassLogin\Exceptions\SingPassTokenException;
+use Accredifysg\SingPassLogin\Interfaces\GetSingPassTokenServiceInterface;
 use Exception;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
-final class GetSingPassTokenService
+final class GetSingPassTokenService implements GetSingPassTokenServiceInterface
 {
     /**
      * Handles the POST Request to SingPass's token endpoint
      *
      * @throws ConnectionException
      */
-    public static function getToken(string $code): mixed
+    public function getToken(string $code): string
     {
         $clientId = config('services.singpass-login.clientId');
         $redirectUrl = config('services.singpass-login.redirectionUrl');

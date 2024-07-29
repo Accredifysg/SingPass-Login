@@ -8,6 +8,7 @@ use Accredifysg\SingPassLogin\Tests\TestCase;
 use Carbon\Carbon;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;
+use Jose\Component\Core\JWKSet;
 use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\ES256;
 use Jose\Component\Signature\JWSBuilder;
@@ -36,10 +37,10 @@ class JwtDecodeTest extends TestCase
         $jwt = $this->createMockJWT($key, $payload);
 
         // Call the method
-        $decodedPayload = SingPassJwtService::jwtDecode($jwt, $keySet);
+        $decodedPayload = (new SingPassJwtService)->jwtDecode($jwt, $keySet);
 
         // Assert the decoded payload is correct
-        $this->assertEquals(json_decode($payload, false), $decodedPayload);
+        $this->assertEquals(json_decode($payload, true), $decodedPayload);
     }
 
     public function test_jwt_decode_failure()
@@ -49,11 +50,11 @@ class JwtDecodeTest extends TestCase
         $newKey = JWKFactory::createECKey('P-256', ['kid' => 'test-kid'])->all();
 
         // Mock JWK set
-        $keySet = [
+        $keySet = JWKSet::createFromKeyData([
             'keys' => [
                 $newKey,
             ],
-        ];
+        ]);
 
         // Create an invalid JWT token
         $invalidJwt = 'invalid.jwt.token';
@@ -63,7 +64,7 @@ class JwtDecodeTest extends TestCase
         $this->expectExceptionMessage('JWT supplied is invalid.');
 
         // Call the method
-        SingPassJwtService::jwtDecode($invalidJwt, $keySet);
+        (new SingPassJwtService)->jwtDecode($invalidJwt, $keySet);
     }
 
     public function test_jwt_decode_failure_invalid_kid()
@@ -99,7 +100,7 @@ class JwtDecodeTest extends TestCase
         $this->expectExceptionMessage('Keyset does not contain KID from JWT.');
 
         // Call the method
-        SingPassJwtService::jwtDecode($jwt, $wrongKeySet);
+        (new SingPassJwtService)->jwtDecode($jwt, $wrongKeySet);
     }
 
     private function createMockJWT(JWK $key, string $payload): string

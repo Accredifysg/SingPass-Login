@@ -4,25 +4,32 @@ namespace Accredifysg\SingPassLogin;
 
 use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
+use Accredifysg\SingPassLogin\Interfaces\GetSingPassJwksServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\GetSingPassTokenServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\OpenIdDiscoveryServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
 use Accredifysg\SingPassLogin\Models\SingPassUser;
-use Accredifysg\SingPassLogin\Services\GetSingPassJwksService;
-use Accredifysg\SingPassLogin\Services\GetSingPassTokenService;
-use Accredifysg\SingPassLogin\Services\OpenIdDiscoveryService;
-use Accredifysg\SingPassLogin\Services\SingPassJwtService;
 use Exception;
 
 readonly class SingPassLogin
 {
-    public function __construct(private string $code, private string $state) {}
+    public function __construct(
+        private string $code,
+        private string $state,
+        private OpenIdDiscoveryServiceInterface $openIdDiscoveryService,
+        private GetSingPassTokenServiceInterface $getSingPassTokenService,
+        private SingPassJwtServiceInterface $singPassJwtService,
+        private GetSingPassJwksServiceInterface $getSingPassJwksService
+    ) {}
 
     public function handleCallback(): void
     {
-        OpenIdDiscoveryService::cacheOpenIdDiscovery();
-        $jweToken = GetSingPassTokenService::getToken($this->code);
-        $jwtToken = SingPassJwtService::jweDecrypt($jweToken);
-        $jwksKeyset = GetSingPassJwksService::getSingPassJwks();
-        $payload = SingPassJwtService::jwtDecode($jwtToken, $jwksKeyset);
-        SingPassJwtService::verifyPayload($payload);
+        $this->openIdDiscoveryService->cacheOpenIdDiscovery();
+        $jweToken = $this->getSingPassTokenService->getToken($this->code);
+        $jwtToken = $this->singPassJwtService->jweDecrypt($jweToken);
+        $jwksKeyset = $this->getSingPassJwksService->getSingPassJwks();
+        $payload = $this->singPassJwtService->jwtDecode($jwtToken, $jwksKeyset);
+        $this->singPassJwtService->verifyPayload($payload);
         $singPassUser = $this->getSingPassUser($payload);
 
         event(new SingPassSuccessfulLoginEvent($singPassUser));
@@ -31,7 +38,7 @@ readonly class SingPassLogin
     private function getSingPassUser($payload): SingPassUser
     {
         // Get NRIC and UUID
-        $sub = $payload->sub;
+        $sub = $payload['sub'];
         if ($sub === '') {
             throw new JwtPayloadException(400, 'Sub is empty');
         }

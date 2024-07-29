@@ -58,7 +58,7 @@ class GetSingPassTokenServiceTest extends TestCase
         ]);
 
         // Call the method
-        $token = GetSingPassTokenService::getToken('mock-code');
+        $token = (new GetSingPassTokenService)->getToken('mock-code');
 
         // Assert the method returns the expected token
         $this->assertEquals('mock-id-token', $token);
@@ -92,6 +92,6 @@ class GetSingPassTokenServiceTest extends TestCase
         $this->expectException(SingPassTokenException::class);
 
         // Call the method
-        GetSingPassTokenService::getToken('mock-code');
+        (new GetSingPassTokenService)->getToken('mock-code');
     }
 }

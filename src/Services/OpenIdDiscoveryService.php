@@ -3,18 +3,19 @@
 namespace Accredifysg\SingPassLogin\Services;
 
 use Accredifysg\SingPassLogin\Exceptions\OpenIdDiscoveryException;
+use Accredifysg\SingPassLogin\Interfaces\OpenIdDiscoveryServiceInterface;
 use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
-final class OpenIdDiscoveryService
+final class OpenIdDiscoveryService implements OpenIdDiscoveryServiceInterface
 {
     /**
      * Calls the SingPass Discovery Endpoint and stores the results in the cache for 1 hour
      *
      * @throws OpenIdDiscoveryException
      */
-    public static function cacheOpenIdDiscovery(): void
+    public function cacheOpenIdDiscovery(): void
     {
         Cache::remember('openId', now()->addHour(), static function () {
             $response = Http::get(config('services.singpass-login.discovery_endpoint'))->body();

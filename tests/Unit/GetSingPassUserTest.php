@@ -3,9 +3,14 @@
 namespace Accredifysg\SingPassLogin\Tests\Unit;
 
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
+use Accredifysg\SingPassLogin\Interfaces\GetSingPassJwksServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\GetSingPassTokenServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\OpenIdDiscoveryServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
 use Accredifysg\SingPassLogin\Models\SingPassUser;
 use Accredifysg\SingPassLogin\SingPassLogin;
 use Accredifysg\SingPassLogin\Tests\TestCase;
+use Mockery;
 use ReflectionMethod;
 
 class GetSingPassUserTest extends TestCase
@@ -15,8 +20,15 @@ class GetSingPassUserTest extends TestCase
     public function setUp(): void
     {
         parent::setUp();
+
+        // Create mock services
+        $openIdDiscoveryService = Mockery::mock(OpenIdDiscoveryServiceInterface::class);
+        $getSingPassTokenService = Mockery::mock(GetSingPassTokenServiceInterface::class);
+        $singPassJwtService = Mockery::mock(SingPassJwtServiceInterface::class);
+        $getSingPassJwksService = Mockery::mock(GetSingPassJwksServiceInterface::class);
+
         // Initialize your class here if needed
-        $this->singPassLogin = new SingPassLogin('123', '456');
+        $this->singPassLogin = new SingPassLogin('123', '456', $openIdDiscoveryService, $getSingPassTokenService, $singPassJwtService, $getSingPassJwksService);
     }
 
     private function callPrivateMethod($object, string $methodName, array $parameters = [])
@@ -30,7 +42,7 @@ class GetSingPassUserTest extends TestCase
     public function test_get_sing_pass_user_success()
     {
         // Create a mock payload
-        $payload = (object) [
+        $payload = [
             'sub' => 's=S8829314B,u=1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9',
         ];
 
@@ -48,7 +60,7 @@ class GetSingPassUserTest extends TestCase
     public function test_get_sing_pass_user_invalid_payload()
     {
         // Create a mock payload with missing NRIC and UUID
-        $payload = (object) [
+        $payload = [
             'sub' => 'S1234567A,',
         ];
 
@@ -63,7 +75,7 @@ class GetSingPassUserTest extends TestCase
     public function test_get_sing_pass_user_empty_sub()
     {
         // Create a mock payload with empty sub
-        $payload = (object) [
+        $payload = [
             'sub' => '',
         ];
 
@@ -78,7 +90,7 @@ class GetSingPassUserTest extends TestCase
     public function test_get_sing_pass_user_invalid_sub_format()
     {
         // Create a mock payload with invalid sub format
-        $payload = (object) [
+        $payload = [
             'sub' => 'invalidformat',
         ];
 

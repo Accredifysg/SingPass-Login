@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Config;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;
 use Jose\Component\Core\Util\ECKey;
-use Jose\Component\Core\Util\RSAKey;
 use Jose\Component\Encryption\Algorithm\ContentEncryption\A256CBCHS512;
 use Jose\Component\Encryption\Algorithm\KeyEncryption\A256KW;
 use Jose\Component\Encryption\Algorithm\KeyEncryption\ECDHESA256KW;
@@ -39,7 +38,7 @@ class JweDecryptTest extends TestCase
         $jwe = $this->createMockJWE($key, $payload);
 
         // Call the method
-        $decryptedPayload = SingPassJwtService::jweDecrypt($jwe);
+        $decryptedPayload = (new SingPassJwtService)->jweDecrypt($jwe);
 
         // Assert the decrypted payload is correct
         $this->assertEquals($payload, $decryptedPayload);
@@ -58,7 +57,7 @@ class JweDecryptTest extends TestCase
         $this->expectException(JweDecryptionFailedException::class);
 
         // Call the method
-        SingPassJwtService::jweDecrypt($invalidJwe);
+        (new SingPassJwtService)->jweDecrypt($invalidJwe);
     }
 
     public function test_jwe_decrypt_failure()
@@ -79,7 +78,7 @@ class JweDecryptTest extends TestCase
         $this->expectException(JweDecryptionFailedException::class);
 
         // Call the method
-        SingPassJwtService::jweDecrypt($jwe);
+        (new SingPassJwtService)->jweDecrypt($jwe);
     }
 
     private function createMockJWE(JWK $key, string $payload): string

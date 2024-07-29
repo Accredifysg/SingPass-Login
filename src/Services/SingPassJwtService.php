@@ -6,6 +6,7 @@ use Accredifysg\SingPassLogin\Exceptions\JweDecryptionFailedException;
 use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
 use Accredifysg\SingPassLogin\Exceptions\JwtDecodeFailedException;
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
+use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Cache;
@@ -34,7 +35,7 @@ use Jose\Component\Signature\JWSVerifier;
 use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializerManager;
 
-final class SingPassJwtService
+final class SingPassJwtService implements SingPassJwtServiceInterface
 {
     /**
      * Gets the key to sign the Assertion with based on what is set in the ENV
@@ -109,7 +110,7 @@ final class SingPassJwtService
      *
      * @throws JweDecryptionFailedException
      */
-    public static function jweDecrypt($token): ?string
+    public function jweDecrypt($jweToken): string
     {
         $algorithmManager = new AlgorithmManager([
             new A256KW(),
@@ -130,7 +131,7 @@ final class SingPassJwtService
             new CompactSerializer(),
         ]);
 
-        $jwe = $serializerManager->unserialize($token);
+        $jwe = $serializerManager->unserialize($jweToken);
 
         if ($jweDecrypter->decryptUsingKey($jwe, $key, 0)) {
             $headerCheckerManager = new HeaderCheckerManager([
@@ -141,7 +142,7 @@ final class SingPassJwtService
 
             $jweLoader = new JWELoader($serializerManager, $jweDecrypter, $headerCheckerManager);
 
-            $jwe = $jweLoader->loadAndDecryptWithKey($token, $key, $recipient);
+            $jwe = $jweLoader->loadAndDecryptWithKey($jweToken, $key, $recipient);
 
             return $jwe->getPayload();
         }
@@ -154,7 +155,7 @@ final class SingPassJwtService
      *
      * @throws JwtDecodeFailedException
      */
-    public static function jwtDecode($token, $keySet): mixed
+    public function jwtDecode(string $jwtToken, JWKSet $jwksKeyset): array
     {
         $algorithmManager = new AlgorithmManager([
             new ES256(),
@@ -167,13 +168,13 @@ final class SingPassJwtService
         ]);
 
         try {
-            $kid = $serializerManager->unserialize($token)->getSignature(0)->getProtectedHeaderParameter('kid');
+            $kid = $serializerManager->unserialize($jwtToken)->getSignature(0)->getProtectedHeaderParameter('kid');
         } catch (InvalidArgumentException) {
             throw new JwtDecodeFailedException(500, 'JWT supplied is invalid.');
         }
 
         try {
-            $key = JWKFactory::createFromKeySet($keySet, $kid);
+            $key = JWKFactory::createFromKeySet($jwksKeyset, $kid);
         } catch (InvalidArgumentException) {
             throw new JwtDecodeFailedException(500, 'Keyset does not contain KID from JWT.');
         }
@@ -186,33 +187,33 @@ final class SingPassJwtService
 
         $jwsLoader = new JWSLoader($serializerManager, $jwsVerifier, $headerCheckerManager);
 
-        $jws = $jwsLoader->loadAndVerifyWithKey($token, $key, $signature);
+        $jws = $jwsLoader->loadAndVerifyWithKey($jwtToken, $key, $signature);
 
-        return json_decode($jws->getPayload(), false);
+        return json_decode($jws->getPayload(), true);
     }
 
     /**
      * Verifies they payload to ensure it is valid
      */
-    public static function verifyPayload($payload): void
+    public function verifyPayload(array $payload): void
     {
         // Check if token has expired
-        $iat = $payload->iat;
-        $exp = $payload->exp;
+        $iat = $payload['iat'];
+        $exp = $payload['exp'];
         $now = Carbon::now()->timestamp;
         if ($iat > $now || $exp < $now) {
             throw new JwtPayloadException(400, 'Token times are invalid');
         }
 
         // Check if the client_id of the relaying party is SingPass
-        $aud = $payload->aud;
+        $aud = $payload['aud'];
         $singpassClientId = config('services.singpass-login.clientId');
         if ($aud !== $singpassClientId) {
             throw new JwtPayloadException(400, 'Wrong client ID');
         }
 
         // Check if the principal is SingPass
-        $iss = $payload->iss;
+        $iss = $payload['iss'];
         $singpassDomain = config('services.singpass-login.domain');
         if ($iss !== $singpassDomain) {
             throw new JwtPayloadException(400, 'Came from wrong principal');

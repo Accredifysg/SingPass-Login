@@ -29,7 +29,7 @@ class OpenIdDiscoveryServiceTest extends TestCase
         ]);
 
         // Call the method
-        OpenIdDiscoveryService::cacheOpenIdDiscovery();
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery();
 
         // Assert the data is cached
         $this->assertEquals($cacheObject, Cache::get('openId'));
@@ -46,6 +46,6 @@ class OpenIdDiscoveryServiceTest extends TestCase
         $this->expectException(OpenIdDiscoveryException::class);
 
         // Call the method
-        OpenIdDiscoveryService::cacheOpenIdDiscovery();
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery();
     }
 }
