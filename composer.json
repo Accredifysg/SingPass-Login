@@ -39,10 +39,6 @@
         }
     },
     "scripts": {
-        "post-autoload-dump": [
-            "@clear",
-            "@prepare"
-        ],
         "lint": [
             "@php vendor/bin/pint",
             "@php vendor/bin/phpstan analyse"
