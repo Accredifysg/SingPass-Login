@@ -8,6 +8,7 @@ use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\File;
+use Jose\Component\KeyManagement\JWKFactory;
 
 class GetJwksEndpointControllerTest extends TestCase
 {
@@ -15,16 +16,13 @@ class GetJwksEndpointControllerTest extends TestCase
     {
         parent::setUp();
 
+        // Create new key
+        $newKey = JWKFactory::createECKey('P-256', ['kid' => 'test-kid'])->all();
+
         // Create a mock JWKS file
         $this->mockJwksContent = [
             'keys' => [
-                [
-                    'kty' => 'RSA',
-                    'kid' => '1',
-                    'use' => 'sig',
-                    'n' => 'someModulus',
-                    'e' => 'AQAB',
-                ],
+                $newKey,
             ],
         ];
 
@@ -78,10 +76,5 @@ class GetJwksEndpointControllerTest extends TestCase
         return [
             SingPassLoginServiceProvider::class,
         ];
-    }
-
-    protected function getEnvironmentSetUp($app)
-    {
-        $app->useStoragePath(realpath(__DIR__.'/../../../../storage'));
     }
 }
