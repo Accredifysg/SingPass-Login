@@ -19,10 +19,6 @@ class SingPassLoginServiceProvider extends ServiceProvider
             __DIR__.'/../config/SingPass-Login.php' => config_path('SingPass-Login.php'),
         ], 'config');
 
-        $this->publishes([
-            __DIR__.'/../jwks/jwks.json' => storage_path('jwks/jwks.json'),
-        ], 'jwks');
-
         // Load routes
         $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
 

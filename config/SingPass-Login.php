@@ -12,13 +12,14 @@ return [
     'signing_kid' => env('SINGPASS_SIGNING_KID'),
     'private_exponent' => env('SINGPASS_PRIVATE_EXPONENT'),
     'encryption_key' => env('SINGPASS_ENCRYPTION_KEY'),
+    'jwks' => env('SINGPASS_JWKS'),
 
     // Default routes
     'enable_default_singpass_routes' => env('SINGPASS_USE_DEFAULT_ROUTES', true),
-
     'get_jwks_endpoint_url' => env('SINGPASS_JWKS_URL', '/sp/jwks'),
     'post_singpass_callback_url' => env('SINGPASS_CALLBACK_URL', '/sp/callback'),
 
+    // Default controllers
     'get_jwks_endpoint_controller' => GetJwksEndpointController::class,
     'post_singpass_callback_controller' => PostSingPassCallbackController::class,
 

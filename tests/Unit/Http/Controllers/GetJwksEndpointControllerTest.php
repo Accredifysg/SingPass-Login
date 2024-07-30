@@ -7,8 +7,9 @@ use Accredifysg\SingPassLogin\Http\Controllers\GetJwksEndpointController;
 use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Config;
 use Jose\Component\KeyManagement\JWKFactory;
+use JsonException;
 
 class GetJwksEndpointControllerTest extends TestCase
 {
@@ -26,19 +27,17 @@ class GetJwksEndpointControllerTest extends TestCase
             ],
         ];
 
-        File::put(storage_path('jwks/jwks.json'), json_encode($this->mockJwksContent), true);
+        Config::set('services.singpass-login.jwks', json_encode($this->mockJwksContent));
     }
 
     protected function tearDown(): void
     {
-        // Clean up the mock file
-        if (File::exists(storage_path('jwks/jwks.json'))) {
-            File::delete(storage_path('jwks/jwks.json'));
-        }
-
         parent::tearDown();
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testInvokeReturnsJwks()
     {
         $controller = new GetJwksEndpointController;
@@ -49,23 +48,31 @@ class GetJwksEndpointControllerTest extends TestCase
         $this->assertEquals($this->mockJwksContent, $response->getData(true));
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testInvokeThrowsExceptionWhenJwksFileIsInvalid()
     {
-        // Replace the JWKS file with invalid JSON
-        File::put(storage_path('jwks/jwks.json'), 'invalid json');
+        // Replace the JWKS env var with invalid JSON
+        Config::set('services.singpass-login.jwks', 'invalid json');
 
         $this->expectException(JwksInvalidException::class);
+        $this->expectExceptionMessage('JWKS is an invalid JSON string.');
 
         $controller = new GetJwksEndpointController;
         $controller->__invoke(request());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testInvokeThrowsExceptionWhenJwksFileIsMissing()
     {
-        // Delete the JWKS file
-        File::delete(storage_path('jwks/jwks.json'));
+        // Delete the JWKS env var
+        Config::set('services.singpass-login.jwks');
 
         $this->expectException(JwksInvalidException::class);
+        $this->expectExceptionMessage('JWKS environment variable not set.');
 
         $controller = new GetJwksEndpointController;
         $controller->__invoke(request());

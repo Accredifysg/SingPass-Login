@@ -23,13 +23,6 @@ class SingPassLoginServiceProviderTest extends TestCase
         $this->assertFileExists(config_path('SingPass-Login.php'));
     }
 
-    public function testJwksIsPublished()
-    {
-        $this->artisan('vendor:publish', ['--provider' => 'Accredifysg\SingPassLogin\SingPassLoginServiceProvider', '--tag' => 'jwks']);
-
-        $this->assertFileExists(storage_path('jwks/jwks.json'));
-    }
-
     public function testRoutesAreLoaded()
     {
         $routeCollection = app('router')->getRoutes();
@@ -60,6 +53,7 @@ class SingPassLoginServiceProviderTest extends TestCase
         $this->assertArrayHasKey('signing_kid', config('singpass-login'));
         $this->assertArrayHasKey('private_exponent', config('singpass-login'));
         $this->assertArrayHasKey('encryption_key', config('singpass-login'));
+        $this->assertArrayHasKey('jwks', config('singpass-login'));
         $this->assertArrayHasKey('enable_default_singpass_routes', config('singpass-login'));
         $this->assertArrayHasKey('get_jwks_endpoint_url', config('singpass-login'));
         $this->assertArrayHasKey('post_singpass_callback_url', config('singpass-login'));
@@ -76,9 +70,6 @@ class SingPassLoginServiceProviderTest extends TestCase
         if (File::exists(config_path('SingPass-Login.php'))) {
             File::delete(config_path('SingPass-Login.php'));
         }
-        if (File::exists(storage_path('jwks/jwks.json'))) {
-            File::delete(storage_path('jwks/jwks.json'));
-        }
     }
 
     protected function tearDown(): void
@@ -86,9 +77,6 @@ class SingPassLoginServiceProviderTest extends TestCase
         // Clean up after tests
         if (File::exists(config_path('SingPass-Login.php'))) {
             File::delete(config_path('SingPass-Login.php'));
-        }
-        if (File::exists(storage_path('jwks/jwks.json'))) {
-            File::delete(storage_path('jwks/jwks.json'));
         }
 
         parent::tearDown();
