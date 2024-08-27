@@ -12,10 +12,6 @@ class GetJwksEndpointController extends Controller
 {
     /**
      * Returns the JSON JWKS located in the storage folder
-     *
-     * @param Request $request
-     *
-     * @return JsonResponse
      */
     public function __invoke(Request $request): JsonResponse
     {
