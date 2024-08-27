@@ -46,7 +46,6 @@ class SingPassLoginServiceProviderTest extends TestCase
         $this->assertNotNull(config('singpass-login'));
 
         $this->assertArrayHasKey('client_id', config('singpass-login'));
-        $this->assertArrayHasKey('client_secret', config('singpass-login'));
         $this->assertArrayHasKey('redirect_uri', config('singpass-login'));
         $this->assertArrayHasKey('domain', config('singpass-login'));
         $this->assertArrayHasKey('discovery_endpoint', config('singpass-login'));

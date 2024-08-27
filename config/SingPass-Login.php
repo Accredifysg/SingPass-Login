@@ -5,7 +5,6 @@ use Accredifysg\SingPassLogin\Http\Controllers\PostSingPassCallbackController;
 
 return [
     'client_id' => env('SINGPASS_CLIENT_ID'),
-    'client_secret' => env('SINGPASS_CLIENT_SECRET'),
     'redirect_uri' => env('SINGPASS_REDIRECT_URI'),
     'domain' => env('SINGPASS_DOMAIN'),
     'discovery_endpoint' => env('SINGPASS_DISCOVERY_ENDPOINT'),
