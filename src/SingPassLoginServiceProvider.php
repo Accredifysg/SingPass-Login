@@ -3,7 +3,6 @@
 namespace Accredifysg\SingPassLogin;
 
 use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
-use Accredifysg\SingPassLogin\Listeners\SingPassSuccessfulLoginListener;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
