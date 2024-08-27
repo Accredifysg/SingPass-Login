@@ -23,6 +23,13 @@ class SingPassLoginServiceProviderTest extends TestCase
         $this->assertFileExists(config_path('SingPass-Login.php'));
     }
 
+    public function testListenerIsPublished()
+    {
+        $this->artisan('vendor:publish', ['--provider' => 'Accredifysg\SingPassLogin\SingPassLoginServiceProvider', '--tag' => 'listener']);
+
+        $this->assertFileExists(app_path('Listeners/SingPassSuccessfulLoginListener.php'));
+    }
+
     public function testRoutesAreLoaded()
     {
         $routeCollection = app('router')->getRoutes();
@@ -59,6 +66,8 @@ class SingPassLoginServiceProviderTest extends TestCase
         $this->assertArrayHasKey('get_jwks_endpoint_controller', config('singpass-login'));
         $this->assertArrayHasKey('post_singpass_callback_controller', config('singpass-login'));
         $this->assertArrayHasKey('debug_mode', config('singpass-login'));
+        $this->assertArrayHasKey('use_default_listener', config('singpass-login'));
+        $this->assertArrayHasKey('listener_class', config('singpass-login'));
     }
 
     public function setUp(): void
