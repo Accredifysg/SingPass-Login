@@ -2,6 +2,7 @@
 
 use Accredifysg\SingPassLogin\Http\Controllers\GetJwksEndpointController;
 use Accredifysg\SingPassLogin\Http\Controllers\PostSingPassCallbackController;
+use Accredifysg\SingPassLogin\Listeners\SingPassSuccessfulLoginListener;
 
 return [
     'client_id' => env('SINGPASS_CLIENT_ID'),
@@ -24,4 +25,8 @@ return [
 
     // Debug mode
     'debug_mode' => env('SINGPASS_DEBUG_MODE', false),
+
+    // Listener
+    'use_default_listener' => env('SINGPASS_USE_DEFAULT_LISTENER', true),
+    'listener_class' => SingPassSuccessfulLoginListener::class,
 ];

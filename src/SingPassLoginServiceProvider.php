@@ -19,14 +19,26 @@ class SingPassLoginServiceProvider extends ServiceProvider
             __DIR__.'/../config/SingPass-Login.php' => config_path('SingPass-Login.php'),
         ], 'config');
 
-        // Load routes
-        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+        // Publish listener
+        $this->publishes([
+            __DIR__.'/Listeners/SingPassSuccessfulLoginListener.php' => app_path('Listeners/SingPassSuccessfulLoginListener.php'),
+        ], 'listener');
 
         // Register event and listener
-        Event::listen(
-            SingPassSuccessfulLoginEvent::class,
-            SingPassSuccessfulLoginListener::class
-        );
+        $this->registerEventListener();
+
+        // Load routes
+        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+    }
+
+    protected function registerEventListener(): void
+    {
+        if (config('singpass-login.use_default_listener')) {
+            Event::listen(
+                SingPassSuccessfulLoginEvent::class,
+                config('singpass-login.listener_class')
+            );
+        }
     }
 
     /**
