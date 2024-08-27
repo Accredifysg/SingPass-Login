@@ -1,0 +1,17 @@
+name: CI
+on:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  ci:
+    name: Continuous Integration
+    uses: ./.github/workflows/ci.yml
+
+  badge:
+    needs: ci
+    name: Generate Coverage Badge
+    uses: ./.github/workflows/badge.yml
+    with:
+      coverage: ${{ needs.ci.outputs.coverage }}

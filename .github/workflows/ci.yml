@@ -1,0 +1,91 @@
+name: CI
+on:
+  workflow_call:
+    outputs:
+      coverage:
+        description: "Code coverage value"
+        value: ${{ jobs.ci.outputs.coverage }}
+    secrets:
+      SONAR_TOKEN:
+        required: false
+
+jobs:
+  ci:
+    name: Feature & Unit Tests
+    runs-on: ubuntu-20.04
+
+    permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push the
+      # added or changed files to the repository.
+      contents: write
+
+    outputs:
+      coverage: ${{ steps.coverage.outputs.coverage }}
+
+    steps:
+      # Checkout Code (current branch)
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Install PHP
+      - name: Setup PHP, with composer and extensions
+        uses: shivammathur/setup-php@v2 #https://github.com/shivammathur/setup-php
+        with:
+          php-version: "8.3"
+          extensions: mbstring, mysql
+          coverage: xdebug
+
+      # Get composer cache
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+      # Cache composer dependencies
+      - name: Cache composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      # Install composer dependencies
+      - name: Install Composer dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      # Generate code coverage
+      - name: Generate code coverage
+        run: ./vendor/bin/phpunit --coverage-clover=coverage/clover.xml
+
+      # Check test coverage
+      - name: Check test coverage
+        uses: johanvanhelden/gha-clover-test-coverage-check@v1
+        id: coverage
+        with:
+          percentage: "80"
+          filename: "coverage/clover.xml"
+
+      # Run Pint
+      - name: Run Pint
+        run: vendor/bin/pint
+
+      # Commit everything
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "fix: code-style"
+          commit_options: "--no-verify"
+
+      # Upload Coverage Report
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/clover.xml
+
+      # SonarCloud Scan
+      - name: SonarCloud Scan
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

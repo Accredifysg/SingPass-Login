@@ -1,0 +1,50 @@
+{
+    "name": "accredifysg/singpass-login",
+    "autoload": {
+        "psr-4": {
+            "Accredifysg\\SingPassLogin\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Accredifysg\\SingPassLogin\\Tests\\": "tests",
+            "Accredifysg\\SingPassLogin\\Database\\Factories\\": "database/factories"
+        }
+    },
+    "require": {
+        "php": "^8.3",
+        "ext-gmp": "*",
+        "ext-json": "*",
+        "ext-openssl": "*",
+        "guzzlehttp/guzzle": "^7.0",
+        "illuminate/contracts": "^10.0||^11.0",
+        "web-token/jwt-framework": "^4.0.1",
+        "spomky-labs/aes-key-wrap": "^7.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.2",
+        "phpunit/phpunit": "^11.2",
+        "laravel/pint": "^1.16",
+        "mockery/mockery": "^1.6",
+        "fakerphp/faker": "^1.23"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Accredifysg\\SingPass-Login\\SingPassLoginServiceProvider"
+            ],
+            "aliases": {
+                "SingPassLogin": "Accredifysg\\SingPass-Login\\Facades\\SingPassLoginFacade"
+            }
+        }
+    },
+    "scripts": {
+        "lint": [
+            "@php vendor/bin/pint",
+            "@php vendor/bin/phpstan analyse"
+        ],
+        "test": [
+            "@php vendor/bin/phpunit"
+        ]
+    }
+}

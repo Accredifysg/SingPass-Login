@@ -1,0 +1,7 @@
+/vendor/
+/coverage/*
+!/coverage/badge.svg
+.phpunit.result.cache
+.idea
+.DS_Store
+/.phpunit.cache/
