@@ -1,8 +1,8 @@
-name: CI
+name: Features
 on:
   push:
     branches-ignore:
-      - main
+      - master
 
 jobs:
   ci:
