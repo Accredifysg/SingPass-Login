@@ -1,13 +1,16 @@
-name: Features
+name: CI
 on:
   push:
     branches-ignore:
       - master
+  pull_request:
 
 jobs:
   ci:
     name: Continuous Integration
     uses: ./.github/workflows/ci.yml
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   badge:
     needs: ci
