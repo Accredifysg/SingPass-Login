@@ -1,5 +1,14 @@
 {
     "name": "accredifysg/singpass-login",
+    "description": "A Laravel package for integrating SingPass Login",
+    "type": "laravel-package",
+    "license": "MIT",
+    "keywords": [
+        "Laravel",
+        "SingPass",
+        "Login"
+    ],
+    "homepage": "https://github.com/accredifysg/singpass-login",
     "autoload": {
         "psr-4": {
             "Accredifysg\\SingPassLogin\\": "src"
@@ -12,7 +21,7 @@
         }
     },
     "require": {
-        "php": "^8.3",
+        "php": "^8.2",
         "ext-gmp": "*",
         "ext-json": "*",
         "ext-openssl": "*",
