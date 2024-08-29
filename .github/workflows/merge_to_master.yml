@@ -1,6 +1,8 @@
-name: Pull Request
+name: Merge to Master Branch
 on:
-  pull_request:
+  push:
+    branches:
+      - master
 
 jobs:
   ci:
