@@ -23,7 +23,7 @@ class SingPassLoginTest extends TestCase
         parent::tearDown();
     }
 
-    public function testHandleCallback()
+    public function test_handle_callback()
     {
         // Create mock services
         $openIdDiscoveryService = Mockery::mock(OpenIdDiscoveryServiceInterface::class);
@@ -77,7 +77,7 @@ class SingPassLoginTest extends TestCase
         });
     }
 
-    public function testHandleCallbackWithException()
+    public function test_handle_callback_with_exception()
     {
         // Create mock services
         $openIdDiscoveryService = Mockery::mock(OpenIdDiscoveryServiceInterface::class);

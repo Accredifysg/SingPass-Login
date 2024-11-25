@@ -9,27 +9,27 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class JwtDecodeFailedExceptionTest extends TestCase
 {
-    public function testExceptionInheritance()
+    public function test_exception_inheritance()
     {
         $exception = new JwtDecodeFailedException;
         $this->assertInstanceOf(HttpException::class, $exception);
     }
 
-    public function testDefaultValues()
+    public function test_default_values()
     {
         $exception = new JwtDecodeFailedException;
         $this->assertEquals(500, $exception->getStatusCode());
         $this->assertEquals('JWT Decoding Failed', $exception->getMessage());
     }
 
-    public function testCustomValues()
+    public function test_custom_values()
     {
         $exception = new JwtDecodeFailedException(400, 'Custom message');
         $this->assertEquals(400, $exception->getStatusCode());
         $this->assertEquals('Custom message', $exception->getMessage());
     }
 
-    public function testRender()
+    public function test_render()
     {
         $exception = new JwtDecodeFailedException(422, 'Custom error message');
         $response = $exception->render();

@@ -9,27 +9,27 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class JwksInvalidExceptionTest extends TestCase
 {
-    public function testExceptionInheritance()
+    public function test_exception_inheritance()
     {
         $exception = new JwksInvalidException;
         $this->assertInstanceOf(HttpException::class, $exception);
     }
 
-    public function testDefaultValues()
+    public function test_default_values()
     {
         $exception = new JwksInvalidException;
         $this->assertEquals(500, $exception->getStatusCode());
         $this->assertEquals('JWKS Invalid', $exception->getMessage());
     }
 
-    public function testCustomValues()
+    public function test_custom_values()
     {
         $exception = new JwksInvalidException(400, 'Custom message');
         $this->assertEquals(400, $exception->getStatusCode());
         $this->assertEquals('Custom message', $exception->getMessage());
     }
 
-    public function testRender()
+    public function test_render()
     {
         $exception = new JwksInvalidException(422, 'Custom error message');
         $response = $exception->render();

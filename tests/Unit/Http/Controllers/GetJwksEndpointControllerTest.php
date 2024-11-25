@@ -13,7 +13,7 @@ use JsonException;
 
 class GetJwksEndpointControllerTest extends TestCase
 {
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -38,7 +38,7 @@ class GetJwksEndpointControllerTest extends TestCase
     /**
      * @throws JsonException
      */
-    public function testInvokeReturnsJwks()
+    public function test_invoke_returns_jwks()
     {
         $controller = new GetJwksEndpointController;
         $response = $controller->__invoke(request());
@@ -51,7 +51,7 @@ class GetJwksEndpointControllerTest extends TestCase
     /**
      * @throws JsonException
      */
-    public function testInvokeThrowsExceptionWhenJwksFileIsInvalid()
+    public function test_invoke_throws_exception_when_jwks_file_is_invalid()
     {
         // Replace the JWKS env var with invalid JSON
         Config::set('services.singpass-login.jwks', 'invalid json');
@@ -66,7 +66,7 @@ class GetJwksEndpointControllerTest extends TestCase
     /**
      * @throws JsonException
      */
-    public function testInvokeThrowsExceptionWhenJwksFileIsMissing()
+    public function test_invoke_throws_exception_when_jwks_file_is_missing()
     {
         // Delete the JWKS env var
         Config::set('services.singpass-login.jwks');

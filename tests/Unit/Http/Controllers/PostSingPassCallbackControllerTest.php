@@ -13,7 +13,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 
 class PostSingPassCallbackControllerTest extends TestCase
 {
-    public function testInvokeCallsHandleCallbackAndRedirects()
+    public function test_invoke_calls_handle_callback_and_redirects()
     {
         // Create a mock of SingPassLogin using PHPUnit's mocking
         /** @var SingPassLogin|MockObject $singPassLoginMock */
@@ -35,7 +35,7 @@ class PostSingPassCallbackControllerTest extends TestCase
         $this->assertInstanceOf(RedirectResponse::class, $response);
     }
 
-    public function testInvokeHandlesExceptions()
+    public function test_invoke_handles_exceptions()
     {
         // Create a mock of SingPassLogin using PHPUnit's mocking
         /** @var SingPassLogin|MockObject $singPassLoginMock */

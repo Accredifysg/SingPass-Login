@@ -17,7 +17,7 @@ class GetSingPassUserTest extends TestCase
 {
     protected SingPassLogin $singPassLogin;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
 

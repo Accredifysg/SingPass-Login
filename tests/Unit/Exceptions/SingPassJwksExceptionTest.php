@@ -9,27 +9,27 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class SingPassJwksExceptionTest extends TestCase
 {
-    public function testExceptionInheritance()
+    public function test_exception_inheritance()
     {
         $exception = new SingPassJwksException;
         $this->assertInstanceOf(HttpException::class, $exception);
     }
 
-    public function testDefaultValues()
+    public function test_default_values()
     {
         $exception = new SingPassJwksException;
         $this->assertEquals(500, $exception->getStatusCode());
         $this->assertEquals('GET request to SingPass JWKS endpoint failed', $exception->getMessage());
     }
 
-    public function testCustomValues()
+    public function test_custom_values()
     {
         $exception = new SingPassJwksException(400, 'Custom message');
         $this->assertEquals(400, $exception->getStatusCode());
         $this->assertEquals('Custom message', $exception->getMessage());
     }
 
-    public function testRender()
+    public function test_render()
     {
         $exception = new SingPassJwksException(422, 'Custom error message');
         $response = $exception->render();
