@@ -40,10 +40,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Accredifysg\\SingPass-Login\\SingPassLoginServiceProvider"
+                "Accredifysg\\SingPassLogin\\SingPassLoginServiceProvider"
             ],
             "aliases": {
-                "SingPassLogin": "Accredifysg\\SingPass-Login\\Facades\\SingPassLoginFacade"
+                "SingPassLogin": "Accredifysg\\SingPassLogin\\Facades\\SingPassLoginFacade"
             }
         }
     },
