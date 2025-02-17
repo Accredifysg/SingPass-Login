@@ -13,8 +13,8 @@ class VerifyPayloadTest extends TestCase
     protected function getEnvironmentSetUp($app)
     {
         // Set up default configuration values
-        $app['config']->set('services.singpass-login.clientId', 'test-client-id');
-        $app['config']->set('services.singpass-login.domain', 'test-domain');
+        $app['config']->set('singpass-login.clientId', 'test-client-id');
+        $app['config']->set('singpass-login.domain', 'test-domain');
     }
 
     public function test_verify_payload_success()
@@ -22,8 +22,8 @@ class VerifyPayloadTest extends TestCase
         // Mock configuration values
         $clientId = 'test-client-id';
         $domain = 'test-domain';
-        Config::set('services.singpass-login.clientId', $clientId);
-        Config::set('services.singpass-login.domain', $domain);
+        Config::set('singpass-login.clientId', $clientId);
+        Config::set('singpass-login.domain', $domain);
 
         // Create a valid payload
         $now = Carbon::now()->timestamp;
@@ -46,8 +46,8 @@ class VerifyPayloadTest extends TestCase
         // Mock configuration values
         $clientId = 'test-client-id';
         $domain = 'test-domain';
-        Config::set('services.singpass-login.clientId', $clientId);
-        Config::set('services.singpass-login.domain', $domain);
+        Config::set('singpass-login.clientId', $clientId);
+        Config::set('singpass-login.domain', $domain);
 
         // Create an expired payload
         $now = Carbon::now()->timestamp;
@@ -71,8 +71,8 @@ class VerifyPayloadTest extends TestCase
         // Mock configuration values
         $clientId = 'test-client-id';
         $domain = 'test-domain';
-        Config::set('services.singpass-login.clientId', $clientId);
-        Config::set('services.singpass-login.domain', $domain);
+        Config::set('singpass-login.clientId', $clientId);
+        Config::set('singpass-login.domain', $domain);
 
         // Create a payload with the wrong client ID
         $now = Carbon::now()->timestamp;
@@ -96,8 +96,8 @@ class VerifyPayloadTest extends TestCase
         // Mock configuration values
         $clientId = 'test-client-id';
         $domain = 'test-domain';
-        Config::set('services.singpass-login.clientId', $clientId);
-        Config::set('services.singpass-login.domain', $domain);
+        Config::set('singpass-login.clientId', $clientId);
+        Config::set('singpass-login.domain', $domain);
 
         // Create a payload with the wrong principal
         $now = Carbon::now()->timestamp;
