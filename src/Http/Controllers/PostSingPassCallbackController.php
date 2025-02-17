@@ -14,7 +14,10 @@ class PostSingPassCallbackController extends Controller
      */
     public function __invoke(Request $request, SingPassLoginInterface $singPassLogin): RedirectResponse
     {
-        $singPassLogin->handleCallback();
+        $code = $request->input('code');
+        $state = $request->input('state');
+
+        $singPassLogin->handleCallback($code, $state);
 
         return redirect()->intended();
     }

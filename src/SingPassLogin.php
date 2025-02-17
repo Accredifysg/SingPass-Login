@@ -15,18 +15,16 @@ use Exception;
 readonly class SingPassLogin implements SingPassLoginInterface
 {
     public function __construct(
-        private string $code,
-        private string $state,
         private OpenIdDiscoveryServiceInterface $openIdDiscoveryService,
         private GetSingPassTokenServiceInterface $getSingPassTokenService,
         private SingPassJwtServiceInterface $singPassJwtService,
         private GetSingPassJwksServiceInterface $getSingPassJwksService
     ) {}
 
-    public function handleCallback(): void
+    public function handleCallback(string $code, string $state): void
     {
         $this->openIdDiscoveryService->cacheOpenIdDiscovery();
-        $jweToken = $this->getSingPassTokenService->getToken($this->code);
+        $jweToken = $this->getSingPassTokenService->getToken($code);
         $jwtToken = $this->singPassJwtService->jweDecrypt($jweToken);
         $jwksKeyset = $this->getSingPassJwksService->getSingPassJwks();
         $payload = $this->singPassJwtService->jwtDecode($jwtToken, $jwksKeyset);
