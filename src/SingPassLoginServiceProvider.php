@@ -3,6 +3,15 @@
 namespace Accredifysg\SingPassLogin;
 
 use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
+use Accredifysg\SingPassLogin\Interfaces\GetSingPassJwksServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\GetSingPassTokenServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\OpenIdDiscoveryServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\SingPassLoginInterface;
+use Accredifysg\SingPassLogin\Services\GetSingPassJwksService;
+use Accredifysg\SingPassLogin\Services\GetSingPassTokenService;
+use Accredifysg\SingPassLogin\Services\OpenIdDiscoveryService;
+use Accredifysg\SingPassLogin\Services\SingPassJwtService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -45,6 +54,12 @@ class SingPassLoginServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(GetSingPassJwksServiceInterface::class, GetSingPassJwksService::class);
+        $this->app->bind(GetSingPassTokenServiceInterface::class, GetSingPassTokenService::class);
+        $this->app->bind(OpenIdDiscoveryServiceInterface::class, OpenIdDiscoveryService::class);
+        $this->app->bind(SingPassJwtServiceInterface::class, SingPassJwtService::class);
+        $this->app->bind(SingPassLoginInterface::class, SingPassLogin::class);
+
         // Merge configuration file
         $this->mergeConfigFrom(
             __DIR__.'/../config/singpass-login.php',
