@@ -28,7 +28,7 @@ class GetSingPassUserTest extends TestCase
         $getSingPassJwksService = Mockery::mock(GetSingPassJwksServiceInterface::class);
 
         // Initialize your class here if needed
-        $this->singPassLogin = new SingPassLogin('123', '456', $openIdDiscoveryService, $getSingPassTokenService, $singPassJwtService, $getSingPassJwksService);
+        $this->singPassLogin = new SingPassLogin($openIdDiscoveryService, $getSingPassTokenService, $singPassJwtService, $getSingPassJwksService);
     }
 
     private function callPrivateMethod($object, string $methodName, array $parameters = [])

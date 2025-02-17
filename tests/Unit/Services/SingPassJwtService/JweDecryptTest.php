@@ -93,6 +93,28 @@ class JweDecryptTest extends TestCase
         (new SingPassJwtService)->jweDecrypt($jwe);
     }
 
+    public function test_jwe_decrypt_failure_invalid_kid_key()
+    {
+        // Create new key
+        $key = JWKFactory::createECKey('P-521', ['kid' => 'test-kid']);
+        $wrongKey = JWKFactory::createECKey('P-521', ['kid' => 'test-kid']);
+        $jwks = json_encode(['keys' => [$wrongKey->jsonSerialize()]]);
+
+        // Mock configuration values
+        Config::set('services.singpass-login.private_jwks', $jwks);
+
+        // Create a mock JWE token
+        $payload = 'test-payload';
+        $jwe = $this->createMockJWE($key, $payload);
+
+        // Expect the JwksInvalidException to be thrown
+        $this->expectException(JweDecryptionFailedException::class);
+        $this->expectExceptionMessage('JWE cannot be decrypted with KID specified.');
+
+        // Call the method
+        (new SingPassJwtService)->jweDecrypt($jwe);
+    }
+
     private function createMockJWE(JWK $key, string $payload): string
     {
         $algorithmManager = new AlgorithmManager([

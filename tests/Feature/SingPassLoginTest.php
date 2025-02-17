@@ -56,8 +56,6 @@ class SingPassLoginTest extends TestCase
 
         // Create an instance of SingPassLogin
         $singPassLogin = new SingPassLogin(
-            'test_code',
-            'test_state',
             $openIdDiscoveryService,
             $getSingPassTokenService,
             $singPassJwtService,
@@ -65,7 +63,7 @@ class SingPassLoginTest extends TestCase
         );
 
         // Call the method
-        $singPassLogin->handleCallback();
+        $singPassLogin->handleCallback('test_code', 'test-state');
 
         // Assert that the event was dispatched
         Event::assertDispatched(SingPassSuccessfulLoginEvent::class, function ($event) {
@@ -90,8 +88,6 @@ class SingPassLoginTest extends TestCase
 
         // Create an instance of SingPassLogin
         $singPassLogin = new SingPassLogin(
-            'test_code',
-            'test_state',
             $openIdDiscoveryService,
             $getSingPassTokenService,
             $singPassJwtService,
@@ -103,7 +99,7 @@ class SingPassLoginTest extends TestCase
         $this->expectExceptionMessage('Open ID Discovery call failed');
 
         // Call the method
-        $singPassLogin->handleCallback();
+        $singPassLogin->handleCallback('test-code', 'test-state');
     }
 
     protected function getPackageProviders($app)

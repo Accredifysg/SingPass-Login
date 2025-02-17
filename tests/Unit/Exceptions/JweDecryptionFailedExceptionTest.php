@@ -19,7 +19,7 @@ class JweDecryptionFailedExceptionTest extends TestCase
     {
         $exception = new JweDecryptionFailedException;
         $this->assertEquals(500, $exception->getStatusCode());
-        $this->assertEquals('JWE Decryption Failed', $exception->getMessage());
+        $this->assertEquals('JWE Decryption Failed.', $exception->getMessage());
     }
 
     public function testCustomValues()
