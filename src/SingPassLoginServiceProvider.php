@@ -15,7 +15,7 @@ class SingPassLoginServiceProvider extends ServiceProvider
     {
         // Publish configuration file
         $this->publishes([
-            __DIR__.'/../config/SingPass-Login.php' => config_path('SingPass-Login.php'),
+            __DIR__.'/../config/singpass-login.php' => config_path('singpass-login.php'),
         ], 'config');
 
         // Publish listener
@@ -47,7 +47,7 @@ class SingPassLoginServiceProvider extends ServiceProvider
     {
         // Merge configuration file
         $this->mergeConfigFrom(
-            __DIR__.'/../config/SingPass-Login.php',
+            __DIR__.'/../config/singpass-login.php',
             'singpass-login'
         );
     }
