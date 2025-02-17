@@ -18,11 +18,11 @@ jobs:
     steps:
       # Checkout Code (current branch)
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       # Use the output from the `coverage` step
       - name: Generate the badge SVG image
-        uses: emibcn/badge-action@v1.2.4
+        uses: emibcn/badge-action@v2.0.3
         id: badge
         with:
           label: 'Test coverage'
