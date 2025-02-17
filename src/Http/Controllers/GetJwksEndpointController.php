@@ -15,7 +15,7 @@ class GetJwksEndpointController extends Controller
      */
     public function __invoke(Request $request): JsonResponse
     {
-        $jwks = config('services.singpass-login.jwks');
+        $jwks = config('singpass-login.jwks');
 
         if ($jwks !== null) {
 

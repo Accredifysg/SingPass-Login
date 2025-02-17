@@ -30,6 +30,7 @@ SINGPASS_PRIVATE_JWKS=
 # Default Routes
 SINGPASS_USE_DEFAULT_ROUTES=true
 SINGPASS_JWKS_URL=/sp/jwks
+SINGPASS_AUTHENTICATION_URL=/sp/login
 SINGPASS_CALLBACK_URL=/sp/callback
 
 # Default Listener
@@ -51,20 +52,23 @@ php artisan vendor:publish --provider="Accredifysg\SingPassLogin\SingPassLoginSe
 ## Usage and Customisations
 
 ### Controllers and Routes
-There are two default controllers that handle the login process
+There are three default controllers that handle the login process
 
 `GetJwksEndpointController` exposes your application's JWKS endpoint to be registered with SingPass. 
 The default route for this controller is `/sp/jwks`
+
+`GetAuthenticationEndpointController` provides the authentication endpoint to redirect the client's browser to.
+The default route for this controller is `/sp/login`
 
 `PostSingPassCallbackController` handles the callback from SingPass, and kick-starts the login process.
 The default route for this controller is `/sp/callback`
 
 If you prefer to set your own routes you can set `SINGPASS_USE_DEFAULT_ROUTES` to `false`, 
-then edit `SINGPASS_JWKS_URL` and `SINGPASS_CALLBACK_URL` in
+then edit `SINGPASS_JWKS_URL`, `SINGPASS_CALLBACK_URL`, and `SINGPASS_AUTHENTICATION_URL` in
 your `.env` file and map your own routes. 
 
 If you prefer to write your own controllers you can define them in the config file
-`SingPass-Login.php` as `get_jwks_endpoint_controller` and `post_singpass_callback_controller`
+`singpass-login.php` as `get_jwks_endpoint_controller`, `post_singpass_callback_controller` and `get_authentication_endpoint_controller`
 
 ### Listener
 If you published the default listener, you should edit it and map your user retrieval via NRIC accordingly.
@@ -87,7 +91,7 @@ public function handle(SingPassSuccessfulLoginEvent $event): RedirectResponse
 ```
 
 If you prefer to write your own, you can set `SINGPASS_USE_DEFAULT_LISTENER` to `false` in
-your `.env` and replace `listener_class` in the config file `SingPass-Login.php`
+your `.env` and replace `listener_class` in the config file `singpass-login.php`
 
 ## Exceptions
 ```php

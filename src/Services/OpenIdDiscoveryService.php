@@ -18,7 +18,7 @@ final class OpenIdDiscoveryService implements OpenIdDiscoveryServiceInterface
     public function cacheOpenIdDiscovery(): void
     {
         Cache::remember('openId', now()->addHour(), static function () {
-            $response = Http::get(config('services.singpass-login.discovery_endpoint'));
+            $response = Http::get(config('singpass-login.discovery_endpoint'));
 
             if ($response->failed()) {
                 throw new OpenIdDiscoveryException($response->status());
