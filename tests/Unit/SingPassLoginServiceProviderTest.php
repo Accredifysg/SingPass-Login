@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\File;
 
 class SingPassLoginServiceProviderTest extends TestCase
 {
-    protected function getPackageProviders($app)
+    protected function getPackageProviders($app): array
     {
         return [SingPassLoginServiceProvider::class];
     }
@@ -20,7 +20,7 @@ class SingPassLoginServiceProviderTest extends TestCase
     {
         $this->artisan('vendor:publish', ['--provider' => 'Accredifysg\SingPassLogin\SingPassLoginServiceProvider', '--tag' => 'config']);
 
-        $this->assertFileExists(config_path('SingPass-Login.php'));
+        $this->assertFileExists(config_path('singpass-login.php'));
     }
 
     public function testListenerIsPublished()
@@ -74,16 +74,16 @@ class SingPassLoginServiceProviderTest extends TestCase
         parent::setUp();
 
         // Ensure we're starting with a clean slate
-        if (File::exists(config_path('SingPass-Login.php'))) {
-            File::delete(config_path('SingPass-Login.php'));
+        if (File::exists(config_path('singpass-login.php'))) {
+            File::delete(config_path('singpass-login.php'));
         }
     }
 
     protected function tearDown(): void
     {
         // Clean up after tests
-        if (File::exists(config_path('SingPass-Login.php'))) {
-            File::delete(config_path('SingPass-Login.php'));
+        if (File::exists(config_path('singpass-login.php'))) {
+            File::delete(config_path('singpass-login.php'));
         }
 
         parent::tearDown();

@@ -148,7 +148,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
             return $jwe->getPayload();
         }
 
-        throw new JweDecryptionFailedException;
+        throw new JweDecryptionFailedException(500, 'JWE cannot be decrypted with KID specified.');
     }
 
     /**

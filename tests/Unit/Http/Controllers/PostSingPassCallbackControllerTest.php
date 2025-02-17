@@ -19,7 +19,8 @@ class PostSingPassCallbackControllerTest extends TestCase
         /** @var SingPassLogin|MockObject $singPassLoginMock */
         $singPassLoginMock = $this->createMock(SingPassLogin::class);
         $singPassLoginMock->expects($this->once())
-            ->method('handleCallback');
+            ->method('handleCallback')
+            ->with('test-code', 'test-state');
 
         // Mock the redirect response
         $redirectMock = $this->createMock(RedirectResponse::class);
@@ -28,8 +29,11 @@ class PostSingPassCallbackControllerTest extends TestCase
         // Create an instance of the controller
         $controller = new PostSingPassCallbackController;
 
+        // Create the request
+        $request = new Request(['code' => 'test-code', 'state' => 'test-state']);
+
         // Call the __invoke method
-        $response = $controller->__invoke(new Request, $singPassLoginMock);
+        $response = $controller->__invoke($request, $singPassLoginMock);
 
         // Assert that the response is a RedirectResponse
         $this->assertInstanceOf(RedirectResponse::class, $response);
@@ -42,6 +46,7 @@ class PostSingPassCallbackControllerTest extends TestCase
         $singPassLoginMock = $this->createMock(SingPassLogin::class);
         $singPassLoginMock->expects($this->once())
             ->method('handleCallback')
+            ->with('test-code', 'test-state')
             ->willThrowException(new \Exception('Test exception'));
 
         // Create an instance of the controller
@@ -51,11 +56,14 @@ class PostSingPassCallbackControllerTest extends TestCase
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Test exception');
 
+        // Create the request
+        $request = new Request(['code' => 'test-code', 'state' => 'test-state']);
+
         // Call the __invoke method
-        $controller->__invoke(new Request, $singPassLoginMock);
+        $controller->__invoke($request, $singPassLoginMock);
     }
 
-    protected function getPackageProviders($app)
+    protected function getPackageProviders($app): array
     {
         return [
             SingPassLoginServiceProvider::class,
