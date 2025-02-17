@@ -10,9 +10,8 @@ return [
     'domain' => env('SINGPASS_DOMAIN'),
     'discovery_endpoint' => env('SINGPASS_DISCOVERY_ENDPOINT'),
     'signing_kid' => env('SINGPASS_SIGNING_KID'),
-    'private_exponent' => env('SINGPASS_PRIVATE_EXPONENT'),
-    'encryption_key' => env('SINGPASS_ENCRYPTION_KEY'),
     'jwks' => env('SINGPASS_JWKS'),
+    'private_jwks' => env('SINGPASS_PRIVATE_JWKS'),
 
     // Default routes
     'enable_default_singpass_routes' => env('SINGPASS_USE_DEFAULT_ROUTES', true),

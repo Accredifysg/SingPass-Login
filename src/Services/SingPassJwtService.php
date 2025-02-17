@@ -10,7 +10,6 @@ use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\File;
 use InvalidArgumentException;
 use Jose\Component\Checker\AlgorithmChecker;
 use Jose\Component\Checker\HeaderCheckerManager;
@@ -34,6 +33,7 @@ use Jose\Component\Signature\JWSTokenSupport;
 use Jose\Component\Signature\JWSVerifier;
 use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializerManager;
+use JsonException;
 
 final class SingPassJwtService implements SingPassJwtServiceInterface
 {
@@ -42,10 +42,10 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
      */
     public static function getSigningJwk(): JWK|JWKSet
     {
-        try {
-            $jwks = File::get(storage_path('jwks/jwks.json'));
-        } catch (Exception) {
-            throw new JwksInvalidException(500, 'JWKS JSON file could not be retrieved.');
+        $jwks = config('services.singpass-login.private_jwks');
+
+        if ($jwks === null) {
+            throw new JwksInvalidException(500, 'Private JWKS not set.');
         }
 
         try {
@@ -60,13 +60,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
             throw new JwksInvalidException(500, 'Signing key not found.');
         }
 
-        if (config('services.singpass-login.private_exponent') === null) {
-            throw new JwksInvalidException(500, 'Private exponent not set.');
-        }
-        $signingKeyArray = $signingKey->all();
-        $signingKeyArray['d'] = config('services.singpass-login.private_exponent');
-
-        return JWKFactory::createFromValues($signingKeyArray);
+        return $signingKey;
     }
 
     /**
@@ -118,20 +112,27 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
             new A256CBCHS512,
         ]);
 
-        $jweDecrypter = new JWEDecrypter($algorithmManager);
-
-        try {
-            $privateKey = str_replace('\\n', "\n", config('services.singpass-login.encryption_key'));
-            $key = JWKFactory::createFromKey($privateKey);
-        } catch (InvalidArgumentException) {
-            throw new JweDecryptionFailedException(500, 'Private key could not be decrypted.');
-        }
-
         $serializerManager = new JWESerializerManager([
             new CompactSerializer,
         ]);
 
-        $jwe = $serializerManager->unserialize($jweToken);
+        try {
+            $jwe = $serializerManager->unserialize($jweToken);
+        } catch (Exception) {
+            throw new JweDecryptionFailedException(500, 'JWE invalid.');
+        }
+
+        $jweDecrypter = new JWEDecrypter($algorithmManager);
+
+        try {
+            $kid = $jwe->getSharedProtectedHeaderParameter('kid');
+            $keySet = JWKFactory::createFromJsonObject(config('services.singpass-login.private_jwks'));
+            $key = $keySet->get($kid);
+        } catch (InvalidArgumentException) {
+            throw new JweDecryptionFailedException(500, 'KID specified not found in JWKS.');
+        } catch (JsonException) {
+            throw new JwksInvalidException(500, 'JWKS is an invalid JSON string.');
+        }
 
         if ($jweDecrypter->decryptUsingKey($jwe, $key, 0)) {
             $headerCheckerManager = new HeaderCheckerManager([
