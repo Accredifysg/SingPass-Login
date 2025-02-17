@@ -42,7 +42,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
      */
     public static function getSigningJwk(): JWK|JWKSet
     {
-        $jwks = config('services.singpass-login.private_jwks');
+        $jwks = config('singpass-login.private_jwks');
 
         if ($jwks === null) {
             throw new JwksInvalidException(500, 'Private JWKS not set.');
@@ -55,7 +55,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
         }
 
         try {
-            $signingKey = $jwkSets->get(config('services.singpass-login.signing_kid'));
+            $signingKey = $jwkSets->get(config('singpass-login.signing_kid'));
         } catch (Exception) {
             throw new JwksInvalidException(500, 'Signing key not found.');
         }
@@ -75,9 +75,9 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
         $jwsBuilder = new JWSBuilder($algorithmManager);
 
         $payload = json_encode([
-            'sub' => config('services.singpass-login.clientId'),
+            'sub' => config('singpass-login.clientId'),
             'aud' => Cache::get('openId')->issuer,
-            'iss' => config('services.singpass-login.clientId'),
+            'iss' => config('singpass-login.clientId'),
             'iat' => time(),
             'exp' => time() + 119,
         ]);
@@ -88,7 +88,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
                 ->addSignature($jwk, [
                     'typ' => 'JWT',
                     'alg' => 'ES512',
-                    'kid' => config('services.singpass-login.signingKid'),
+                    'kid' => config('singpass-login.signingKid'),
                 ])->build();
         } catch (Exception) {
             throw new JwksInvalidException(500, 'JWKS JSON Invalid.');
@@ -126,7 +126,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
 
         try {
             $kid = $jwe->getSharedProtectedHeaderParameter('kid');
-            $keySet = JWKFactory::createFromJsonObject(config('services.singpass-login.private_jwks'));
+            $keySet = JWKFactory::createFromJsonObject(config('singpass-login.private_jwks'));
             $key = $keySet->get($kid);
         } catch (InvalidArgumentException) {
             throw new JweDecryptionFailedException(500, 'KID specified not found in JWKS.');
@@ -208,14 +208,14 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
 
         // Check if the client_id of the relaying party is SingPass
         $aud = $payload['aud'];
-        $singpassClientId = config('services.singpass-login.clientId');
+        $singpassClientId = config('singpass-login.clientId');
         if ($aud !== $singpassClientId) {
             throw new JwtPayloadException(400, 'Wrong client ID');
         }
 
         // Check if the principal is SingPass
         $iss = $payload['iss'];
-        $singpassDomain = config('services.singpass-login.domain');
+        $singpassDomain = config('singpass-login.domain');
         if ($iss !== $singpassDomain) {
             throw new JwtPayloadException(400, 'Came from wrong principal');
         }

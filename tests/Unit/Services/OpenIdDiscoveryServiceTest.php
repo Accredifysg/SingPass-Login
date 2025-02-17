@@ -15,7 +15,7 @@ class OpenIdDiscoveryServiceTest extends TestCase
     {
         parent::setUp();
         // You can set any necessary configuration here.
-        Config::set('services.singpass-login.discovery_endpoint', 'https://example.com/discovery');
+        Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
     }
 
     public function test_cache_open_id_discovery_success()

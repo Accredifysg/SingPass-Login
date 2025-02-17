@@ -11,3 +11,8 @@ Route::get(
     config('singpass-login.get_jwks_endpoint_url'),
     config('singpass-login.get_jwks_endpoint_controller')
 )->name('singpass.jwks');
+
+Route::get(
+    config('singpass-login.get_authentication_endpoint_url'),
+    config('singpass-login.get_authentication_endpoint_controller')
+)->name('singpass.login');

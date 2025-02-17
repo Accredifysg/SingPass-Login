@@ -14,8 +14,8 @@ class GenerateClientAssertionTest extends TestCase
     protected function getEnvironmentSetUp($app)
     {
         // Set up default configuration values
-        $app['config']->set('services.singpass-login.clientId', 'test-client-id');
-        $app['config']->set('services.singpass-login.signingKid', 'test-signing-kid');
+        $app['config']->set('singpass-login.clientId', 'test-client-id');
+        $app['config']->set('singpass-login.signingKid', 'test-signing-kid');
     }
 
     public function test_generate_client_assertion_success()
