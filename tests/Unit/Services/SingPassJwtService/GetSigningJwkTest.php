@@ -6,36 +6,26 @@ use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
 use Accredifysg\SingPassLogin\Services\SingPassJwtService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\File;
 use Jose\Component\Core\JWK;
+use Jose\Component\KeyManagement\JWKFactory;
 
 class GetSigningJwkTest extends TestCase
 {
-    protected function getEnvironmentSetUp($app)
-    {
-        // Set up default configuration values
-        $app['config']->set('services.singpass-login.signing_kid', 'test-key-id');
-        $app['config']->set('services.singpass-login.private_exponent', 'test-private-exponent');
-    }
-
     public function test_get_signing_jwk_success()
     {
-        // Mock the JSON file content
-        $mockJwkJson = json_encode([
-            'keys' => [
-                [
-                    'kty' => 'RSA',
-                    'kid' => 'test-key-id',
-                    'n' => 'test-modulus',
-                    'e' => 'AQAB',
-                ],
-            ],
-        ]);
+        // Create new key
+        $newKey = JWKFactory::createECKey('P-256', ['kid' => 'test-kid-id'])->all();
 
-        File::shouldReceive('get')
-            ->once()
-            ->with(storage_path('jwks/jwks.json'))
-            ->andReturn($mockJwkJson);
+        // Mock JWK set
+        $keySet = [
+            'keys' => [
+                $newKey,
+            ],
+        ];
+
+        // Set up default configuration values
+        Config::set('services.singpass-login.private_jwks', json_encode($keySet));
+        Config::set('services.singpass-login.signing_kid', 'test-kid-id');
 
         // Call the method
         $jwk = SingPassJwtService::getSigningJwk();
@@ -44,23 +34,14 @@ class GetSigningJwkTest extends TestCase
         $this->assertInstanceOf(JWK::class, $jwk);
 
         // Assert the JWK object contains the expected values
-        $this->assertEquals('test-key-id', $jwk->get('kid'));
-        $this->assertEquals('test-modulus', $jwk->get('n'));
-        $this->assertEquals('AQAB', $jwk->get('e'));
-        $this->assertEquals('test-private-exponent', $jwk->get('d'));
+        $this->assertEquals('test-kid-id', $jwk->get('kid'));
     }
 
-    public function test_get_signing_jwk_file_exception()
+    public function test_get_signing_private_jwk_exception()
     {
-        // Mock the file get method to throw an exception
-        File::shouldReceive('get')
-            ->once()
-            ->with(storage_path('jwks/jwks.json'))
-            ->andThrow(new \Exception);
-
         // Expect the JwksInvalidException to be thrown
         $this->expectException(JwksInvalidException::class);
-        $this->expectExceptionMessage('JWKS JSON file could not be retrieved.');
+        $this->expectExceptionMessage('Private JWKS not set.');
 
         // Call the method
         SingPassJwtService::getSigningJwk();
@@ -68,14 +49,8 @@ class GetSigningJwkTest extends TestCase
 
     public function test_get_signing_jwk_invalid_json_exception()
     {
-        // Mock configuration values
-        Config::set('services.singpass-login.signing_kid', 'test-key-id');
-
-        // Mock the JSON file content with invalid JSON
-        File::shouldReceive('get')
-            ->once()
-            ->with(storage_path('jwks/jwks.json'))
-            ->andReturn('invalid-json');
+        // Set up default configuration values
+        Config::set('services.singpass-login.private_jwks', '{{}');
 
         // Expect the JwksInvalidException to be thrown
         $this->expectException(JwksInvalidException::class);
@@ -87,61 +62,23 @@ class GetSigningJwkTest extends TestCase
 
     public function test_get_signing_jwk_key_not_found_exception()
     {
-        // Mock configuration values
-        Config::set('services.singpass-login.signing_kid', 'non-existent-key-id');
-        Config::set('services.singpass-login.private_exponent', 'test-private-exponent');
+        // Create new key
+        $newKey = JWKFactory::createECKey('P-256', ['kid' => 'wrong-test-kid-id'])->all();
 
-        // Mock the JSON file content
-        $mockJwkJson = json_encode([
+        // Mock JWK set
+        $keySet = [
             'keys' => [
-                [
-                    'kty' => 'RSA',
-                    'kid' => 'test-key-id',
-                    'n' => 'test-modulus',
-                    'e' => 'AQAB',
-                ],
+                $newKey,
             ],
-        ]);
+        ];
 
-        File::shouldReceive('get')
-            ->once()
-            ->with(storage_path('jwks/jwks.json'))
-            ->andReturn($mockJwkJson);
+        // Set up default configuration values
+        Config::set('services.singpass-login.private_jwks', json_encode($keySet));
+        Config::set('services.singpass-login.signing_kid', 'test-kid-id');
 
         // Expect the JwksInvalidException to be thrown
         $this->expectException(JwksInvalidException::class);
         $this->expectExceptionMessage('Signing key not found.');
-
-        // Call the method
-        SingPassJwtService::getSigningJwk();
-    }
-
-    public function test_get_signing_jwk_private_exponent_not_set_exception()
-    {
-        // Mock configuration values
-        Config::set('services.singpass-login.signing_kid', 'test-key-id');
-        Config::set('services.singpass-login.private_exponent');
-
-        // Mock the JSON file content
-        $mockJwkJson = json_encode([
-            'keys' => [
-                [
-                    'kty' => 'RSA',
-                    'kid' => 'test-key-id',
-                    'n' => 'test-modulus',
-                    'e' => 'AQAB',
-                ],
-            ],
-        ]);
-
-        File::shouldReceive('get')
-            ->once()
-            ->with(storage_path('jwks/jwks.json'))
-            ->andReturn($mockJwkJson);
-
-        // Expect the JwksInvalidException to be thrown
-        $this->expectException(JwksInvalidException::class);
-        $this->expectExceptionMessage('Private exponent not set.');
 
         // Call the method
         SingPassJwtService::getSigningJwk();

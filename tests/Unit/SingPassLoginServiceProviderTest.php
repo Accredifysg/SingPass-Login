@@ -57,9 +57,8 @@ class SingPassLoginServiceProviderTest extends TestCase
         $this->assertArrayHasKey('domain', config('singpass-login'));
         $this->assertArrayHasKey('discovery_endpoint', config('singpass-login'));
         $this->assertArrayHasKey('signing_kid', config('singpass-login'));
-        $this->assertArrayHasKey('private_exponent', config('singpass-login'));
-        $this->assertArrayHasKey('encryption_key', config('singpass-login'));
         $this->assertArrayHasKey('jwks', config('singpass-login'));
+        $this->assertArrayHasKey('private_jwks', config('singpass-login'));
         $this->assertArrayHasKey('enable_default_singpass_routes', config('singpass-login'));
         $this->assertArrayHasKey('get_jwks_endpoint_url', config('singpass-login'));
         $this->assertArrayHasKey('post_singpass_callback_url', config('singpass-login'));
