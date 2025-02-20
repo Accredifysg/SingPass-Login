@@ -13,7 +13,7 @@ class VerifyPayloadTest extends TestCase
     protected function getEnvironmentSetUp($app)
     {
         // Set up default configuration values
-        $app['config']->set('singpass-login.clientId', 'test-client-id');
+        $app['config']->set('singpass-login.client_id', 'test-client-id');
         $app['config']->set('singpass-login.domain', 'test-domain');
     }
 
@@ -22,7 +22,7 @@ class VerifyPayloadTest extends TestCase
         // Mock configuration values
         $clientId = 'test-client-id';
         $domain = 'test-domain';
-        Config::set('singpass-login.clientId', $clientId);
+        Config::set('singpass-login.client_id', $clientId);
         Config::set('singpass-login.domain', $domain);
 
         // Create a valid payload
@@ -46,7 +46,7 @@ class VerifyPayloadTest extends TestCase
         // Mock configuration values
         $clientId = 'test-client-id';
         $domain = 'test-domain';
-        Config::set('singpass-login.clientId', $clientId);
+        Config::set('singpass-login.client_id', $clientId);
         Config::set('singpass-login.domain', $domain);
 
         // Create an expired payload
@@ -60,7 +60,7 @@ class VerifyPayloadTest extends TestCase
 
         // Expect the JwtPayloadException to be thrown
         $this->expectException(JwtPayloadException::class);
-        $this->expectExceptionMessage('Token times are invalid');
+        $this->expectExceptionMessage('The token expired.');
 
         // Call the method
         (new SingPassJwtService)->verifyPayload($payload);
@@ -71,7 +71,7 @@ class VerifyPayloadTest extends TestCase
         // Mock configuration values
         $clientId = 'test-client-id';
         $domain = 'test-domain';
-        Config::set('singpass-login.clientId', $clientId);
+        Config::set('singpass-login.client_id', $clientId);
         Config::set('singpass-login.domain', $domain);
 
         // Create a payload with the wrong client ID
@@ -85,7 +85,7 @@ class VerifyPayloadTest extends TestCase
 
         // Expect the JwtPayloadException to be thrown
         $this->expectException(JwtPayloadException::class);
-        $this->expectExceptionMessage('Wrong client ID');
+        $this->expectExceptionMessage('Bad audience.');
 
         // Call the method
         (new SingPassJwtService)->verifyPayload($payload);
@@ -96,7 +96,7 @@ class VerifyPayloadTest extends TestCase
         // Mock configuration values
         $clientId = 'test-client-id';
         $domain = 'test-domain';
-        Config::set('singpass-login.clientId', $clientId);
+        Config::set('singpass-login.client_id', $clientId);
         Config::set('singpass-login.domain', $domain);
 
         // Create a payload with the wrong principal
@@ -110,7 +110,7 @@ class VerifyPayloadTest extends TestCase
 
         // Expect the JwtPayloadException to be thrown
         $this->expectException(JwtPayloadException::class);
-        $this->expectExceptionMessage('Came from wrong principal');
+        $this->expectExceptionMessage('Unknown issuer.');
 
         // Call the method
         (new SingPassJwtService)->verifyPayload($payload);

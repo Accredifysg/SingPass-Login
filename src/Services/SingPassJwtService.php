@@ -7,12 +7,17 @@ use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
 use Accredifysg\SingPassLogin\Exceptions\JwtDecodeFailedException;
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
-use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
 use Jose\Component\Checker\AlgorithmChecker;
+use Jose\Component\Checker\AudienceChecker;
+use Jose\Component\Checker\ClaimCheckerManager;
+use Jose\Component\Checker\ExpirationTimeChecker;
 use Jose\Component\Checker\HeaderCheckerManager;
+use Jose\Component\Checker\InvalidClaimException;
+use Jose\Component\Checker\IssuedAtChecker;
+use Jose\Component\Checker\IssuerChecker;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;
 use Jose\Component\Core\JWKSet;
@@ -34,6 +39,7 @@ use Jose\Component\Signature\JWSVerifier;
 use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializerManager;
 use JsonException;
+use Symfony\Component\Clock\NativeClock;
 
 final class SingPassJwtService implements SingPassJwtServiceInterface
 {
@@ -199,26 +205,21 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
      */
     public function verifyPayload(array $payload): void
     {
-        // Check if token has expired
-        $iat = $payload['iat'];
-        $exp = $payload['exp'];
-        $now = Carbon::now()->timestamp;
-        if ($iat > $now || $exp < $now) {
-            throw new JwtPayloadException(400, 'Token times are invalid');
-        }
+        $clock = new NativeClock;
 
-        // Check if the client_id of the relaying party is SingPass
-        $aud = $payload['aud'];
-        $singpassClientId = config('singpass-login.clientId');
-        if ($aud !== $singpassClientId) {
-            throw new JwtPayloadException(400, 'Wrong client ID');
-        }
+        $claimCheckerManager = new ClaimCheckerManager(
+            [
+                new AudienceChecker(config('singpass-login.client_id')),
+                new IssuedAtChecker($clock),
+                new ExpirationTimeChecker($clock),
+                new IssuerChecker([config('singpass-login.domain')]),
+            ]
+        );
 
-        // Check if the principal is SingPass
-        $iss = $payload['iss'];
-        $singpassDomain = config('singpass-login.domain');
-        if ($iss !== $singpassDomain) {
-            throw new JwtPayloadException(400, 'Came from wrong principal');
+        try {
+            $claimCheckerManager->check($payload);
+        } catch (InvalidClaimException $exception) {
+            throw new JwtPayloadException(400, $exception->getMessage());
         }
     }
 }
