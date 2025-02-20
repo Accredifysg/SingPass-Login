@@ -7,7 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
-class PostSingPassCallbackController extends Controller
+class GetSingPassCallbackController extends Controller
 {
     /**
      * Handles the callback from SingPass

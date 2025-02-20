@@ -2,7 +2,7 @@
 
 use Accredifysg\SingPassLogin\Http\Controllers\GetAuthenticationEndpointController;
 use Accredifysg\SingPassLogin\Http\Controllers\GetJwksEndpointController;
-use Accredifysg\SingPassLogin\Http\Controllers\PostSingPassCallbackController;
+use Accredifysg\SingPassLogin\Http\Controllers\GetSingPassCallbackController;
 use Accredifysg\SingPassLogin\Listeners\SingPassSuccessfulLoginListener;
 
 return [
@@ -23,7 +23,7 @@ return [
     // Default controllers
     'get_jwks_endpoint_controller' => GetJwksEndpointController::class,
     'get_authentication_endpoint_controller' => GetAuthenticationEndpointController::class,
-    'post_singpass_callback_controller' => PostSingPassCallbackController::class,
+    'post_singpass_callback_controller' => GetSingPassCallbackController::class,
 
     // Debug mode
     'debug_mode' => env('SINGPASS_DEBUG_MODE', false),

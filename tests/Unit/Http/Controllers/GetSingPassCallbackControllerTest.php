@@ -2,7 +2,7 @@
 
 namespace Accredifysg\SingPassLogin\Tests\Unit\Http\Controllers;
 
-use Accredifysg\SingPassLogin\Http\Controllers\PostSingPassCallbackController;
+use Accredifysg\SingPassLogin\Http\Controllers\GetSingPassCallbackController;
 use Accredifysg\SingPassLogin\SingPassLogin;
 use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
 use Accredifysg\SingPassLogin\Tests\TestCase;
@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use PHPUnit\Framework\MockObject\MockObject;
 
-class PostSingPassCallbackControllerTest extends TestCase
+class GetSingPassCallbackControllerTest extends TestCase
 {
     public function testInvokeCallsHandleCallbackAndRedirects()
     {
@@ -27,7 +27,7 @@ class PostSingPassCallbackControllerTest extends TestCase
         Redirect::shouldReceive('intended')->once()->andReturn($redirectMock);
 
         // Create an instance of the controller
-        $controller = new PostSingPassCallbackController;
+        $controller = new GetSingPassCallbackController;
 
         // Create the request
         $request = new Request(['code' => 'test-code', 'state' => 'test-state']);
@@ -50,7 +50,7 @@ class PostSingPassCallbackControllerTest extends TestCase
             ->willThrowException(new \Exception('Test exception'));
 
         // Create an instance of the controller
-        $controller = new PostSingPassCallbackController;
+        $controller = new GetSingPassCallbackController;
 
         // Expect an exception to be thrown
         $this->expectException(\Exception::class);

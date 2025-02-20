@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::post(
+Route::get(
     config('singpass-login.post_singpass_callback_url'),
     config('singpass-login.post_singpass_callback_controller')
 )->name('singpass.callback');
