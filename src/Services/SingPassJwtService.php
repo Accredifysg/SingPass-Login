@@ -66,7 +66,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
     /**
      * Generate the client assertion needed to retrieve a token to use for subsequent calls
      */
-    public static function generateClientAssertion($jwk): string
+    public static function generateClientAssertion($jwk, $code): string
     {
         $algorithmManager = new AlgorithmManager([
             new ES512,
@@ -75,11 +75,12 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
         $jwsBuilder = new JWSBuilder($algorithmManager);
 
         $payload = json_encode([
-            'sub' => config('singpass-login.clientId'),
+            'sub' => config('singpass-login.client_id'),
             'aud' => Cache::get('openId')->issuer,
-            'iss' => config('singpass-login.clientId'),
+            'iss' => config('singpass-login.client_id'),
             'iat' => time(),
             'exp' => time() + 119,
+            'code' => $code,
         ]);
 
         try {
@@ -88,7 +89,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
                 ->addSignature($jwk, [
                     'typ' => 'JWT',
                     'alg' => 'ES512',
-                    'kid' => config('singpass-login.signingKid'),
+                    'kid' => config('singpass-login.signing_kid'),
                 ])->build();
         } catch (Exception) {
             throw new JwksInvalidException(500, 'JWKS JSON Invalid.');

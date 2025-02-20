@@ -32,8 +32,8 @@ class GetSingPassTokenServiceTest extends TestCase
     public function test_get_token_success()
     {
         // Mock configuration values
-        Config::set('singpass-login.clientId', 'test-client-id');
-        Config::set('singpass-login.redirectionUrl', 'https://example.com/callback');
+        Config::set('singpass-login.client_id', 'test-client-id');
+        Config::set('singpass-login.redirection_uri', 'https://example.com/callback');
 
         // Mock SingPassJwtService methods
         $mockJwk = (object) ['kty' => 'RSA', 'kid' => 'test-key-id'];
@@ -45,7 +45,7 @@ class GetSingPassTokenServiceTest extends TestCase
             ->andReturn($mockJwk);
         $singPassJwtServiceMock->shouldReceive('generateClientAssertion')
             ->once()
-            ->with($mockJwk)
+            ->with($mockJwk, 'mock-code')
             ->andReturn($mockClientAssertion);
 
         // Mock the HTTP response
@@ -67,8 +67,8 @@ class GetSingPassTokenServiceTest extends TestCase
     public function test_get_token_exception()
     {
         // Mock configuration values
-        Config::set('singpass-login.clientId', 'test-client-id');
-        Config::set('singpass-login.redirectionUrl', 'https://example.com/callback');
+        Config::set('singpass-login.client_id', 'test-client-id');
+        Config::set('singpass-login.redirection_uri', 'https://example.com/callback');
 
         // Mock SingPassJwtService methods
         $mockJwk = (object) ['kty' => 'RSA', 'kid' => 'test-key-id'];
@@ -80,7 +80,7 @@ class GetSingPassTokenServiceTest extends TestCase
             ->andReturn($mockJwk);
         $singPassJwtServiceMock->shouldReceive('generateClientAssertion')
             ->once()
-            ->with($mockJwk)
+            ->with($mockJwk, 'mock-code')
             ->andReturn($mockClientAssertion);
 
         // Mock the HTTP response to return an error status

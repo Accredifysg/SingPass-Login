@@ -14,8 +14,8 @@ class GenerateClientAssertionTest extends TestCase
     protected function getEnvironmentSetUp($app)
     {
         // Set up default configuration values
-        $app['config']->set('singpass-login.clientId', 'test-client-id');
-        $app['config']->set('singpass-login.signingKid', 'test-signing-kid');
+        $app['config']->set('singpass-login.client_id', 'test-client-id');
+        $app['config']->set('singpass-login.signing_kid', 'test-signing-kid');
     }
 
     public function test_generate_client_assertion_success()
@@ -40,7 +40,7 @@ class GenerateClientAssertionTest extends TestCase
         ]);
 
         // Call the method
-        $clientAssertion = SingPassJwtService::generateClientAssertion($jwk);
+        $clientAssertion = SingPassJwtService::generateClientAssertion($jwk, 'mock-code');
 
         // Assert the client assertion is a non-empty string
         $this->assertIsString($clientAssertion);
@@ -59,6 +59,7 @@ class GenerateClientAssertionTest extends TestCase
         $this->assertEquals('test-client-id', $payload['iss']);
         $this->assertArrayHasKey('iat', $payload);
         $this->assertArrayHasKey('exp', $payload);
+        $this->assertEquals('mock-code', 'mock-code');
     }
 
     public function test_generate_client_assertion_jwk_failure()
@@ -86,6 +87,6 @@ class GenerateClientAssertionTest extends TestCase
         $this->expectException(JwksInvalidException::class);
 
         // Call the method
-        SingPassJwtService::generateClientAssertion($jwk);
+        SingPassJwtService::generateClientAssertion($jwk, 'mock-code');
     }
 }
