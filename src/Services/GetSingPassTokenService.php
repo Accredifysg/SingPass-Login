@@ -19,7 +19,7 @@ final class GetSingPassTokenService implements GetSingPassTokenServiceInterface
     public function getToken(string $code): string
     {
         $clientId = config('singpass-login.client_id');
-        $redirectUrl = config('singpass-login.redirection_uri');
+        $redirectUrl = config('singpass-login.redirect_uri');
         $grantType = 'authorization_code';
         $clientAssertionType = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
 

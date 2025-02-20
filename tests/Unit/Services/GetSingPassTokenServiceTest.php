@@ -33,7 +33,7 @@ class GetSingPassTokenServiceTest extends TestCase
     {
         // Mock configuration values
         Config::set('singpass-login.client_id', 'test-client-id');
-        Config::set('singpass-login.redirection_uri', 'https://example.com/callback');
+        Config::set('singpass-login.redirect_uri', 'https://example.com/callback');
 
         // Mock SingPassJwtService methods
         $mockJwk = (object) ['kty' => 'RSA', 'kid' => 'test-key-id'];
@@ -68,7 +68,7 @@ class GetSingPassTokenServiceTest extends TestCase
     {
         // Mock configuration values
         Config::set('singpass-login.client_id', 'test-client-id');
-        Config::set('singpass-login.redirection_uri', 'https://example.com/callback');
+        Config::set('singpass-login.redirect_uri', 'https://example.com/callback');
 
         // Mock SingPassJwtService methods
         $mockJwk = (object) ['kty' => 'RSA', 'kid' => 'test-key-id'];
