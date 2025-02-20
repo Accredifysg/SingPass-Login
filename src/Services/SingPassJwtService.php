@@ -210,8 +210,8 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
         $claimCheckerManager = new ClaimCheckerManager(
             [
                 new AudienceChecker(config('singpass-login.client_id')),
-                new IssuedAtChecker($clock),
-                new ExpirationTimeChecker($clock),
+                new IssuedAtChecker($clock, 5),
+                new ExpirationTimeChecker($clock, 5),
                 new IssuerChecker([config('singpass-login.domain')]),
             ]
         );
