@@ -16,6 +16,13 @@ use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerialize
 
 class JwtDecodeTest extends TestCase
 {
+    protected function getEnvironmentSetUp($app)
+    {
+        // Set up default configuration values
+        $app['config']->set('singpass-login.client_id', 'test-client-id');
+        $app['config']->set('singpass-login.domain', 'test-domain');
+    }
+
     public function test_jwt_decode_success()
     {
         // Create new key
@@ -32,8 +39,18 @@ class JwtDecodeTest extends TestCase
         $keySet = JWKFactory::createFromValues($keySet);
         $key = $keySet->get('test-kid');
 
+        $now = Carbon::now();
+
         // Create a mock JWT token
-        $payload = json_encode(['sub' => '1234567890', 'name' => 'John Doe', 'iat' => Carbon::now()->timestamp]);
+        $payload = json_encode(
+            [
+                'sub' => '1234567890',
+                'aud' => config('singpass-login.client_id'),
+                'iss' => config('singpass-login.domain'),
+                'iat' => $now->timestamp,
+                'exp' => $now->addMinutes(10)->timestamp,
+            ]
+        );
         $jwt = $this->createMockJWT($key, $payload);
 
         // Call the method

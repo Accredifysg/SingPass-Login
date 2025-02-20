@@ -18,13 +18,13 @@ final class GetSingPassTokenService implements GetSingPassTokenServiceInterface
      */
     public function getToken(string $code): string
     {
-        $clientId = config('singpass-login.clientId');
-        $redirectUrl = config('singpass-login.redirectionUrl');
+        $clientId = config('singpass-login.client_id');
+        $redirectUrl = config('singpass-login.redirection_uri');
         $grantType = 'authorization_code';
         $clientAssertionType = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
 
         $jwk = SingPassJwtService::getSigningJwk();
-        $clientAssertion = SingPassJwtService::generateClientAssertion($jwk);
+        $clientAssertion = SingPassJwtService::generateClientAssertion($jwk, $code);
 
         $response = Http::bodyFormat('form_params')
             ->contentType('application/x-www-form-urlencoded; charset=ISO-8859-1')
@@ -35,6 +35,7 @@ final class GetSingPassTokenService implements GetSingPassTokenServiceInterface
                 'grant_type' => $grantType,
                 'redirect_uri' => $redirectUrl,
                 'client_assertion' => $clientAssertion,
+                'code_verifier' => $this->generateCodeVerifier(),
             ]);
 
         try {
@@ -42,5 +43,19 @@ final class GetSingPassTokenService implements GetSingPassTokenServiceInterface
         } catch (Exception) {
             throw new SingPassTokenException;
         }
+    }
+
+    private function generateCodeVerifier(): string
+    {
+        $length = max(43, min(43, 128)); // Ensure length is within bounds
+
+        $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-~.'; // Allowed characters
+        $randomString = '';
+
+        for ($i = 0; $i < $length; $i++) {
+            $randomString .= $characters[random_int(0, strlen($characters) - 1)];
+        }
+
+        return $randomString;
     }
 }
