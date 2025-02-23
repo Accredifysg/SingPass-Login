@@ -2,17 +2,19 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get(
-    config('singpass-login.post_singpass_callback_url'),
-    config('singpass-login.post_singpass_callback_controller')
-)->name('singpass.callback');
+Route::middleware('web')->group(function () {
+    Route::get(
+        config('singpass-login.post_singpass_callback_url'),
+        config('singpass-login.post_singpass_callback_controller')
+    )->name('singpass.callback');
 
-Route::get(
-    config('singpass-login.get_jwks_endpoint_url'),
-    config('singpass-login.get_jwks_endpoint_controller')
-)->name('singpass.jwks');
+    Route::get(
+        config('singpass-login.get_jwks_endpoint_url'),
+        config('singpass-login.get_jwks_endpoint_controller')
+    )->name('singpass.jwks');
 
-Route::get(
-    config('singpass-login.get_authentication_endpoint_url'),
-    config('singpass-login.get_authentication_endpoint_controller')
-)->name('singpass.login');
+    Route::get(
+        config('singpass-login.get_authentication_endpoint_url'),
+        config('singpass-login.get_authentication_endpoint_controller')
+    )->name('singpass.login');
+});
