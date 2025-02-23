@@ -31,7 +31,7 @@ readonly class SingPassLogin implements SingPassLoginInterface
         $this->singPassJwtService->verifyPayload($payload);
         $singPassUser = $this->getSingPassUser($payload);
 
-        event(new SingPassSuccessfulLoginEvent($singPassUser));
+        event(new SingPassSuccessfulLoginEvent($singPassUser, $state));
     }
 
     private function getSingPassUser($payload): SingPassUser

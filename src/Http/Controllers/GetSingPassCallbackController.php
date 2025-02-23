@@ -2,6 +2,7 @@
 
 namespace Accredifysg\SingPassLogin\Http\Controllers;
 
+use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
 use Accredifysg\SingPassLogin\Interfaces\SingPassLoginInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,11 @@ class GetSingPassCallbackController extends Controller
         $code = $request->input('code');
         $state = $request->input('state');
 
-        $singPassLogin->handleCallback($code, $state);
+        try {
+            $singPassLogin->handleCallback($code, $state);
+        } catch (SingPassLoginException $e) {
+            return $e->render();
+        }
 
         return redirect()->intended();
     }

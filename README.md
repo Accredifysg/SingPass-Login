@@ -81,12 +81,10 @@ public function handle(SingPassSuccessfulLoginEvent $event): RedirectResponse
         $user = User::where('nric', '=', $nric)->first(); // Map to your own model that stores the users' NRIC or UUID
 
         if (! $user) {
-            throw new ModelNotFoundException;
+            throw new SingPassLoginException;
         }
 
         Auth::login($user);
-
-        return redirect()->intended();
     }
 ```
 
@@ -103,5 +101,6 @@ use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Accredifysg\SingPassLogin\Exceptions\OpenIdDiscoveryException;
 use Accredifysg\SingPassLogin\Exceptions\SingPassJwksException;
 use Accredifysg\SingPassLogin\Exceptions\SingPassTokenException;
+use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
 ```
 
