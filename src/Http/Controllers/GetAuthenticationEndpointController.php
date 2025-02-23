@@ -19,7 +19,7 @@ class GetAuthenticationEndpointController extends Controller
         (new OpenIdDiscoveryService)->cacheOpenIdDiscovery();
         $redirectUri = config('singpass-login.redirect_uri');
         $responseType = 'code';
-        $state = 'LOGIN-'.Str::uuid();
+        $state = $request->query('state', 'LOGIN-').Str::uuid();
         $scope = 'openid';
         $singPassAuthenticationEndpoint = Cache::get('openId')->authorization_endpoint;
         $clientID = config('singpass-login.client_id');

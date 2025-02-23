@@ -14,12 +14,15 @@ class SingPassSuccessfulLoginEvent
      */
     public SingPassUser $user;
 
+    public string $state;
+
     /**
      * SingPassSuccessfulLoginEvent constructor.
      */
-    public function __construct(SingPassUser $user)
+    public function __construct(SingPassUser $user, string $state)
     {
         $this->user = $user;
+        $this->state = $state;
     }
 
     /**
@@ -30,5 +33,10 @@ class SingPassSuccessfulLoginEvent
     public function getSingPassUser(): SingPassUser
     {
         return $this->user;
+    }
+
+    public function getState(): string
+    {
+        return $this->state;
     }
 }
