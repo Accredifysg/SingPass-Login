@@ -16,21 +16,21 @@ class SingPassLoginServiceProviderTest extends TestCase
         return [SingPassLoginServiceProvider::class];
     }
 
-    public function testConfigIsPublished()
+    public function testConfigIsPublished(): void
     {
         $this->artisan('vendor:publish', ['--provider' => 'Accredifysg\SingPassLogin\SingPassLoginServiceProvider', '--tag' => 'config']);
 
         $this->assertFileExists(config_path('singpass-login.php'));
     }
 
-    public function testListenerIsPublished()
+    public function testListenerIsPublished(): void
     {
         $this->artisan('vendor:publish', ['--provider' => 'Accredifysg\SingPassLogin\SingPassLoginServiceProvider', '--tag' => 'listener']);
 
         $this->assertFileExists(app_path('Listeners/SingPassSuccessfulLoginListener.php'));
     }
 
-    public function testRoutesAreLoaded()
+    public function testRoutesAreLoaded(): void
     {
         $routeCollection = app('router')->getRoutes();
 
@@ -38,7 +38,7 @@ class SingPassLoginServiceProviderTest extends TestCase
         $this->assertTrue($routeCollection->hasNamedRoute('singpass.jwks'));
     }
 
-    public function testEventListenerIsRegistered()
+    public function testEventListenerIsRegistered(): void
     {
         Event::fake();
 
@@ -48,7 +48,7 @@ class SingPassLoginServiceProviderTest extends TestCase
         );
     }
 
-    public function testConfigIsMerged()
+    public function testConfigIsMerged(): void
     {
         $this->assertNotNull(config('singpass-login'));
 

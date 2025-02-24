@@ -20,7 +20,7 @@ class GetSingPassJwksServiceTest extends TestCase
         ]);
     }
 
-    public function test_get_sing_pass_jwks_success()
+    public function test_get_sing_pass_jwks_success(): void
     {
         // Mock the HTTP response
         $mockJwks = json_encode([
@@ -49,7 +49,7 @@ class GetSingPassJwksServiceTest extends TestCase
         $this->assertEquals($mockJwks, json_encode($jwks->jsonSerialize()));
     }
 
-    public function test_get_sing_pass_jwks_exception()
+    public function test_get_sing_pass_jwks_exception(): void
     {
         // Mock the HTTP response to return an error status
         Http::fake([

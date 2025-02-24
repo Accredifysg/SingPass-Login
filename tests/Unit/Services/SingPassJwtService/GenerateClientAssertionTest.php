@@ -11,14 +11,14 @@ use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerialize
 
 class GenerateClientAssertionTest extends TestCase
 {
-    protected function getEnvironmentSetUp($app)
+    protected function getEnvironmentSetUp($app): void
     {
         // Set up default configuration values
         $app['config']->set('singpass-login.client_id', 'test-client-id');
         $app['config']->set('singpass-login.signing_kid', 'test-signing-kid');
     }
 
-    public function test_generate_client_assertion_success()
+    public function test_generate_client_assertion_success(): void
     {
         // Mock Cache to return expected 'openId' values
         Cache::shouldReceive('get')
@@ -62,7 +62,7 @@ class GenerateClientAssertionTest extends TestCase
         $this->assertEquals('mock-code', 'mock-code');
     }
 
-    public function test_generate_client_assertion_jwk_failure()
+    public function test_generate_client_assertion_jwk_failure(): void
     {
         // Mock Cache to return expected 'openId' values
         Cache::shouldReceive('get')

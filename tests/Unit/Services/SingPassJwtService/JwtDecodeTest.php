@@ -16,14 +16,14 @@ use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerialize
 
 class JwtDecodeTest extends TestCase
 {
-    protected function getEnvironmentSetUp($app)
+    protected function getEnvironmentSetUp($app): void
     {
         // Set up default configuration values
         $app['config']->set('singpass-login.client_id', 'test-client-id');
         $app['config']->set('singpass-login.domain', 'test-domain');
     }
 
-    public function test_jwt_decode_success()
+    public function test_jwt_decode_success(): void
     {
         // Create new key
         $newKey = JWKFactory::createECKey('P-256', ['kid' => 'test-kid'])->all();
@@ -60,7 +60,7 @@ class JwtDecodeTest extends TestCase
         $this->assertEquals(json_decode($payload, true), $decodedPayload);
     }
 
-    public function test_jwt_decode_failure()
+    public function test_jwt_decode_failure(): void
     {
         // Mock JWK set
         // Create new key
@@ -84,7 +84,7 @@ class JwtDecodeTest extends TestCase
         (new SingPassJwtService)->jwtDecode($invalidJwt, $keySet);
     }
 
-    public function test_jwt_decode_failure_invalid_kid()
+    public function test_jwt_decode_failure_invalid_kid(): void
     {
         // Create new key
         $newKey = JWKFactory::createECKey('P-256', ['kid' => 'test-kid'])->all();

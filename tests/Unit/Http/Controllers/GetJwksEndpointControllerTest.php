@@ -9,10 +9,11 @@ use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Config;
 use Jose\Component\KeyManagement\JWKFactory;
-use JsonException;
 
 class GetJwksEndpointControllerTest extends TestCase
 {
+    private array $mockJwksContent;
+
     public function setUp(): void
     {
         parent::setUp();
@@ -35,10 +36,7 @@ class GetJwksEndpointControllerTest extends TestCase
         parent::tearDown();
     }
 
-    /**
-     * @throws JsonException
-     */
-    public function testInvokeReturnsJwks()
+    public function testInvokeReturnsJwks(): void
     {
         $controller = new GetJwksEndpointController;
         $response = $controller->__invoke(request());
@@ -48,10 +46,7 @@ class GetJwksEndpointControllerTest extends TestCase
         $this->assertEquals($this->mockJwksContent, $response->getData(true));
     }
 
-    /**
-     * @throws JsonException
-     */
-    public function testInvokeThrowsExceptionWhenJwksFileIsInvalid()
+    public function testInvokeThrowsExceptionWhenJwksFileIsInvalid(): void
     {
         // Replace the JWKS env var with invalid JSON
         Config::set('singpass-login.jwks', 'invalid json');
@@ -63,10 +58,7 @@ class GetJwksEndpointControllerTest extends TestCase
         $controller->__invoke(request());
     }
 
-    /**
-     * @throws JsonException
-     */
-    public function testInvokeThrowsExceptionWhenJwksFileIsMissing()
+    public function testInvokeThrowsExceptionWhenJwksFileIsMissing(): void
     {
         // Delete the JWKS env var
         Config::set('singpass-login.jwks');
@@ -78,7 +70,7 @@ class GetJwksEndpointControllerTest extends TestCase
         $controller->__invoke(request());
     }
 
-    protected function getPackageProviders($app)
+    protected function getPackageProviders($app): array
     {
         return [
             SingPassLoginServiceProvider::class,

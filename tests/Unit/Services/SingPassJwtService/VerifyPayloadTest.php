@@ -10,14 +10,14 @@ use Illuminate\Support\Facades\Config;
 
 class VerifyPayloadTest extends TestCase
 {
-    protected function getEnvironmentSetUp($app)
+    protected function getEnvironmentSetUp($app): void
     {
         // Set up default configuration values
         $app['config']->set('singpass-login.client_id', 'test-client-id');
         $app['config']->set('singpass-login.domain', 'test-domain');
     }
 
-    public function test_verify_payload_success()
+    public function test_verify_payload_success(): void
     {
         // Mock configuration values
         $clientId = 'test-client-id';
@@ -41,7 +41,7 @@ class VerifyPayloadTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function test_verify_payload_expired_token()
+    public function test_verify_payload_expired_token(): void
     {
         // Mock configuration values
         $clientId = 'test-client-id';
@@ -66,7 +66,7 @@ class VerifyPayloadTest extends TestCase
         (new SingPassJwtService)->verifyPayload($payload);
     }
 
-    public function test_verify_payload_wrong_client_id()
+    public function test_verify_payload_wrong_client_id(): void
     {
         // Mock configuration values
         $clientId = 'test-client-id';
@@ -91,7 +91,7 @@ class VerifyPayloadTest extends TestCase
         (new SingPassJwtService)->verifyPayload($payload);
     }
 
-    public function test_verify_payload_wrong_principal()
+    public function test_verify_payload_wrong_principal(): void
     {
         // Mock configuration values
         $clientId = 'test-client-id';

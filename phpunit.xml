@@ -22,6 +22,7 @@
   </testsuites>
   <php>
     <env name="SINGPASS_DISCOVERY_ENDPOINT" value="https://www.test.com"/>
+    <env name="APP_KEY" value="base64:2WMciQ3IBEdMKENx+RstUfajnH5A37wAzW/a9Glfkf0="/>
   </php>
   <source>
     <include>

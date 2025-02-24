@@ -29,7 +29,7 @@ class GetSingPassTokenServiceTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_get_token_success()
+    public function test_get_token_success(): void
     {
         // Mock configuration values
         Config::set('singpass-login.client_id', 'test-client-id');
@@ -64,7 +64,7 @@ class GetSingPassTokenServiceTest extends TestCase
         $this->assertEquals('mock-id-token', $token);
     }
 
-    public function test_get_token_exception()
+    public function test_get_token_exception(): void
     {
         // Mock configuration values
         Config::set('singpass-login.client_id', 'test-client-id');

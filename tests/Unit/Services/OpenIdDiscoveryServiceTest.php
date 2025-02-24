@@ -18,7 +18,7 @@ class OpenIdDiscoveryServiceTest extends TestCase
         Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
     }
 
-    public function test_cache_open_id_discovery_success()
+    public function test_cache_open_id_discovery_success(): void
     {
         // Mock the HTTP response
         $mockResponse = '{"issuer":"https://example.com","authorization_endpoint":"https://example.com/auth"}';
@@ -35,7 +35,7 @@ class OpenIdDiscoveryServiceTest extends TestCase
         $this->assertEquals($cacheObject, Cache::get('openId'));
     }
 
-    public function test_cache_open_id_discovery_json_exception()
+    public function test_cache_open_id_discovery_json_exception(): void
     {
         // Mock the HTTP response to return invalid JSON
         Http::fake([
@@ -50,7 +50,7 @@ class OpenIdDiscoveryServiceTest extends TestCase
         (new OpenIdDiscoveryService)->cacheOpenIdDiscovery();
     }
 
-    public function test_cache_open_id_discovery_exception()
+    public function test_cache_open_id_discovery_exception(): void
     {
         // Mock the HTTP response to return invalid JSON
         Http::fake([

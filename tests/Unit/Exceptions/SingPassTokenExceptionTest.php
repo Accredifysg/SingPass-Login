@@ -9,27 +9,27 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class SingPassTokenExceptionTest extends TestCase
 {
-    public function testExceptionInheritance()
+    public function testExceptionInheritance(): void
     {
         $exception = new SingPassTokenException;
         $this->assertInstanceOf(HttpException::class, $exception);
     }
 
-    public function testDefaultValues()
+    public function testDefaultValues(): void
     {
         $exception = new SingPassTokenException;
         $this->assertEquals(500, $exception->getStatusCode());
         $this->assertEquals('GET request to SingPass Token endpoint failed', $exception->getMessage());
     }
 
-    public function testCustomValues()
+    public function testCustomValues(): void
     {
         $exception = new SingPassTokenException(400, 'Custom message');
         $this->assertEquals(400, $exception->getStatusCode());
         $this->assertEquals('Custom message', $exception->getMessage());
     }
 
-    public function testRender()
+    public function testRender(): void
     {
         $exception = new SingPassTokenException(422, 'Custom error message');
         $response = $exception->render();

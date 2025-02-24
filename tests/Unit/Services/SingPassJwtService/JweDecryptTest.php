@@ -18,7 +18,7 @@ use Jose\Component\KeyManagement\JWKFactory;
 
 class JweDecryptTest extends TestCase
 {
-    public function test_jwe_decrypt_success()
+    public function test_jwe_decrypt_success(): void
     {
         // Create new key
         $key = JWKFactory::createECKey('P-521', ['kid' => 'test-kid']);
@@ -38,7 +38,7 @@ class JweDecryptTest extends TestCase
         $this->assertEquals($payload, $decryptedPayload);
     }
 
-    public function test_jwe_decrypt_failure_missing_kid()
+    public function test_jwe_decrypt_failure_missing_kid(): void
     {
         // Create new key
         $key = JWKFactory::createECKey('P-521', ['kid' => 'test-wrong-kid']);
@@ -59,7 +59,7 @@ class JweDecryptTest extends TestCase
         (new SingPassJwtService)->jweDecrypt($jwe);
     }
 
-    public function test_jwe_decrypt_failure_invalid_jwe()
+    public function test_jwe_decrypt_failure_invalid_jwe(): void
     {
         // Create an invalid JWE token
         $invalidJwe = 'invalid-jwe-token';
@@ -72,7 +72,7 @@ class JweDecryptTest extends TestCase
         (new SingPassJwtService)->jweDecrypt($invalidJwe);
     }
 
-    public function test_jwe_decrypt_failure_invalid_private_jwks()
+    public function test_jwe_decrypt_failure_invalid_private_jwks(): void
     {
         // Create new key
         $key = JWKFactory::createECKey('P-521', ['kid' => 'test-wrong-kid']);
@@ -93,7 +93,7 @@ class JweDecryptTest extends TestCase
         (new SingPassJwtService)->jweDecrypt($jwe);
     }
 
-    public function test_jwe_decrypt_failure_invalid_kid_key()
+    public function test_jwe_decrypt_failure_invalid_kid_key(): void
     {
         // Create new key
         $key = JWKFactory::createECKey('P-521', ['kid' => 'test-kid']);

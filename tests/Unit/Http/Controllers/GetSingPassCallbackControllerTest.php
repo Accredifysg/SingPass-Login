@@ -2,6 +2,7 @@
 
 namespace Accredifysg\SingPassLogin\Tests\Unit\Http\Controllers;
 
+use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
 use Accredifysg\SingPassLogin\Http\Controllers\GetSingPassCallbackController;
 use Accredifysg\SingPassLogin\SingPassLogin;
 use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
@@ -13,7 +14,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 
 class GetSingPassCallbackControllerTest extends TestCase
 {
-    public function testInvokeCallsHandleCallbackAndRedirects()
+    public function testInvokeCallsHandleCallbackAndRedirects(): void
     {
         // Create a mock of SingPassLogin using PHPUnit's mocking
         /** @var SingPassLogin|MockObject $singPassLoginMock */
@@ -39,28 +40,40 @@ class GetSingPassCallbackControllerTest extends TestCase
         $this->assertInstanceOf(RedirectResponse::class, $response);
     }
 
-    public function testInvokeHandlesExceptions()
+    public function testSingPassLoginExceptionRender(): void
     {
-        // Create a mock of SingPassLogin using PHPUnit's mocking
-        /** @var SingPassLogin|MockObject $singPassLoginMock */
+        // Mock the SingPassLogin class
         $singPassLoginMock = $this->createMock(SingPassLogin::class);
+
         $singPassLoginMock->expects($this->once())
             ->method('handleCallback')
             ->with('test-code', 'test-state')
-            ->willThrowException(new \Exception('Test exception'));
+            ->willThrowException(new SingPassLoginException);
 
         // Create an instance of the controller
         $controller = new GetSingPassCallbackController;
 
-        // Expect an exception to be thrown
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Test exception');
-
         // Create the request
         $request = new Request(['code' => 'test-code', 'state' => 'test-state']);
 
-        // Call the __invoke method
-        $controller->__invoke($request, $singPassLoginMock);
+        // Call the method and capture the response
+        $response = $controller->__invoke($request, $singPassLoginMock);
+
+        // Assert that the response is a redirect
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+
+        // Assert that it redirects back
+        $this->assertEquals(url()->previous(), $response->getTargetUrl());
+
+        // Assert that the session contains the expected error message
+        $this->assertEquals([
+            'singpass' => [
+                [
+                    'title' => 'SingPass Login Error',
+                    'description' => 'User not found.',
+                ],
+            ],
+        ], session('errors')->getBag('default')->messages());
     }
 
     protected function getPackageProviders($app): array

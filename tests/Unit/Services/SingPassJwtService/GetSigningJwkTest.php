@@ -11,7 +11,7 @@ use Jose\Component\KeyManagement\JWKFactory;
 
 class GetSigningJwkTest extends TestCase
 {
-    public function test_get_signing_jwk_success()
+    public function test_get_signing_jwk_success(): void
     {
         // Create new key
         $newKey = JWKFactory::createECKey('P-256', ['kid' => 'test-kid-id'])->all();
@@ -37,7 +37,7 @@ class GetSigningJwkTest extends TestCase
         $this->assertEquals('test-kid-id', $jwk->get('kid'));
     }
 
-    public function test_get_signing_private_jwk_exception()
+    public function test_get_signing_private_jwk_exception(): void
     {
         // Expect the JwksInvalidException to be thrown
         $this->expectException(JwksInvalidException::class);
@@ -47,7 +47,7 @@ class GetSigningJwkTest extends TestCase
         SingPassJwtService::getSigningJwk();
     }
 
-    public function test_get_signing_jwk_invalid_json_exception()
+    public function test_get_signing_jwk_invalid_json_exception(): void
     {
         // Set up default configuration values
         Config::set('singpass-login.private_jwks', '{{}');
@@ -60,7 +60,7 @@ class GetSigningJwkTest extends TestCase
         SingPassJwtService::getSigningJwk();
     }
 
-    public function test_get_signing_jwk_key_not_found_exception()
+    public function test_get_signing_jwk_key_not_found_exception(): void
     {
         // Create new key
         $newKey = JWKFactory::createECKey('P-256', ['kid' => 'wrong-test-kid-id'])->all();

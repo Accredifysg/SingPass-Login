@@ -11,7 +11,7 @@ class GetAuthenticationEndpointControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_it_returns_a_valid_singpass_login_url()
+    public function test_it_returns_a_valid_singpass_login_url(): void
     {
         // Mock the HTTP response
         $mockResponse = '{"issuer":"https://example.com","authorization_endpoint":"https://example.com/auth"}';

@@ -36,7 +36,8 @@
         "phpunit/phpunit": "^11.2",
         "laravel/pint": "^1.16",
         "mockery/mockery": "^1.6",
-        "fakerphp/faker": "^1.23"
+        "fakerphp/faker": "^1.23",
+        "phpstan/phpstan": "^2.1"
     },
     "extra": {
         "laravel": {
@@ -51,7 +52,7 @@
     "scripts": {
         "lint": [
             "@php vendor/bin/pint",
-            "@php vendor/bin/phpstan analyse"
+            "@php vendor/bin/phpstan analyse src tests database"
         ],
         "test": [
             "@php vendor/bin/phpunit"

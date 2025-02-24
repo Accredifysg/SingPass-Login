@@ -4,7 +4,7 @@ namespace Accredifysg\SingPassLogin\Listeners;
 
 use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
 use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
-use Illuminate\Foundation\Auth\User;
+use Accredifysg\SingPassLogin\Models\User;
 use Illuminate\Support\Facades\Auth;
 
 class SingPassSuccessfulLoginListener
