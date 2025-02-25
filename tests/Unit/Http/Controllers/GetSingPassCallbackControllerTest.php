@@ -10,6 +10,7 @@ use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\MockObject\MockObject;
 
 class GetSingPassCallbackControllerTest extends TestCase
@@ -42,6 +43,8 @@ class GetSingPassCallbackControllerTest extends TestCase
 
     public function testSingPassLoginExceptionRender(): void
     {
+        Route::get('/login')->name('login');
+
         // Mock the SingPassLogin class
         $singPassLoginMock = $this->createMock(SingPassLogin::class);
 
@@ -63,14 +66,14 @@ class GetSingPassCallbackControllerTest extends TestCase
         $this->assertInstanceOf(RedirectResponse::class, $response);
 
         // Assert that it redirects back
-        $this->assertEquals(url()->previous(), $response->getTargetUrl());
+        $this->assertEquals(route('login'), $response->getTargetUrl());
 
         // Assert that the session contains the expected error message
         $this->assertEquals([
             'singpass' => [
                 [
-                    'title' => 'SingPass Login Error',
-                    'description' => 'User not found.',
+                    'title' => 'No Account Found',
+                    'description' => 'This SingPass account is not connected with any existing accounts in our system.',
                 ],
             ],
         ], session('errors')->getBag('default')->messages());

@@ -107,7 +107,7 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
         $listener = new SingPassSuccessfulLoginListener;
 
         $this->expectException(SingPassLoginException::class);
-        $this->expectExceptionMessage('User not found.');
+        $this->expectExceptionMessage('This SingPass account is not connected with any existing accounts in our system.');
 
         $listener->handle($event);
     }
