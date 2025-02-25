@@ -6,6 +6,7 @@ use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
 use Accredifysg\SingPassLogin\Exceptions\SingPassTokenException;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class SingPassLoginExceptionTest extends TestCase
@@ -20,7 +21,7 @@ class SingPassLoginExceptionTest extends TestCase
     {
         $exception = new SingPassLoginException;
         $this->assertEquals(400, $exception->getStatusCode());
-        $this->assertEquals('User not found.', $exception->getMessage());
+        $this->assertEquals('This SingPass account is not connected with any existing accounts in our system.', $exception->getMessage());
     }
 
     public function testCustomValues(): void
@@ -32,17 +33,19 @@ class SingPassLoginExceptionTest extends TestCase
 
     public function testRender(): void
     {
+        Route::get('/login')->name('login');
+
         $exception = new SingPassLoginException;
 
         $response = $exception->render();
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
-        $this->assertEquals(url()->previous(), $response->getTargetUrl());
+        $this->assertEquals(route('login'), $response->getTargetUrl());
         $this->assertEquals([
             'singpass' => [
                 [
-                    'title' => 'SingPass Login Error',
-                    'description' => 'User not found.',
+                    'title' => 'No Account Found',
+                    'description' => 'This SingPass account is not connected with any existing accounts in our system.',
                 ],
             ],
         ], session('errors')->getBag('default')->messages());
