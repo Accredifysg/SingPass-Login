@@ -11,7 +11,7 @@ use Jose\Component\Core\JWKSet;
 
 class GetSingPassJwksServiceTest extends TestCase
 {
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
         // Set up the cache with a mock OpenId configuration

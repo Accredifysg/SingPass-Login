@@ -18,7 +18,7 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
         $this->loadLaravelMigrations();
@@ -31,7 +31,7 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
     /**
      * @throws Exception
      */
-    public function testHandleWithExistingUser(): void
+    public function test_handle_with_existing_user(): void
     {
         // Create a user
         $user = User::factory()->create(['nric' => '123456']);
@@ -57,7 +57,7 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
     /**
      * @throws Exception
      */
-    public function testHandleWithNonExistentUser(): void
+    public function test_handle_with_non_existent_user(): void
     {
         // Mock SingPassUser
         $singPassUser = $this->createMock(SingPassUser::class);
@@ -76,7 +76,7 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
         $listener->handle($event);
     }
 
-    public function testHandleWithUpdateToExistentUser(): void
+    public function test_handle_with_update_to_existent_user(): void
     {
         // Create a user
         $user = User::factory()->create(['nric' => '123456']);
@@ -99,7 +99,7 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
         $this->assertEquals($user->id, Auth::id());
     }
 
-    public function testHandleThrowsException(): void
+    public function test_handle_throws_exception(): void
     {
         $singpassUser = new SingPassUser('1111-1111-1111-1111', 'S0000000A');
         $event = new SingPassSuccessfulLoginEvent($singpassUser, 'LOGIN-');

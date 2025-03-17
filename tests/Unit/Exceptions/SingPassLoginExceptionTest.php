@@ -11,27 +11,27 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class SingPassLoginExceptionTest extends TestCase
 {
-    public function testExceptionInheritance(): void
+    public function test_exception_inheritance(): void
     {
         $exception = new SingPassLoginException;
         $this->assertInstanceOf(HttpException::class, $exception);
     }
 
-    public function testDefaultValues(): void
+    public function test_default_values(): void
     {
         $exception = new SingPassLoginException;
         $this->assertEquals(400, $exception->getStatusCode());
         $this->assertEquals('This SingPass account is not connected with any existing accounts in our system.', $exception->getMessage());
     }
 
-    public function testCustomValues(): void
+    public function test_custom_values(): void
     {
         $exception = new SingPassTokenException(400, 'Custom message');
         $this->assertEquals(400, $exception->getStatusCode());
         $this->assertEquals('Custom message', $exception->getMessage());
     }
 
-    public function testRender(): void
+    public function test_render(): void
     {
         Route::get('/login')->name('login');
 
