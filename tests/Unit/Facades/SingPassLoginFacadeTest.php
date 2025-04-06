@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 
 class SingPassLoginFacadeTest extends TestCase
 {
-    public function testFacadeCallsUnderlyingClass(): void
+    public function test_facade_calls_underlying_class(): void
     {
         $mock = $this->createMock(SingPassLogin::class);
 

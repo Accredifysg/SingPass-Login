@@ -13,7 +13,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
 
     protected $enablesPackageDiscoveries = true;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
     }

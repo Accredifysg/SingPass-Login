@@ -14,7 +14,7 @@ class GetJwksEndpointControllerTest extends TestCase
 {
     private array $mockJwksContent;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -36,7 +36,7 @@ class GetJwksEndpointControllerTest extends TestCase
         parent::tearDown();
     }
 
-    public function testInvokeReturnsJwks(): void
+    public function test_invoke_returns_jwks(): void
     {
         $controller = new GetJwksEndpointController;
         $response = $controller->__invoke(request());
@@ -46,7 +46,7 @@ class GetJwksEndpointControllerTest extends TestCase
         $this->assertEquals($this->mockJwksContent, $response->getData(true));
     }
 
-    public function testInvokeThrowsExceptionWhenJwksFileIsInvalid(): void
+    public function test_invoke_throws_exception_when_jwks_file_is_invalid(): void
     {
         // Replace the JWKS env var with invalid JSON
         Config::set('singpass-login.jwks', 'invalid json');
@@ -58,7 +58,7 @@ class GetJwksEndpointControllerTest extends TestCase
         $controller->__invoke(request());
     }
 
-    public function testInvokeThrowsExceptionWhenJwksFileIsMissing(): void
+    public function test_invoke_throws_exception_when_jwks_file_is_missing(): void
     {
         // Delete the JWKS env var
         Config::set('singpass-login.jwks');
