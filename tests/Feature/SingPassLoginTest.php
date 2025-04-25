@@ -76,7 +76,7 @@ class SingPassLoginTest extends TestCase
         });
     }
 
-    public function testHandleCallbackWithException(): void
+    public function test_handle_callback_with_exception(): void
     {
         // Create mock services
         $openIdDiscoveryService = $this->createMock(OpenIdDiscoveryServiceInterface::class);

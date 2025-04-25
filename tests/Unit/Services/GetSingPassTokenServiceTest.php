@@ -13,7 +13,7 @@ use Mockery;
 
 class GetSingPassTokenServiceTest extends TestCase
 {
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -23,7 +23,7 @@ class GetSingPassTokenServiceTest extends TestCase
         ]);
     }
 
-    public function tearDown(): void
+    protected function tearDown(): void
     {
         Mockery::close();
         parent::tearDown();
