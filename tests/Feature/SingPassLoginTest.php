@@ -16,7 +16,7 @@ use Jose\Component\Core\JWKSet;
 
 class SingPassLoginTest extends TestCase
 {
-    public function testHandleCallback(): void
+    public function test_handle_callback(): void
     {
         // Create mock services
         $openIdDiscoveryService = $this->createMock(OpenIdDiscoveryServiceInterface::class);

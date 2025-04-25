@@ -9,7 +9,7 @@ class CodeChallengeVerifierServiceTest extends TestCase
 {
     private CodeChallengeVerifierService $service;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
         $this->service = new CodeChallengeVerifierService;
