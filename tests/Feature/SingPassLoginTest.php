@@ -45,7 +45,7 @@ class SingPassLoginTest extends TestCase
 
         // Set expectations on mock services
         $openIdDiscoveryService->shouldReceive('cacheOpenIdDiscovery')->once();
-        $getSingPassTokenService->shouldReceive('getToken')->once()->with('test_code')->andReturn('jwe_token');
+        $getSingPassTokenService->shouldReceive('getToken')->once()->with('test_code', 'test-code-verifier')->andReturn('jwe_token');
         $singPassJwtService->shouldReceive('jweDecrypt')->once()->with('jwe_token')->andReturn('jwt_token');
         $getSingPassJwksService->shouldReceive('getSingPassJwks')->once()->andReturn($jwks);
         $singPassJwtService->shouldReceive('jwtDecode')->once()->with('jwt_token', $jwks)->andReturn(['sub' => 's=S8829314B,u=1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9']);
@@ -63,7 +63,7 @@ class SingPassLoginTest extends TestCase
         );
 
         // Call the method
-        $singPassLogin->handleCallback('test_code', 'test-state');
+        $singPassLogin->handleCallback('test_code', 'test-state', 'test-code-verifier');
 
         // Assert that the event was dispatched
         Event::assertDispatched(SingPassSuccessfulLoginEvent::class, function ($event) {
@@ -99,7 +99,7 @@ class SingPassLoginTest extends TestCase
         $this->expectExceptionMessage('Open ID Discovery call failed');
 
         // Call the method
-        $singPassLogin->handleCallback('test-code', 'test-state');
+        $singPassLogin->handleCallback('test-code', 'test-state', 'test-code-verifier');
     }
 
     protected function getPackageProviders($app): array

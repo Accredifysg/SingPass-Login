@@ -21,10 +21,10 @@ readonly class SingPassLogin implements SingPassLoginInterface
         private GetSingPassJwksServiceInterface $getSingPassJwksService
     ) {}
 
-    public function handleCallback(string $code, string $state): void
+    public function handleCallback(string $code, string $state, string $codeVerifier): void
     {
         $this->openIdDiscoveryService->cacheOpenIdDiscovery();
-        $jweToken = $this->getSingPassTokenService->getToken($code);
+        $jweToken = $this->getSingPassTokenService->getToken($code, $codeVerifier);
         $jwtToken = $this->singPassJwtService->jweDecrypt($jweToken);
         $jwksKeyset = $this->getSingPassJwksService->getSingPassJwks();
         $payload = $this->singPassJwtService->jwtDecode($jwtToken, $jwksKeyset);
