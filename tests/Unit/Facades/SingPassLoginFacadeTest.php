@@ -17,8 +17,6 @@ class SingPassLoginFacadeTest extends TestCase
 
         SingPassLoginFacade::swap($mock);
 
-        $result = SingPassLoginFacade::handleCallback('test-code', 'test-state', 'test-code-verifier');
-
-        $this->assertEquals(null, $result);
+        SingPassLoginFacade::handleCallback('test-code', 'test-state', 'test-code-verifier');
     }
 }

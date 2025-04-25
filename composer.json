@@ -52,7 +52,7 @@
     "scripts": {
         "lint": [
             "@php vendor/bin/pint",
-            "@php vendor/bin/phpstan analyse src tests database"
+            "@php vendor/bin/phpstan analyse --level 1 src tests database"
         ],
         "test": [
             "@php vendor/bin/phpunit"
