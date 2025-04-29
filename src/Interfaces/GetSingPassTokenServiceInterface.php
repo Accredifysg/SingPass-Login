@@ -4,5 +4,5 @@ namespace Accredifysg\SingPassLogin\Interfaces;
 
 interface GetSingPassTokenServiceInterface
 {
-    public function getToken(string $code): string;
+    public function getToken(string $code, string $codeVerifier): string;
 }

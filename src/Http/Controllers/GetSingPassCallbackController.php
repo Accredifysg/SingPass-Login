@@ -17,9 +17,10 @@ class GetSingPassCallbackController extends Controller
     {
         $code = $request->input('code');
         $state = $request->input('state');
+        $codeVerifier = $request->cookie('code_verifier');
 
         try {
-            $singPassLogin->handleCallback($code, $state);
+            $singPassLogin->handleCallback($code, $state, $codeVerifier);
         } catch (SingPassLoginException $e) {
             return $e->render();
         }

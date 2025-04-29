@@ -46,7 +46,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
     /**
      * Gets the key to sign the Assertion with based on what is set in the ENV
      */
-    public static function getSigningJwk(): JWK|JWKSet
+    public static function getSigningJwk(): JWK
     {
         $jwks = config('singpass-login.private_jwks');
 

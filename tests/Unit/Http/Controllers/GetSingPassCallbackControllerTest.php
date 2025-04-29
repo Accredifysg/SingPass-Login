@@ -22,7 +22,7 @@ class GetSingPassCallbackControllerTest extends TestCase
         $singPassLoginMock = $this->createMock(SingPassLogin::class);
         $singPassLoginMock->expects($this->once())
             ->method('handleCallback')
-            ->with('test-code', 'test-state');
+            ->with('test-code', 'test-state', 'test-code-verifier');
 
         // Mock the redirect response
         $redirectMock = $this->createMock(RedirectResponse::class);
@@ -32,7 +32,7 @@ class GetSingPassCallbackControllerTest extends TestCase
         $controller = new GetSingPassCallbackController;
 
         // Create the request
-        $request = new Request(['code' => 'test-code', 'state' => 'test-state']);
+        $request = new Request(['code' => 'test-code', 'state' => 'test-state'], [], [], ['code_verifier' => 'test-code-verifier']);
 
         // Call the __invoke method
         $response = $controller->__invoke($request, $singPassLoginMock);
@@ -50,14 +50,14 @@ class GetSingPassCallbackControllerTest extends TestCase
 
         $singPassLoginMock->expects($this->once())
             ->method('handleCallback')
-            ->with('test-code', 'test-state')
+            ->with('test-code', 'test-state', 'test-code-verifier')
             ->willThrowException(new SingPassLoginException);
 
         // Create an instance of the controller
         $controller = new GetSingPassCallbackController;
 
         // Create the request
-        $request = new Request(['code' => 'test-code', 'state' => 'test-state']);
+        $request = new Request(['code' => 'test-code', 'state' => 'test-state'], [], [], ['code_verifier' => 'test-code-verifier']);
 
         // Call the method and capture the response
         $response = $controller->__invoke($request, $singPassLoginMock);

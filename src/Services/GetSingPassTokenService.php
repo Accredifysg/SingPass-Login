@@ -16,7 +16,7 @@ final class GetSingPassTokenService implements GetSingPassTokenServiceInterface
      *
      * @throws ConnectionException
      */
-    public function getToken(string $code): string
+    public function getToken(string $code, string $codeVerifier): string
     {
         $clientId = config('singpass-login.client_id');
         $redirectUrl = config('singpass-login.redirect_uri');
@@ -35,7 +35,7 @@ final class GetSingPassTokenService implements GetSingPassTokenServiceInterface
                 'grant_type' => $grantType,
                 'redirect_uri' => $redirectUrl,
                 'client_assertion' => $clientAssertion,
-                'code_verifier' => $this->generateCodeVerifier(),
+                'code_verifier' => $codeVerifier,
             ]);
 
         try {
@@ -43,19 +43,5 @@ final class GetSingPassTokenService implements GetSingPassTokenServiceInterface
         } catch (Exception) {
             throw new SingPassTokenException;
         }
-    }
-
-    private function generateCodeVerifier(): string
-    {
-        $length = max(43, min(43, 128)); // Ensure length is within bounds
-
-        $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-~.'; // Allowed characters
-        $randomString = '';
-
-        for ($i = 0; $i < $length; $i++) {
-            $randomString .= $characters[random_int(0, strlen($characters) - 1)];
-        }
-
-        return $randomString;
     }
 }

@@ -8,7 +8,7 @@ on:
 jobs:
   badge:
     name: Generate Coverage Badge
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     permissions:
       # Give the default GITHUB_TOKEN write permission to commit and push the
