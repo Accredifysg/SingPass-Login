@@ -27,7 +27,7 @@ class GetAuthenticationEndpointController extends Controller
         $nonce = Str::uuid();
 
         // PKCE
-        $codeChallengeMethod = 'S246';
+        $codeChallengeMethod = 'S256';
         $codeChallengeVerifierService = new CodeChallengeVerifierService;
         $codeVerifier = $codeChallengeVerifierService->generateCodeVerifier();
         $codeChallenge = $codeChallengeVerifierService->generateCodeChallenge($codeVerifier);
