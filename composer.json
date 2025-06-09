@@ -32,7 +32,7 @@
         "symfony/clock": "^7.0"
     },
     "require-dev": {
-        "orchestra/testbench": "^9.2",
+        "orchestra/testbench": "^10.4",
         "phpunit/phpunit": "^11.2",
         "laravel/pint": "^1.16",
         "mockery/mockery": "^1.6",
