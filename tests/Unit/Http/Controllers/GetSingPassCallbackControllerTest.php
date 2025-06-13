@@ -79,6 +79,41 @@ class GetSingPassCallbackControllerTest extends TestCase
         ], session('errors')->getBag('default')->messages());
     }
 
+    public function test_missing_required_parameters_throws_exception(): void
+    {
+        Route::get('/login')->name('login');
+
+        // Create an instance of the controller
+        $controller = new GetSingPassCallbackController;
+
+        // Create the request with missing parameters
+        $request = new Request([], [], [], []); // Empty request with no parameters
+
+        // Create a mock of SingPassLogin (though it shouldn't be called)
+        /** @var SingPassLogin|MockObject $singPassLoginMock */
+        $singPassLoginMock = $this->createMock(SingPassLogin::class);
+        $singPassLoginMock->expects($this->never())->method('handleCallback');
+
+        // Call the method and capture the response
+        $response = $controller->__invoke($request, $singPassLoginMock);
+
+        // Assert that the response is a redirect
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+
+        // Assert that it redirects to login
+        $this->assertEquals(route('login'), $response->getTargetUrl());
+
+        // Assert that the session contains the expected error message
+        $this->assertEquals([
+            'singpass' => [
+                [
+                    'title' => 'Request Error',
+                    'description' => 'An error has occurred when processing your request.',
+                ],
+            ],
+        ], session('errors')->getBag('default')->messages());
+    }
+
     protected function getPackageProviders($app): array
     {
         return [
