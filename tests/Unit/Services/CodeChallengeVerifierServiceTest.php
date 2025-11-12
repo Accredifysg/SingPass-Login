@@ -20,7 +20,6 @@ class CodeChallengeVerifierServiceTest extends TestCase
         $codeVerifier = $this->service->generateCodeVerifier();
 
         // Assert that the code verifier is a non-empty string
-        $this->assertIsString($codeVerifier);
         $this->assertNotEmpty($codeVerifier);
 
         // Assert that the code verifier only contains valid characters
@@ -37,7 +36,6 @@ class CodeChallengeVerifierServiceTest extends TestCase
         $codeChallenge = $this->service->generateCodeChallenge($codeVerifier);
 
         // Assert that the code challenge is a non-empty string
-        $this->assertIsString($codeChallenge);
         $this->assertNotEmpty($codeChallenge);
 
         // Assert that the code challenge only contains valid characters

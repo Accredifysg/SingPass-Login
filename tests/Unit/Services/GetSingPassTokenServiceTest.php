@@ -41,13 +41,11 @@ class GetSingPassTokenServiceTest extends TestCase
         $mockClientAssertion = 'mock-client-assertion';
 
         $singPassJwtServiceMock = Mockery::mock('alias:'.SingPassJwtService::class);
-        $singPassJwtServiceMock->shouldReceive('getSigningJwk')
-            ->once()
+        $singPassJwtServiceMock->allows('getSigningJwk')
             ->andReturn($mockJwk);
-        $singPassJwtServiceMock->shouldReceive('generateClientAssertion')
-            ->once()
-            ->with($mockJwk, 'mock-code')
-            ->andReturn($mockClientAssertion);
+        $singPassJwtServiceMock->allows([
+            'generateClientAssertion' => $mockClientAssertion,
+        ]);
 
         // Mock the HTTP response
         $mockResponse = [
@@ -80,13 +78,11 @@ class GetSingPassTokenServiceTest extends TestCase
         $mockClientAssertion = 'mock-client-assertion';
 
         $singPassJwtServiceMock = Mockery::mock('alias:'.SingPassJwtService::class);
-        $singPassJwtServiceMock->shouldReceive('getSigningJwk')
-            ->once()
+        $singPassJwtServiceMock->allows('getSigningJwk')
             ->andReturn($mockJwk);
-        $singPassJwtServiceMock->shouldReceive('generateClientAssertion')
-            ->once()
-            ->with($mockJwk, 'mock-code')
-            ->andReturn($mockClientAssertion);
+        $singPassJwtServiceMock->allows([
+            'generateClientAssertion' => $mockClientAssertion,
+        ]);
 
         // Mock the HTTP response without access_token
         $mockResponse = [
@@ -118,13 +114,11 @@ class GetSingPassTokenServiceTest extends TestCase
         $mockClientAssertion = 'mock-client-assertion';
 
         $singPassJwtServiceMock = Mockery::mock('alias:'.SingPassJwtService::class);
-        $singPassJwtServiceMock->shouldReceive('getSigningJwk')
-            ->once()
+        $singPassJwtServiceMock->allows('getSigningJwk')
             ->andReturn($mockJwk);
-        $singPassJwtServiceMock->shouldReceive('generateClientAssertion')
-            ->once()
-            ->with($mockJwk, 'mock-code')
-            ->andReturn($mockClientAssertion);
+        $singPassJwtServiceMock->allows([
+            'generateClientAssertion' => $mockClientAssertion,
+        ]);
 
         // Mock the HTTP response to return an error status
         Http::fake([

@@ -51,7 +51,7 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
 
         // Assert that the user is logged in
         $this->assertTrue(Auth::check());
-        $this->assertEquals($user->id, Auth::id());
+        $this->assertEquals($user->getKey(), Auth::id());
     }
 
     /**
@@ -96,7 +96,7 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
 
         // Assert that the user is logged in
         $this->assertTrue(Auth::check());
-        $this->assertEquals($user->id, Auth::id());
+        $this->assertEquals($user->getKey(), Auth::id());
     }
 
     public function test_handle_throws_exception(): void
@@ -119,7 +119,7 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
         ];
     }
 
-    public function getEnvironmentSetUp($app): void
+    protected function defineEnvironment($app): void
     {
         // Setup default database to use sqlite :memory:
         $app['config']->set('database.default', 'testbench');

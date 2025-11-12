@@ -4,6 +4,7 @@ namespace Accredifysg\SingPassLogin\Database\Factories;
 
 use Accredifysg\SingPassLogin\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class UserFactory extends Factory
@@ -11,7 +12,7 @@ class UserFactory extends Factory
     /**
      * The name of the factory's corresponding model.
      *
-     * @var string
+     * @var class-string<Model>
      */
     protected $model = User::class;
 

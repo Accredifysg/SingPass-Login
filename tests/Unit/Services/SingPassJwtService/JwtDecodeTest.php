@@ -16,7 +16,7 @@ use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerialize
 
 class JwtDecodeTest extends TestCase
 {
-    protected function getEnvironmentSetUp($app): void
+    protected function defineEnvironment($app): void
     {
         // Set up default configuration values
         $app['config']->set('singpass-login.client_id', 'test-client-id');

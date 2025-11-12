@@ -23,10 +23,15 @@ class GetSingPassUserTest extends TestCase
         parent::setUp();
 
         // Create mock services
+        /** @var OpenIdDiscoveryServiceInterface $openIdDiscoveryService */
         $openIdDiscoveryService = Mockery::mock(OpenIdDiscoveryServiceInterface::class);
+        /** @var GetSingPassTokenServiceInterface $getSingPassTokenService */
         $getSingPassTokenService = Mockery::mock(GetSingPassTokenServiceInterface::class);
+        /** @var SingPassJwtServiceInterface $singPassJwtService */
         $singPassJwtService = Mockery::mock(SingPassJwtServiceInterface::class);
+        /** @var GetSingPassJwksServiceInterface $getSingPassJwksService */
         $getSingPassJwksService = Mockery::mock(GetSingPassJwksServiceInterface::class);
+        /** @var GetUserInfoServiceInterface $getUserInfoService */
         $getUserInfoService = Mockery::mock(GetUserInfoServiceInterface::class);
 
         // Initialize your class here if needed

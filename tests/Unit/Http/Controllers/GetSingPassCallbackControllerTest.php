@@ -18,7 +18,7 @@ class GetSingPassCallbackControllerTest extends TestCase
     public function test_invoke_calls_handle_callback_and_redirects(): void
     {
         // Create a mock of SingPassLogin using PHPUnit's mocking
-        /** @var SingPassLogin|MockObject $singPassLoginMock */
+        /** @var MockObject&SingPassLogin $singPassLoginMock */
         $singPassLoginMock = $this->createMock(SingPassLogin::class);
         $singPassLoginMock->expects($this->once())
             ->method('handleCallback')
@@ -90,7 +90,7 @@ class GetSingPassCallbackControllerTest extends TestCase
         $request = new Request([], [], [], []); // Empty request with no parameters
 
         // Create a mock of SingPassLogin (though it shouldn't be called)
-        /** @var SingPassLogin|MockObject $singPassLoginMock */
+        /** @var MockObject&SingPassLogin $singPassLoginMock */
         $singPassLoginMock = $this->createMock(SingPassLogin::class);
         $singPassLoginMock->expects($this->never())->method('handleCallback');
 

@@ -5,6 +5,7 @@ namespace Accredifysg\SingPassLogin\Listeners;
 use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
 use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
 use Accredifysg\SingPassLogin\Models\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Auth;
 
 class SingPassSuccessfulLoginListener
@@ -24,6 +25,7 @@ class SingPassSuccessfulLoginListener
             $user->update(['nric' => $nric]);
         }
 
+        /** @var Authenticatable $user */
         Auth::login($user);
     }
 }

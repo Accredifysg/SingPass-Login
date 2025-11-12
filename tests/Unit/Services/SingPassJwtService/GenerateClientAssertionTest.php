@@ -11,7 +11,7 @@ use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerialize
 
 class GenerateClientAssertionTest extends TestCase
 {
-    protected function getEnvironmentSetUp($app): void
+    protected function defineEnvironment($app): void
     {
         // Set up default configuration values
         $app['config']->set('singpass-login.client_id', 'test-client-id');
@@ -43,7 +43,6 @@ class GenerateClientAssertionTest extends TestCase
         $clientAssertion = SingPassJwtService::generateClientAssertion($jwk, 'mock-code');
 
         // Assert the client assertion is a non-empty string
-        $this->assertIsString($clientAssertion);
         $this->assertNotEmpty($clientAssertion);
 
         // Further validate the JWS structure

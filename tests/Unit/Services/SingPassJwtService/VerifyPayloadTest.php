@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Config;
 
 class VerifyPayloadTest extends TestCase
 {
-    protected function getEnvironmentSetUp($app): void
+    protected function defineEnvironment($app): void
     {
         // Set up default configuration values
         $app['config']->set('singpass-login.client_id', 'test-client-id');
@@ -34,11 +34,11 @@ class VerifyPayloadTest extends TestCase
             'iss' => $domain,
         ];
 
-        // Call the method
+        // Call the method - it returns void, so we just verify no exception is thrown
         (new SingPassJwtService)->verifyPayload($payload);
 
-        // If no exception is thrown, the test passes
-        $this->assertTrue(true);
+        // If we reach here, no exception was thrown
+        $this->expectNotToPerformAssertions();
     }
 
     public function test_verify_payload_expired_token(): void
