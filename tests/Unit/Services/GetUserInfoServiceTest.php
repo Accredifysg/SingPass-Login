@@ -390,4 +390,3 @@ class GetUserInfoServiceTest extends TestCase
         return "$header.$payload.$signature";
     }
 }
-

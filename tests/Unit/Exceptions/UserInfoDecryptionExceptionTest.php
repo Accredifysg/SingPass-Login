@@ -41,4 +41,3 @@ class UserInfoDecryptionExceptionTest extends TestCase
         $this->assertEquals(['message' => 'Custom error message'], $content);
     }
 }
-
