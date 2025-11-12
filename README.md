@@ -120,7 +120,6 @@ const extendedScopes = [
     'name',
     'email',
     'mobileno',
-    'residentialstatus',
     'nationality',
     'dob'
 ];
