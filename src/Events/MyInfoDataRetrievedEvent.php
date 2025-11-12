@@ -2,8 +2,6 @@
 
 namespace Accredifysg\SingPassLogin\Events;
 
-use Accredifysg\SingPassLogin\Models\SingPassUser;
-
 /**
  * Class MyInfoDataRetrievedEvent
  */
