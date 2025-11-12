@@ -8,7 +8,7 @@ interface GetUserInfoServiceInterface
      * Retrieve user information from the UserInfo endpoint
      *
      * @param  string  $accessToken  The access token to use for authentication
-     * @return array|null The user info data as an associative array, or null if not applicable
+     * @return array<string, mixed>|null The user info data as an associative array, or null if not applicable
      */
     public function getUserInfo(string $accessToken): ?array;
 

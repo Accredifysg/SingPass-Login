@@ -58,6 +58,9 @@ class GetAuthenticationEndpointController extends Controller
 
     /**
      * Validate requested scopes against available scopes configuration
+     *
+     * @param  array<int, string>  $scopes
+     * @return array<int, string>
      */
     private function validateScopes(array $scopes): array
     {

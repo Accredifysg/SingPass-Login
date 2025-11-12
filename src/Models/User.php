@@ -9,14 +9,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 /**
- * @method static \Illuminate\Database\Eloquent\Builder where(string $column, string $operator = null, mixed $value = null)
- * @method static \Illuminate\Database\Eloquent\Builder first()
- * @method static \Illuminate\Database\Eloquent\Builder find($id)
- * @method static \Illuminate\Database\Eloquent\Builder create(array $attributes = [])
- * @method static \Illuminate\Database\Eloquent\Builder update(array $attributes = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<User> where(string $column, string $operator = null, mixed $value = null)
+ * @method static \Illuminate\Database\Eloquent\Builder<User> first()
+ * @method static \Illuminate\Database\Eloquent\Builder<User> find($id)
+ * @method static \Illuminate\Database\Eloquent\Builder<User> create(array<string, mixed> $attributes = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<User> update(array<string, mixed> $attributes = [])
  */
 class User extends Authenticatable
 {
+    /** @use HasFactory<UserFactory> */
     use HasFactory;
 
     /**
@@ -32,6 +33,8 @@ class User extends Authenticatable
 
     /**
      * Create a new factory instance for the model.
+     *
+     * @return UserFactory
      */
     protected static function newFactory(): Factory
     {

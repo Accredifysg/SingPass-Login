@@ -72,7 +72,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
     /**
      * Generate the client assertion needed to retrieve a token to use for subsequent calls
      */
-    public static function generateClientAssertion($jwk, $code): string
+    public static function generateClientAssertion(JWK $jwk, string $code): string
     {
         $algorithmManager = new AlgorithmManager([
             new ES512,
@@ -111,7 +111,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
      *
      * @throws JweDecryptionFailedException
      */
-    public function jweDecrypt($jweToken): string
+    public function jweDecrypt(string $jweToken): string
     {
         $algorithmManager = new AlgorithmManager([
             new A256KW,
@@ -161,6 +161,8 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
     /**
      * Decrypts the JWT that was encrypted within the JWE token
      *
+     * @return array<string, mixed>
+     *
      * @throws JwtDecodeFailedException
      */
     public function jwtDecode(string $jwtToken, JWKSet $jwksKeyset): array
@@ -202,6 +204,8 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
 
     /**
      * Verifies they payload to ensure it is valid
+     *
+     * @param  array<string, mixed>  $payload
      */
     public function verifyPayload(array $payload): void
     {

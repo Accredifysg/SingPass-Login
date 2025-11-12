@@ -39,7 +39,7 @@ final readonly class GetUserInfoService implements GetUserInfoServiceInterface
      * Extract scopes from the access token JWT
      *
      * @param  string  $accessToken  The access token JWT
-     * @return array Array of scopes
+     * @return array<int, string> Array of scopes
      */
     private function extractScopesFromAccessToken(string $accessToken): array
     {
@@ -71,7 +71,7 @@ final readonly class GetUserInfoService implements GetUserInfoServiceInterface
      * Retrieve user information from the UserInfo endpoint
      *
      * @param  string  $accessToken  The access token to use for authentication
-     * @return array|null The user info data as an associative array, or null if not applicable
+     * @return array<string, mixed>|null The user info data as an associative array, or null if not applicable
      *
      * @throws ConnectionException
      */

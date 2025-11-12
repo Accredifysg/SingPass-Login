@@ -8,6 +8,9 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class UserInfoVerificationException extends HttpException
 {
+    /**
+     * @param  array<string, mixed>  $headers
+     */
     public function __construct(int $statusCode = 500, string $message = 'UserInfo JWS verification failed', ?Exception $previous = null, array $headers = [], int $code = 0)
     {
         parent::__construct($statusCode, $message, $previous, $headers, $code);

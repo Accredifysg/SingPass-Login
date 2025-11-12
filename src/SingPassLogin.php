@@ -48,7 +48,10 @@ readonly class SingPassLogin implements SingPassLoginInterface
         }
     }
 
-    private function getSingPassUser($payload): SingPassUser
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function getSingPassUser(array $payload): SingPassUser
     {
         // Get NRIC and UUID
         $sub = $payload['sub'];

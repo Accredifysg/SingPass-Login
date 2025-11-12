@@ -9,6 +9,8 @@ readonly class MyInfoDataRetrievedEvent
 {
     /**
      * MyInfoDataRetrievedEvent constructor.
+     *
+     * @param  array<string, mixed>  $myInfoData
      */
     public function __construct(
         public array $myInfoData,
@@ -18,7 +20,7 @@ readonly class MyInfoDataRetrievedEvent
     /**
      * Get the MyInfo data retrieved from the UserInfo endpoint
      *
-     * @return array The MyInfo data
+     * @return array<string, mixed> The MyInfo data
      */
     public function getMyInfoData(): array
     {

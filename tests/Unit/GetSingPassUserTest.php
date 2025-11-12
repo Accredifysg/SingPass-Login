@@ -38,7 +38,10 @@ class GetSingPassUserTest extends TestCase
         $this->singPassLogin = new SingPassLogin($openIdDiscoveryService, $getSingPassTokenService, $singPassJwtService, $getSingPassJwksService, $getUserInfoService);
     }
 
-    private function callPrivateMethod($object, string $methodName, array $parameters = []): mixed
+    /**
+     * @param  array<int, mixed>  $parameters
+     */
+    private function callPrivateMethod(object $object, string $methodName, array $parameters = []): mixed
     {
         $reflection = new ReflectionMethod($object, $methodName);
 
