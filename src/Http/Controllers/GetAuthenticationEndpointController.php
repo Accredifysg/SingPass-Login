@@ -53,10 +53,7 @@ class GetAuthenticationEndpointController extends Controller
         $singPassQuery = "redirect_uri=$redirectUri&response_type=$responseType&state=$state&scope=$scope&client_id=$clientID&nonce=$nonce&code_challenge_method=$codeChallengeMethod&code_challenge=$codeChallenge";
         $redirectUrl = "{$singPassAuthenticationEndpoint}?{$singPassQuery}";
 
-        // Store both code_verifier and requested_scopes in cookies for callback
-        return response()->json(['redirect_url' => $redirectUrl])
-            ->cookie('code_verifier', $codeVerifier)
-            ->cookie('requested_scopes', json_encode($validatedScopes));
+        return response()->json(['redirect_url' => $redirectUrl])->cookie('code_verifier', $codeVerifier);
     }
 
     /**
