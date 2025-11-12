@@ -2,6 +2,7 @@
 
 namespace Accredifysg\SingPassLogin\Http\Controllers;
 
+use Accredifysg\SingPassLogin\Exceptions\SingPassGetEndpointException;
 use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
 use Accredifysg\SingPassLogin\Interfaces\SingPassLoginInterface;
 use Illuminate\Http\RedirectResponse;
@@ -20,8 +21,12 @@ class GetSingPassCallbackController extends Controller
         $codeVerifier = $request->cookie('code_verifier');
 
         try {
+            if (! $code || ! $state || ! $codeVerifier) {
+                throw new SingPassGetEndpointException;
+            }
+
             $singPassLogin->handleCallback($code, $state, $codeVerifier);
-        } catch (SingPassLoginException $e) {
+        } catch (SingPassLoginException|SingPassGetEndpointException $e) {
             return $e->render();
         }
 

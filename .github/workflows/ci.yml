@@ -25,7 +25,7 @@ jobs:
     steps:
       # Checkout Code (current branch)
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Install PHP
       - name: Setup PHP, with composer and extensions
@@ -70,14 +70,14 @@ jobs:
 
       # Commit everything
       - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "fix: code-style"
           commit_options: "--no-verify"
 
       # Upload Coverage Report
       - name: Upload Coverage Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage-report
           path: coverage/clover.xml
@@ -85,7 +85,7 @@ jobs:
       # SonarCloud Scan
       - name: SonarCloud Scan
         if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/master')
-        uses: SonarSource/sonarqube-scan-action@v5.2.0
+        uses: SonarSource/sonarqube-scan-action@v6.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
