@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class GetAuthenticationEndpointController extends Controller
@@ -21,7 +22,24 @@ class GetAuthenticationEndpointController extends Controller
         $redirectUri = config('singpass-login.redirect_uri');
         $responseType = 'code';
         $state = $request->query('state', 'LOGIN-').Str::uuid();
-        $scope = 'openid';
+
+        // Get scopes from query parameter, default to ['openid']
+        $requestedScopes = $request->query('scopes', 'openid');
+        $scopesArray = is_array($requestedScopes)
+            ? $requestedScopes
+            : explode(',', $requestedScopes);
+
+        // Validate scopes
+        $validatedScopes = $this->validateScopes($scopesArray);
+
+        // Ensure openid is always included
+        if (! in_array('openid', $validatedScopes)) {
+            array_unshift($validatedScopes, 'openid');
+        }
+
+        // Join scopes with spaces for OAuth 2.0 authorization URL
+        $scope = implode(' ', $validatedScopes);
+
         $singPassAuthenticationEndpoint = Cache::get('openId')->authorization_endpoint;
         $clientID = config('singpass-login.client_id');
         $nonce = Str::uuid();
@@ -35,6 +53,31 @@ class GetAuthenticationEndpointController extends Controller
         $singPassQuery = "redirect_uri=$redirectUri&response_type=$responseType&state=$state&scope=$scope&client_id=$clientID&nonce=$nonce&code_challenge_method=$codeChallengeMethod&code_challenge=$codeChallenge";
         $redirectUrl = "{$singPassAuthenticationEndpoint}?{$singPassQuery}";
 
-        return response()->json(['redirect_url' => $redirectUrl])->cookie('code_verifier', $codeVerifier);
+        // Store both code_verifier and requested_scopes in cookies for callback
+        return response()->json(['redirect_url' => $redirectUrl])
+            ->cookie('code_verifier', $codeVerifier)
+            ->cookie('requested_scopes', json_encode($validatedScopes));
+    }
+
+    /**
+     * Validate requested scopes against available scopes configuration
+     */
+    private function validateScopes(array $scopes): array
+    {
+        $availableScopes = config('singpass-login.available_scopes', []);
+
+        // Always allow 'openid'
+        if (! in_array('openid', $availableScopes)) {
+            $availableScopes[] = 'openid';
+        }
+
+        return array_values(array_filter($scopes, function ($scope) use ($availableScopes) {
+            $isValid = in_array($scope, $availableScopes);
+            if (! $isValid) {
+                Log::warning("Invalid scope requested: {$scope}");
+            }
+
+            return $isValid;
+        }));
     }
 }
