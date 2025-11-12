@@ -51,7 +51,7 @@
     },
     "scripts": {
         "lint": [
-            "@php vendor/bin/pint",
+            "@php vendor/bin/pint --parallel",
             "@php vendor/bin/phpstan analyse --level 1 src tests database"
         ],
         "test": [
