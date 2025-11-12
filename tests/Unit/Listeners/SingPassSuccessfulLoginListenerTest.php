@@ -34,6 +34,7 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
     public function test_handle_with_existing_user(): void
     {
         // Create a user
+        /** @var User $user */
         $user = User::factory()->create(['nric' => '123456']);
 
         // Mock SingPassUser
@@ -79,6 +80,7 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
     public function test_handle_with_update_to_existent_user(): void
     {
         // Create a user
+        /** @var User $user */
         $user = User::factory()->create(['nric' => '123456']);
 
         // Mock SingPassUser

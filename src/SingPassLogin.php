@@ -35,7 +35,8 @@ readonly class SingPassLogin implements SingPassLoginInterface
         $singPassUser = $this->getSingPassUser($payload);
 
         // Check if MyInfo data should be retrieved
-        if ($tokenResponseDto->hasAccessToken() && $this->getUserInfoService->shouldCallUserInfo($tokenResponseDto->accessToken)) {
+        if ($tokenResponseDto->hasAccessToken() && $tokenResponseDto->accessToken !== null
+            && $this->getUserInfoService->shouldCallUserInfo($tokenResponseDto->accessToken)) {
             // Retrieve MyInfo data and emit MyInfo event
             $myInfoData = $this->getUserInfoService->getUserInfo($tokenResponseDto->accessToken);
 

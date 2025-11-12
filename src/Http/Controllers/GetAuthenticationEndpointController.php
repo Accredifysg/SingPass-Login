@@ -21,13 +21,14 @@ class GetAuthenticationEndpointController extends Controller
         (new OpenIdDiscoveryService)->cacheOpenIdDiscovery();
         $redirectUri = config('singpass-login.redirect_uri');
         $responseType = 'code';
-        $state = $request->query('state', 'LOGIN-').Str::uuid();
+        $statePrefix = $request->query('state', 'LOGIN-');
+        $state = (is_string($statePrefix) ? $statePrefix : 'LOGIN-').Str::uuid();
 
         // Get scopes from query parameter, default to ['openid']
         $requestedScopes = $request->query('scopes', 'openid');
         $scopesArray = is_array($requestedScopes)
             ? $requestedScopes
-            : explode(',', $requestedScopes);
+            : explode(',', (string) $requestedScopes);
 
         // Validate scopes
         $validatedScopes = $this->validateScopes($scopesArray);

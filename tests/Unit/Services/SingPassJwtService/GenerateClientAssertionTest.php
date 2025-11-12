@@ -51,7 +51,7 @@ class GenerateClientAssertionTest extends TestCase
 
         $this->assertEquals(1, $jws->countSignatures());
 
-        $payload = json_decode($jws->getPayload(), true);
+        $payload = json_decode($jws->getPayload() ?: '{}', true);
 
         $this->assertEquals('test-client-id', $payload['sub']);
         $this->assertEquals('https://example.com', $payload['aud']);

@@ -89,6 +89,10 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
             'code' => $code,
         ]);
 
+        if ($payload === false) {
+            throw new JwksInvalidException(500, 'Failed to encode JWT payload.');
+        }
+
         try {
             $jws = $jwsBuilder->create()
                 ->withPayload($payload)
@@ -152,7 +156,12 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
 
             $jwe = $jweLoader->loadAndDecryptWithKey($jweToken, $key, $recipient);
 
-            return $jwe->getPayload();
+            $payload = $jwe->getPayload();
+            if ($payload === null) {
+                throw new JweDecryptionFailedException(500, 'JWE payload is empty.');
+            }
+
+            return $payload;
         }
 
         throw new JweDecryptionFailedException(500, 'JWE cannot be decrypted with KID specified.');
@@ -199,7 +208,12 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
 
         $jws = $jwsLoader->loadAndVerifyWithKey($jwtToken, $key, $signature);
 
-        return json_decode($jws->getPayload(), true);
+        $payload = $jws->getPayload();
+        if ($payload === null) {
+            throw new JwtDecodeFailedException(500, 'JWT payload is empty.');
+        }
+
+        return json_decode($payload, true);
     }
 
     /**

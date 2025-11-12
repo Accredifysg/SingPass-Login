@@ -1,12 +1,13 @@
 {
     "name": "accredifysg/singpass-login",
-    "description": "A Laravel package for integrating SingPass Login",
+    "description": "A Laravel package for integrating SingPass Login and MyInfo",
     "type": "laravel-package",
     "license": "MIT",
     "keywords": [
         "Laravel",
         "SingPass",
-        "Login"
+        "Login",
+        "MyInfo"
     ],
     "homepage": "https://github.com/accredifysg/singpass-login",
     "autoload": {
@@ -52,7 +53,7 @@
     "scripts": {
         "lint": [
             "@php vendor/bin/pint --parallel",
-            "@php vendor/bin/phpstan analyse --level 1 src tests database"
+            "@php vendor/bin/phpstan analyse --level 8 src tests database"
         ],
         "test": [
             "@php vendor/bin/phpunit"

@@ -37,10 +37,11 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         $redirectUrl = $response->json('redirect_url');
 
         // Assert the URL contains expected query parameters
-        parse_str(parse_url($redirectUrl, PHP_URL_QUERY), $queryParams);
+        parse_str(parse_url($redirectUrl, PHP_URL_QUERY) ?: '', $queryParams);
 
         $this->assertEquals('http://redirect.uri', $queryParams['redirect_uri']);
         $this->assertEquals('code', $queryParams['response_type']);
+        $this->assertIsString($queryParams['state']);
         $this->assertStringStartsWith('LOGIN-', $queryParams['state']);
         $this->assertEquals('openid', $queryParams['scope']);
         $this->assertEquals('test-client-id', $queryParams['client_id']);
@@ -72,7 +73,7 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         $redirectUrl = $response->json('redirect_url');
 
         // Assert the URL contains expected query parameters
-        parse_str(parse_url($redirectUrl, PHP_URL_QUERY), $queryParams);
+        parse_str(parse_url($redirectUrl, PHP_URL_QUERY) ?: '', $queryParams);
 
         $this->assertEquals('openid name email', $queryParams['scope']);
     }
@@ -102,7 +103,7 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         $redirectUrl = $response->json('redirect_url');
 
         // Assert the URL contains expected query parameters
-        parse_str(parse_url($redirectUrl, PHP_URL_QUERY), $queryParams);
+        parse_str(parse_url($redirectUrl, PHP_URL_QUERY) ?: '', $queryParams);
 
         $this->assertEquals('openid name email', $queryParams['scope']);
     }
@@ -137,7 +138,7 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         $redirectUrl = $response->json('redirect_url');
 
         // Assert the URL contains only valid scopes
-        parse_str(parse_url($redirectUrl, PHP_URL_QUERY), $queryParams);
+        parse_str(parse_url($redirectUrl, PHP_URL_QUERY) ?: '', $queryParams);
 
         $this->assertEquals('openid name', $queryParams['scope']);
     }
@@ -167,7 +168,7 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         $redirectUrl = $response->json('redirect_url');
 
         // Assert the URL contains openid as first scope
-        parse_str(parse_url($redirectUrl, PHP_URL_QUERY), $queryParams);
+        parse_str(parse_url($redirectUrl, PHP_URL_QUERY) ?: '', $queryParams);
 
         $this->assertEquals('openid name email', $queryParams['scope']);
     }

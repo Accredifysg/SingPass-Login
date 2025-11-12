@@ -26,7 +26,7 @@ class VerifyPayloadTest extends TestCase
         Config::set('singpass-login.domain', $domain);
 
         // Create a valid payload
-        $now = Carbon::now()->timestamp;
+        $now = (int) Carbon::now()->timestamp;
         $payload = [
             'iat' => $now - 60, // Issued 1 minute ago
             'exp' => $now + 60, // Expires in 1 minute
@@ -50,7 +50,7 @@ class VerifyPayloadTest extends TestCase
         Config::set('singpass-login.domain', $domain);
 
         // Create an expired payload
-        $now = Carbon::now()->timestamp;
+        $now = (int) Carbon::now()->timestamp;
         $payload = [
             'iat' => $now - 120, // Issued 2 minutes ago
             'exp' => $now - 60,  // Expired 1 minute ago
@@ -75,7 +75,7 @@ class VerifyPayloadTest extends TestCase
         Config::set('singpass-login.domain', $domain);
 
         // Create a payload with the wrong client ID
-        $now = Carbon::now()->timestamp;
+        $now = (int) Carbon::now()->timestamp;
         $payload = [
             'iat' => $now - 60, // Issued 1 minute ago
             'exp' => $now + 60, // Expires in 1 minute
@@ -100,7 +100,7 @@ class VerifyPayloadTest extends TestCase
         Config::set('singpass-login.domain', $domain);
 
         // Create a payload with the wrong principal
-        $now = Carbon::now()->timestamp;
+        $now = (int) Carbon::now()->timestamp;
         $payload = [
             'iat' => $now - 60, // Issued 1 minute ago
             'exp' => $now + 60, // Expires in 1 minute

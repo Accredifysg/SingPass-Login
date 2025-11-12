@@ -41,9 +41,8 @@ class GetSingPassTokenServiceTest extends TestCase
         $mockClientAssertion = 'mock-client-assertion';
 
         $singPassJwtServiceMock = Mockery::mock('alias:'.SingPassJwtService::class);
-        $singPassJwtServiceMock->allows('getSigningJwk')
-            ->andReturn($mockJwk);
         $singPassJwtServiceMock->allows([
+            'getSigningJwk' => $mockJwk,
             'generateClientAssertion' => $mockClientAssertion,
         ]);
 
@@ -78,9 +77,8 @@ class GetSingPassTokenServiceTest extends TestCase
         $mockClientAssertion = 'mock-client-assertion';
 
         $singPassJwtServiceMock = Mockery::mock('alias:'.SingPassJwtService::class);
-        $singPassJwtServiceMock->allows('getSigningJwk')
-            ->andReturn($mockJwk);
         $singPassJwtServiceMock->allows([
+            'getSigningJwk' => $mockJwk,
             'generateClientAssertion' => $mockClientAssertion,
         ]);
 
@@ -114,9 +112,8 @@ class GetSingPassTokenServiceTest extends TestCase
         $mockClientAssertion = 'mock-client-assertion';
 
         $singPassJwtServiceMock = Mockery::mock('alias:'.SingPassJwtService::class);
-        $singPassJwtServiceMock->allows('getSigningJwk')
-            ->andReturn($mockJwk);
         $singPassJwtServiceMock->allows([
+            'getSigningJwk' => $mockJwk,
             'generateClientAssertion' => $mockClientAssertion,
         ]);
 
