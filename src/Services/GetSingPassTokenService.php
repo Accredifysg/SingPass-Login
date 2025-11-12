@@ -2,6 +2,7 @@
 
 namespace Accredifysg\SingPassLogin\Services;
 
+use Accredifysg\SingPassLogin\DTOs\TokenResponseDto;
 use Accredifysg\SingPassLogin\Exceptions\SingPassTokenException;
 use Accredifysg\SingPassLogin\Interfaces\GetSingPassTokenServiceInterface;
 use Exception;
@@ -16,7 +17,7 @@ final class GetSingPassTokenService implements GetSingPassTokenServiceInterface
      *
      * @throws ConnectionException
      */
-    public function getToken(string $code, string $codeVerifier): string
+    public function getToken(string $code, string $codeVerifier): TokenResponseDto
     {
         $clientId = config('singpass-login.client_id');
         $redirectUrl = config('singpass-login.redirect_uri');
@@ -39,7 +40,12 @@ final class GetSingPassTokenService implements GetSingPassTokenServiceInterface
             ]);
 
         try {
-            return json_decode($response, false, 512, JSON_THROW_ON_ERROR)->id_token;
+            $responseData = json_decode($response, false, 512, JSON_THROW_ON_ERROR);
+
+            return new TokenResponseDto(
+                idToken: $responseData->id_token,
+                accessToken: $responseData->access_token ?? null
+            );
         } catch (Exception) {
             throw new SingPassTokenException;
         }

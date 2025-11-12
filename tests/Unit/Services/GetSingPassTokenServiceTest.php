@@ -2,6 +2,7 @@
 
 namespace Accredifysg\SingPassLogin\Tests\Unit\Services;
 
+use Accredifysg\SingPassLogin\DTOs\TokenResponseDto;
 use Accredifysg\SingPassLogin\Exceptions\SingPassTokenException;
 use Accredifysg\SingPassLogin\Services\GetSingPassTokenService;
 use Accredifysg\SingPassLogin\Services\SingPassJwtService;
@@ -51,6 +52,7 @@ class GetSingPassTokenServiceTest extends TestCase
         // Mock the HTTP response
         $mockResponse = [
             'id_token' => 'mock-id-token',
+            'access_token' => 'mock-access-token',
         ];
 
         Http::fake([
@@ -58,10 +60,51 @@ class GetSingPassTokenServiceTest extends TestCase
         ]);
 
         // Call the method
-        $token = (new GetSingPassTokenService)->getToken('mock-code', 'test-code-verifier');
+        $tokenResponse = (new GetSingPassTokenService)->getToken('mock-code', 'test-code-verifier');
 
-        // Assert the method returns the expected token
-        $this->assertEquals('mock-id-token', $token);
+        // Assert the method returns the expected TokenResponseDto
+        $this->assertInstanceOf(TokenResponseDto::class, $tokenResponse);
+        $this->assertEquals('mock-id-token', $tokenResponse->idToken);
+        $this->assertEquals('mock-access-token', $tokenResponse->accessToken);
+        $this->assertTrue($tokenResponse->hasAccessToken());
+    }
+
+    public function test_get_token_without_access_token(): void
+    {
+        // Mock configuration values
+        Config::set('singpass-login.client_id', 'test-client-id');
+        Config::set('singpass-login.redirect_uri', 'https://example.com/callback');
+
+        // Mock SingPassJwtService methods
+        $mockJwk = (object) ['kty' => 'RSA', 'kid' => 'test-key-id'];
+        $mockClientAssertion = 'mock-client-assertion';
+
+        $singPassJwtServiceMock = Mockery::mock('alias:'.SingPassJwtService::class);
+        $singPassJwtServiceMock->shouldReceive('getSigningJwk')
+            ->once()
+            ->andReturn($mockJwk);
+        $singPassJwtServiceMock->shouldReceive('generateClientAssertion')
+            ->once()
+            ->with($mockJwk, 'mock-code')
+            ->andReturn($mockClientAssertion);
+
+        // Mock the HTTP response without access_token
+        $mockResponse = [
+            'id_token' => 'mock-id-token',
+        ];
+
+        Http::fake([
+            'https://example.com/token' => Http::response($mockResponse, 200),
+        ]);
+
+        // Call the method
+        $tokenResponse = (new GetSingPassTokenService)->getToken('mock-code', 'test-code-verifier');
+
+        // Assert the method returns TokenResponseDto with null accessToken
+        $this->assertInstanceOf(TokenResponseDto::class, $tokenResponse);
+        $this->assertEquals('mock-id-token', $tokenResponse->idToken);
+        $this->assertNull($tokenResponse->accessToken);
+        $this->assertFalse($tokenResponse->hasAccessToken());
     }
 
     public function test_get_token_exception(): void
