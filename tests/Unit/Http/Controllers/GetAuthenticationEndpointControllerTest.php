@@ -172,4 +172,66 @@ class GetAuthenticationEndpointControllerTest extends TestCase
 
         $this->assertEquals('openid name email', $queryParams['scope']);
     }
+
+    public function test_it_allows_openid_even_when_not_in_available_scopes_config(): void
+    {
+        // Mock the HTTP response
+        $mockResponse = '{"issuer":"https://example.com","authorization_endpoint":"https://example.com/auth"}';
+
+        Http::fake([
+            'https://example.com/discovery' => Http::response($mockResponse, 200),
+        ]);
+
+        // Mock configuration values
+        Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
+        Config::set('singpass-login.redirect_uri', 'http://redirect.uri');
+        Config::set('singpass-login.client_id', 'test-client-id');
+        // Set available_scopes WITHOUT 'openid' - this should trigger line 72
+        Config::set('singpass-login.available_scopes', ['name', 'email', 'mobileno']);
+
+        // Call the route requesting openid scope
+        $response = $this->getJson('/sp/login?scopes=openid,name,email');
+
+        // Assert response is valid JSON
+        $response->assertStatus(200);
+
+        // Extract redirect URL from response
+        $redirectUrl = $response->json('redirect_url');
+
+        // Assert the URL contains openid scope (it should be allowed even though not in config)
+        parse_str(parse_url($redirectUrl, PHP_URL_QUERY) ?: '', $queryParams);
+
+        $this->assertEquals('openid name email', $queryParams['scope']);
+    }
+
+    public function test_it_defaults_to_openid_scope_when_available_scopes_missing_openid(): void
+    {
+        // Mock the HTTP response
+        $mockResponse = '{"issuer":"https://example.com","authorization_endpoint":"https://example.com/auth"}';
+
+        Http::fake([
+            'https://example.com/discovery' => Http::response($mockResponse, 200),
+        ]);
+
+        // Mock configuration values
+        Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
+        Config::set('singpass-login.redirect_uri', 'http://redirect.uri');
+        Config::set('singpass-login.client_id', 'test-client-id');
+        // Set available_scopes WITHOUT 'openid' - this should trigger line 72
+        Config::set('singpass-login.available_scopes', ['name', 'email']);
+
+        // Call the route without specifying scopes (should default to openid)
+        $response = $this->getJson('/sp/login');
+
+        // Assert response is valid JSON
+        $response->assertStatus(200);
+
+        // Extract redirect URL from response
+        $redirectUrl = $response->json('redirect_url');
+
+        // Assert the URL contains openid scope as default
+        parse_str(parse_url($redirectUrl, PHP_URL_QUERY) ?: '', $queryParams);
+
+        $this->assertEquals('openid', $queryParams['scope']);
+    }
 }
