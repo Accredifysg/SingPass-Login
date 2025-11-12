@@ -5,6 +5,7 @@ namespace Accredifysg\SingPassLogin\Tests\Unit;
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Accredifysg\SingPassLogin\Interfaces\GetSingPassJwksServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\GetSingPassTokenServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\GetUserInfoServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\OpenIdDiscoveryServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
 use Accredifysg\SingPassLogin\Models\SingPassUser;
@@ -26,15 +27,15 @@ class GetSingPassUserTest extends TestCase
         $getSingPassTokenService = Mockery::mock(GetSingPassTokenServiceInterface::class);
         $singPassJwtService = Mockery::mock(SingPassJwtServiceInterface::class);
         $getSingPassJwksService = Mockery::mock(GetSingPassJwksServiceInterface::class);
+        $getUserInfoService = Mockery::mock(GetUserInfoServiceInterface::class);
 
         // Initialize your class here if needed
-        $this->singPassLogin = new SingPassLogin($openIdDiscoveryService, $getSingPassTokenService, $singPassJwtService, $getSingPassJwksService);
+        $this->singPassLogin = new SingPassLogin($openIdDiscoveryService, $getSingPassTokenService, $singPassJwtService, $getSingPassJwksService, $getUserInfoService);
     }
 
     private function callPrivateMethod($object, string $methodName, array $parameters = []): mixed
     {
         $reflection = new ReflectionMethod($object, $methodName);
-        $reflection->setAccessible(true);
 
         return $reflection->invokeArgs($object, $parameters);
     }

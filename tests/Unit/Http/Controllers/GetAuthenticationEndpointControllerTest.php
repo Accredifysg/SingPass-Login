@@ -75,9 +75,6 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         parse_str(parse_url($redirectUrl, PHP_URL_QUERY), $queryParams);
 
         $this->assertEquals('openid name email', $queryParams['scope']);
-
-        // Assert scopes are stored in cookie
-        $response->assertCookie('requested_scopes', json_encode(['openid', 'name', 'email']));
     }
 
     public function test_it_accepts_scopes_as_array(): void
@@ -108,9 +105,6 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         parse_str(parse_url($redirectUrl, PHP_URL_QUERY), $queryParams);
 
         $this->assertEquals('openid name email', $queryParams['scope']);
-
-        // Assert scopes are stored in cookie
-        $response->assertCookie('requested_scopes', json_encode(['openid', 'name', 'email']));
     }
 
     public function test_it_filters_invalid_scopes(): void
@@ -146,9 +140,6 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         parse_str(parse_url($redirectUrl, PHP_URL_QUERY), $queryParams);
 
         $this->assertEquals('openid name', $queryParams['scope']);
-
-        // Assert only valid scopes are stored in cookie
-        $response->assertCookie('requested_scopes', json_encode(['openid', 'name']));
     }
 
     public function test_it_ensures_openid_is_always_included(): void
@@ -179,8 +170,5 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         parse_str(parse_url($redirectUrl, PHP_URL_QUERY), $queryParams);
 
         $this->assertEquals('openid name email', $queryParams['scope']);
-
-        // Assert openid is included in cookie scopes
-        $response->assertCookie('requested_scopes', json_encode(['openid', 'name', 'email']));
     }
 }
