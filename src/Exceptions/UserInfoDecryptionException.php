@@ -6,12 +6,12 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
-class JwtDecodeFailedException extends HttpException
+class UserInfoDecryptionException extends HttpException
 {
     /**
      * @param  array<string, mixed>  $headers
      */
-    public function __construct(int $statusCode = 500, string $message = 'JWT Decoding Failed', ?Exception $previous = null, array $headers = [], int $code = 0)
+    public function __construct(int $statusCode = 500, string $message = 'UserInfo JWE decryption failed', ?Exception $previous = null, array $headers = [], int $code = 0)
     {
         parent::__construct($statusCode, $message, $previous, $headers, $code);
     }

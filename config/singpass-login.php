@@ -31,4 +31,116 @@ return [
     // Listener
     'use_default_listener' => env('SINGPASS_USE_DEFAULT_LISTENER', true),
     'listener_class' => SingPassSuccessfulLoginListener::class,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Available MyInfo Scopes
+    |--------------------------------------------------------------------------
+    |
+    | This array defines the valid MyInfo scopes that can be requested during
+    | the OAuth authorization flow. These scopes determine what user data can
+    | be retrieved from the MyInfo UserInfo endpoint.
+    |
+    | The 'openid' scope is always required and allowed for authentication.
+    | Additional scopes enable retrieval of specific user data categories.
+    |
+    | Scope validation occurs when scopes are passed as query parameters to
+    | the authentication endpoint. Invalid scopes will be filtered out and
+    | logged as warnings.
+    |
+    | For the complete and up-to-date list of available MyInfo data items,
+    | refer to the official MyInfo Data Catalog:
+    | https://docs.developer.singpass.gov.sg/docs/data-catalog-myinfo/catalog
+    |
+    | Common scope categories include:
+    | - Personal: uinfin, name, sex, race, nationality, dob, birthcountry, residentialstatus
+    | - Contact: email, mobileno, regadd (registered address)
+    | - Family: marital, marriagecertno, countryofmarriage, childrenbirthrecords
+    | - Financial: cpfcontributions, cpfbalances, cpfemployers
+    | - Education: edulevel, gradyear, schoolname
+    | - Employment: employment, occupation, workpassstatus, passtype, passstatus
+    | - Vehicle: vehicles, drivinglicence
+    | - Property: housingtype, hdbtype, ownerprivate
+    |
+    | Example usage:
+    | GET /sp/login?scopes=openid,name,email,mobileno
+    |
+    */
+    'available_scopes' => [
+        // Core authentication scope (always required)
+        'openid',
+
+        // Personal Information
+        'uinfin',
+        'partialuinfin',
+        'name',
+        'aliasname',
+        'hanyupinyinname',
+        'hanyupinyinaliasname',
+        'marriedname',
+        'sex',
+        'race',
+        'secondaryrace',
+        'dialect',
+        'dob',
+        'residentialstatus',
+        'nationality',
+        'birthcountry',
+        'passportnumber',
+        'passportexpirydate',
+        'passtype',
+        'passstatus',
+        'passexpirydate',
+        'employmentsector',
+
+        // Contact Information
+        'mobileno',
+        'email',
+        'regadd',
+        'mailadd',
+        'billadd',
+
+        // Housing Information (based on registered address)
+        'hdbtype',
+        'housingtype',
+
+        // Family Information
+        'marital',
+        'marriagecertno',
+        'countryofmarriage',
+        'marriagedate',
+        'divorcedate',
+        'childrenbirthrecords',
+        'sponsoredchildrenrecords',
+
+        // Financial Information
+        'cpfcontributions',
+        'cpfbalances',
+        'cpfemployers',
+        'cpfhousingwithdrawal',
+
+        // Education Information
+        'edulevel',
+        'gradyear',
+        'schoolname',
+
+        // Employment Information
+        'employment',
+        'occupation',
+        'workpassstatus',
+        'workpassexpirydate',
+
+        // Vehicle Information
+        'vehicles',
+        'drivinglicence',
+
+        // Property Ownership
+        'ownerprivate',
+
+        // Government Schemes
+        'gstvoucher',
+        'merdekagen',
+        'pioneergen',
+        'silversupport',
+    ],
 ];

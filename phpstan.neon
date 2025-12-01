@@ -1,0 +1,10 @@
+includes:
+    - vendor/phpstan/phpstan-mockery/extension.neon
+
+parameters:
+    level: 8
+    paths:
+        - src
+        - tests
+        - database
+

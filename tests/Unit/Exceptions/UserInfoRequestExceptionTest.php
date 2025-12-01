@@ -2,36 +2,36 @@
 
 namespace Accredifysg\SingPassLogin\Tests\Unit\Exceptions;
 
-use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
+use Accredifysg\SingPassLogin\Exceptions\UserInfoRequestException;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
-class JwksInvalidExceptionTest extends TestCase
+class UserInfoRequestExceptionTest extends TestCase
 {
     public function test_exception_inheritance(): void
     {
-        $exception = new JwksInvalidException;
+        $exception = new UserInfoRequestException;
         $this->assertInstanceOf(HttpException::class, $exception);
     }
 
     public function test_default_values(): void
     {
-        $exception = new JwksInvalidException;
+        $exception = new UserInfoRequestException;
         $this->assertEquals(500, $exception->getStatusCode());
-        $this->assertEquals('JWKS Invalid', $exception->getMessage());
+        $this->assertEquals('UserInfo endpoint request failed', $exception->getMessage());
     }
 
     public function test_custom_values(): void
     {
-        $exception = new JwksInvalidException(400, 'Custom message');
+        $exception = new UserInfoRequestException(400, 'Custom message');
         $this->assertEquals(400, $exception->getStatusCode());
         $this->assertEquals('Custom message', $exception->getMessage());
     }
 
     public function test_render(): void
     {
-        $exception = new JwksInvalidException(422, 'Custom error message');
+        $exception = new UserInfoRequestException(422, 'Custom error message');
         $response = $exception->render();
 
         $this->assertInstanceOf(JsonResponse::class, $response);

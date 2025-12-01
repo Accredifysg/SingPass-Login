@@ -5,6 +5,7 @@ namespace Accredifysg\SingPassLogin\Tests\Unit;
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Accredifysg\SingPassLogin\Interfaces\GetSingPassJwksServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\GetSingPassTokenServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\GetUserInfoServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\OpenIdDiscoveryServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
 use Accredifysg\SingPassLogin\Models\SingPassUser;
@@ -22,19 +23,27 @@ class GetSingPassUserTest extends TestCase
         parent::setUp();
 
         // Create mock services
+        /** @var OpenIdDiscoveryServiceInterface $openIdDiscoveryService */
         $openIdDiscoveryService = Mockery::mock(OpenIdDiscoveryServiceInterface::class);
+        /** @var GetSingPassTokenServiceInterface $getSingPassTokenService */
         $getSingPassTokenService = Mockery::mock(GetSingPassTokenServiceInterface::class);
+        /** @var SingPassJwtServiceInterface $singPassJwtService */
         $singPassJwtService = Mockery::mock(SingPassJwtServiceInterface::class);
+        /** @var GetSingPassJwksServiceInterface $getSingPassJwksService */
         $getSingPassJwksService = Mockery::mock(GetSingPassJwksServiceInterface::class);
+        /** @var GetUserInfoServiceInterface $getUserInfoService */
+        $getUserInfoService = Mockery::mock(GetUserInfoServiceInterface::class);
 
         // Initialize your class here if needed
-        $this->singPassLogin = new SingPassLogin($openIdDiscoveryService, $getSingPassTokenService, $singPassJwtService, $getSingPassJwksService);
+        $this->singPassLogin = new SingPassLogin($openIdDiscoveryService, $getSingPassTokenService, $singPassJwtService, $getSingPassJwksService, $getUserInfoService);
     }
 
-    private function callPrivateMethod($object, string $methodName, array $parameters = []): mixed
+    /**
+     * @param  array<int, mixed>  $parameters
+     */
+    private function callPrivateMethod(object $object, string $methodName, array $parameters = []): mixed
     {
         $reflection = new ReflectionMethod($object, $methodName);
-        $reflection->setAccessible(true);
 
         return $reflection->invokeArgs($object, $parameters);
     }

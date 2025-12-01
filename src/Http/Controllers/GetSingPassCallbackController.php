@@ -21,7 +21,7 @@ class GetSingPassCallbackController extends Controller
         $codeVerifier = $request->cookie('code_verifier');
 
         try {
-            if (! $code || ! $state || ! $codeVerifier) {
+            if (! $code || ! $state || ! $codeVerifier || ! is_string($codeVerifier)) {
                 throw new SingPassGetEndpointException;
             }
 

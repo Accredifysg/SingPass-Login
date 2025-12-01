@@ -2,10 +2,12 @@
 
 namespace Accredifysg\SingPassLogin;
 
+use Accredifysg\SingPassLogin\Events\MyInfoDataRetrievedEvent;
 use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Accredifysg\SingPassLogin\Interfaces\GetSingPassJwksServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\GetSingPassTokenServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\GetUserInfoServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\OpenIdDiscoveryServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\SingPassLoginInterface;
@@ -18,23 +20,39 @@ readonly class SingPassLogin implements SingPassLoginInterface
         private OpenIdDiscoveryServiceInterface $openIdDiscoveryService,
         private GetSingPassTokenServiceInterface $getSingPassTokenService,
         private SingPassJwtServiceInterface $singPassJwtService,
-        private GetSingPassJwksServiceInterface $getSingPassJwksService
+        private GetSingPassJwksServiceInterface $getSingPassJwksService,
+        private GetUserInfoServiceInterface $getUserInfoService
     ) {}
 
     public function handleCallback(string $code, string $state, string $codeVerifier): void
     {
         $this->openIdDiscoveryService->cacheOpenIdDiscovery();
-        $jweToken = $this->getSingPassTokenService->getToken($code, $codeVerifier);
-        $jwtToken = $this->singPassJwtService->jweDecrypt($jweToken);
+        $tokenResponseDto = $this->getSingPassTokenService->getToken($code, $codeVerifier);
+        $jwtToken = $this->singPassJwtService->jweDecrypt($tokenResponseDto->idToken);
         $jwksKeyset = $this->getSingPassJwksService->getSingPassJwks();
         $payload = $this->singPassJwtService->jwtDecode($jwtToken, $jwksKeyset);
         $this->singPassJwtService->verifyPayload($payload);
         $singPassUser = $this->getSingPassUser($payload);
 
-        event(new SingPassSuccessfulLoginEvent($singPassUser, $state));
+        // Check if MyInfo data should be retrieved
+        if ($tokenResponseDto->hasAccessToken() && $tokenResponseDto->accessToken !== null
+            && $this->getUserInfoService->shouldCallUserInfo($tokenResponseDto->accessToken)) {
+            // Retrieve MyInfo data and emit MyInfo event
+            $myInfoData = $this->getUserInfoService->getUserInfo($tokenResponseDto->accessToken);
+
+            if ($myInfoData) {
+                event(new MyInfoDataRetrievedEvent($myInfoData, $state));
+            }
+        } else {
+            // Authentication only - emit login event
+            event(new SingPassSuccessfulLoginEvent($singPassUser, $state));
+        }
     }
 
-    private function getSingPassUser($payload): SingPassUser
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function getSingPassUser(array $payload): SingPassUser
     {
         // Get NRIC and UUID
         $sub = $payload['sub'];

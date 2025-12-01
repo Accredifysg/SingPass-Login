@@ -37,7 +37,7 @@ class SingPassTokenExceptionTest extends TestCase
         $this->assertInstanceOf(JsonResponse::class, $response);
         $this->assertEquals(422, $response->getStatusCode());
 
-        $content = json_decode($response->getContent(), true);
+        $content = json_decode($response->getContent() ?: '{}', true);
         $this->assertEquals(['message' => 'Custom error message'], $content);
     }
 }

@@ -12,6 +12,7 @@ use Jose\Component\KeyManagement\JWKFactory;
 
 class GetJwksEndpointControllerTest extends TestCase
 {
+    /** @var array<string, mixed> */
     private array $mockJwksContent;
 
     protected function setUp(): void

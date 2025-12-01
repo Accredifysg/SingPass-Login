@@ -2,7 +2,7 @@
 
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Accredifysg_SingPass-Login&metric=coverage&token=11b8dd252687c701584068be55e47e5e432056c8)](https://sonarcloud.io/summary/new_code?id=Accredifysg_SingPass-Login)
 
-PHP Laravel Package for SingPass Login
+PHP Laravel Package for SingPass Login and MyInfo
 
 <a href="https://api.singpass.gov.sg/library/login/developers/overview-at-a-glance" rel="noreferrer nofollow">Official SingPass Login Docs</a>
 
@@ -91,6 +91,173 @@ public function handle(SingPassSuccessfulLoginEvent $event): RedirectResponse
 If you prefer to write your own, you can set `SINGPASS_USE_DEFAULT_LISTENER` to `false` in
 your `.env` and replace `listener_class` in the config file `singpass-login.php`
 
+## MyInfo Integration
+
+This package supports retrieving user data from MyInfo through scope-based data retrieval. By default, the package performs authentication-only flow using the `openid` scope. To retrieve additional user data, you can request specific MyInfo scopes during the authentication process.
+
+### How It Works
+
+MyInfo functionality is scope-driven:
+- **Authentication Only**: When only the `openid` scope is requested (default), the package performs standard authentication without calling the UserInfo endpoint
+- **MyInfo Data Retrieval**: When additional MyInfo scopes are requested, the package calls the UserInfo endpoint after successful authentication to retrieve the consented user data
+
+### Requesting MyInfo Scopes
+
+Pass scopes as query parameters when redirecting users to the authentication endpoint:
+
+**From JavaScript/Frontend:**
+```javascript
+// Basic authentication only (default behavior)
+window.location.href = '/sp/login';
+
+// Request basic profile information
+const scopes = ['openid', 'name', 'email', 'mobileno'];
+window.location.href = `/sp/login?scopes=${scopes.join(',')}`;
+
+// Request extended user data
+const extendedScopes = [
+    'openid',
+    'name',
+    'email',
+    'mobileno',
+    'nationality',
+    'dob'
+];
+window.location.href = `/sp/login?scopes=${extendedScopes.join(',')}`;
+```
+
+**From Laravel Controller:**
+```php
+public function redirectToSingPass()
+{
+    $scopes = ['openid', 'name', 'email', 'mobileno'];
+    return redirect('/sp/login?' . http_build_query(['scopes' => implode(',', $scopes)]));
+}
+```
+
+### Available MyInfo Scopes
+
+For the complete and up-to-date list of available MyInfo data items and their descriptions, refer to the official MyInfo Data Catalog:
+
+**[MyInfo Data Catalog Documentation](https://docs.developer.singpass.gov.sg/docs/data-catalog-myinfo/catalog)**
+
+The package validates requested scopes against the `available_scopes` configuration. Invalid scopes are filtered out and logged as warnings.
+
+### Handling MyInfo Data
+
+When MyInfo scopes are requested and data is successfully retrieved, the package emits a `MyInfoDataRetrievedEvent` instead of the standard `SingPassSuccessfulLoginEvent`.
+
+#### MyInfoDataRetrievedEvent
+
+Create a listener to handle the MyInfo data:
+
+```php
+<?php
+
+namespace App\Listeners;
+
+use Accredifysg\SingPassLogin\Events\MyInfoDataRetrievedEvent;
+
+class MyInfoDataRetrievedListener
+{
+    public function handle(MyInfoDataRetrievedEvent $event): void
+    {
+        $myInfoData = $event->getMyInfoData();
+        $state = $event->getState();
+        
+        // Update user profile with MyInfo data
+        if ($myInfoData) {
+            $user->update([
+                'name' => $myInfoData['name']['value'] ?? null,
+                'email' => $myInfoData['email']['value'] ?? null,
+                'mobile' => $myInfoData['mobileno']['value'] ?? null,
+                'nationality' => $myInfoData['nationality']['value'] ?? null,
+                'date_of_birth' => $myInfoData['dob']['value'] ?? null,
+            ]);
+        }
+    }
+}
+```
+
+#### MyInfo Data Structure
+
+MyInfo data is returned as an associative array. Each field typically contains:
+- `value`: The actual data value
+- `source`: Data source identifier (e.g., '1' for government-verified)
+- `classification`: Data classification level
+- `lastupdated`: Timestamp of last update
+
+Example structure:
+```php
+[
+    'sub' => 's=S1234567A,u=UUID',
+    'name' => [
+        'value' => 'John Doe',
+        'source' => '1',
+        'classification' => 'C',
+        'lastupdated' => '2023-01-15'
+    ],
+    'email' => [
+        'value' => 'john@example.com',
+        'source' => '2',
+        'classification' => 'C',
+        'lastupdated' => '2023-01-15'
+    ],
+    'mobileno' => [
+        'value' => '+6591234567',
+        'source' => '2',
+        'classification' => 'C',
+        'lastupdated' => '2023-01-15'
+    ],
+    // Additional fields based on requested scopes
+]
+```
+
+#### Registering the Listener
+
+Register the listener in your `EventServiceProvider`:
+
+```php
+<?php
+
+namespace App\Providers;
+
+use Accredifysg\SingPassLogin\Events\MyInfoDataRetrievedEvent;
+use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
+use App\Listeners\MyInfoDataRetrievedListener;
+use App\Listeners\SingPassSuccessfulLoginListener;
+use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+
+class EventServiceProvider extends ServiceProvider
+{
+    protected $listen = [
+        // Authentication only (no MyInfo scopes)
+        SingPassSuccessfulLoginEvent::class => [
+            SingPassSuccessfulLoginListener::class,
+        ],
+        
+        // MyInfo data retrieval (with additional scopes)
+        MyInfoDataRetrievedEvent::class => [
+            MyInfoDataRetrievedListener::class,
+        ],
+    ];
+}
+```
+
+### Event Flow
+
+- **Authentication Only**: When only `openid` scope is requested → `SingPassSuccessfulLoginEvent` is emitted
+- **MyInfo Data Retrieval**: When additional MyInfo scopes are requested → `MyInfoDataRetrievedEvent` is emitted
+
+This separation allows you to handle authentication-only flows differently from flows that include MyInfo data retrieval.
+
+### Backward Compatibility
+
+Existing implementations continue to work without any changes:
+- Default behavior remains authentication-only with `openid` scope
+- `SingPassSuccessfulLoginEvent` is still emitted for authentication-only flows
+- No configuration changes required for existing applications
+
 ## Exceptions
 ```php
 <?php
@@ -102,5 +269,39 @@ use Accredifysg\SingPassLogin\Exceptions\OpenIdDiscoveryException;
 use Accredifysg\SingPassLogin\Exceptions\SingPassJwksException;
 use Accredifysg\SingPassLogin\Exceptions\SingPassTokenException;
 use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
+
+// MyInfo-specific exceptions
+use Accredifysg\SingPassLogin\Exceptions\UserInfoRequestException;
+use Accredifysg\SingPassLogin\Exceptions\UserInfoDecryptionException;
+use Accredifysg\SingPassLogin\Exceptions\UserInfoVerificationException;
+```
+
+### MyInfo Exception Handling
+
+When retrieving MyInfo data, the following exceptions may be thrown:
+
+- **`UserInfoRequestException`**: Thrown when the UserInfo endpoint HTTP request fails. Includes HTTP status code and endpoint URL.
+- **`UserInfoDecryptionException`**: Thrown when the UserInfo JWE token decryption fails. Includes decryption failure details.
+- **`UserInfoVerificationException`**: Thrown when the UserInfo JWS token verification fails. Includes verification failure reason.
+
+All MyInfo exceptions extend `SingPassLoginException` and can be caught and handled in your application:
+
+```php
+use Accredifysg\SingPassLogin\Exceptions\UserInfoRequestException;
+use Accredifysg\SingPassLogin\Exceptions\UserInfoDecryptionException;
+use Accredifysg\SingPassLogin\Exceptions\UserInfoVerificationException;
+
+try {
+    // MyInfo data retrieval happens automatically during callback
+} catch (UserInfoRequestException $e) {
+    // Handle UserInfo endpoint failure
+    Log::error('MyInfo request failed: ' . $e->getMessage());
+} catch (UserInfoDecryptionException $e) {
+    // Handle decryption failure
+    Log::error('MyInfo decryption failed: ' . $e->getMessage());
+} catch (UserInfoVerificationException $e) {
+    // Handle verification failure
+    Log::error('MyInfo verification failed: ' . $e->getMessage());
+}
 ```
 

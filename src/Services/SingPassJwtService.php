@@ -72,7 +72,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
     /**
      * Generate the client assertion needed to retrieve a token to use for subsequent calls
      */
-    public static function generateClientAssertion($jwk, $code): string
+    public static function generateClientAssertion(JWK $jwk, string $code): string
     {
         $algorithmManager = new AlgorithmManager([
             new ES512,
@@ -88,6 +88,10 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
             'exp' => time() + 119,
             'code' => $code,
         ]);
+
+        if ($payload === false) {
+            throw new JwksInvalidException(500, 'Failed to encode JWT payload.');
+        }
 
         try {
             $jws = $jwsBuilder->create()
@@ -111,7 +115,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
      *
      * @throws JweDecryptionFailedException
      */
-    public function jweDecrypt($jweToken): string
+    public function jweDecrypt(string $jweToken): string
     {
         $algorithmManager = new AlgorithmManager([
             new A256KW,
@@ -152,7 +156,12 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
 
             $jwe = $jweLoader->loadAndDecryptWithKey($jweToken, $key, $recipient);
 
-            return $jwe->getPayload();
+            $payload = $jwe->getPayload();
+            if ($payload === null) {
+                throw new JweDecryptionFailedException(500, 'JWE payload is empty.');
+            }
+
+            return $payload;
         }
 
         throw new JweDecryptionFailedException(500, 'JWE cannot be decrypted with KID specified.');
@@ -160,6 +169,8 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
 
     /**
      * Decrypts the JWT that was encrypted within the JWE token
+     *
+     * @return array<string, mixed>
      *
      * @throws JwtDecodeFailedException
      */
@@ -197,11 +208,18 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
 
         $jws = $jwsLoader->loadAndVerifyWithKey($jwtToken, $key, $signature);
 
-        return json_decode($jws->getPayload(), true);
+        $payload = $jws->getPayload();
+        if ($payload === null) {
+            throw new JwtDecodeFailedException(500, 'JWT payload is empty.');
+        }
+
+        return json_decode($payload, true);
     }
 
     /**
      * Verifies they payload to ensure it is valid
+     *
+     * @param  array<string, mixed>  $payload
      */
     public function verifyPayload(array $payload): void
     {

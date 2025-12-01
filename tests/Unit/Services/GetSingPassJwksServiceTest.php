@@ -33,7 +33,7 @@ class GetSingPassJwksServiceTest extends TestCase
                     'e' => 'AQAB',
                 ],
             ],
-        ]);
+        ]) ?: '{}';
 
         Http::fake([
             'https://example.com/jwks' => Http::response($mockJwks, 200),

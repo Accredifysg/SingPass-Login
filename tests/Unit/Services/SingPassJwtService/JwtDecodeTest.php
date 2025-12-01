@@ -16,7 +16,7 @@ use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerialize
 
 class JwtDecodeTest extends TestCase
 {
-    protected function getEnvironmentSetUp($app): void
+    protected function defineEnvironment($app): void
     {
         // Set up default configuration values
         $app['config']->set('singpass-login.client_id', 'test-client-id');
@@ -50,11 +50,14 @@ class JwtDecodeTest extends TestCase
                 'iat' => $now->timestamp,
                 'exp' => $now->addMinutes(10)->timestamp,
             ]
-        );
+        ) ?: '{}';
         $jwt = $this->createMockJWT($key, $payload);
 
+        // Create JWKSet from keySet
+        $jwkSet = JWKSet::createFromKeyData(['keys' => [$keySet->get('test-kid')->all()]]);
+
         // Call the method
-        $decodedPayload = (new SingPassJwtService)->jwtDecode($jwt, $keySet);
+        $decodedPayload = (new SingPassJwtService)->jwtDecode($jwt, $jwkSet);
 
         // Assert the decoded payload is correct
         $this->assertEquals(json_decode($payload, true), $decodedPayload);
@@ -109,15 +112,18 @@ class JwtDecodeTest extends TestCase
         $wrongKeySet = JWKFactory::createFromValues($wrongKeySet);
 
         // Create a mock JWT token
-        $payload = json_encode(['sub' => '1234567890', 'name' => 'John Doe', 'iat' => Carbon::now()->timestamp]);
+        $payload = json_encode(['sub' => '1234567890', 'name' => 'John Doe', 'iat' => Carbon::now()->timestamp]) ?: '{}';
         $jwt = $this->createMockJWT($key, $payload);
+
+        // Create JWKSet from wrongKeySet
+        $wrongJwkSet = JWKSet::createFromKeyData(['keys' => [$wrongKeySet->get('test-kid-kid')->all()]]);
 
         // Expect the JwtDecodeFailedException to be thrown
         $this->expectException(JwtDecodeFailedException::class);
         $this->expectExceptionMessage('Keyset does not contain KID from JWT.');
 
         // Call the method
-        (new SingPassJwtService)->jwtDecode($jwt, $wrongKeySet);
+        (new SingPassJwtService)->jwtDecode($jwt, $wrongJwkSet);
     }
 
     private function createMockJWT(JWK $key, string $payload): string
