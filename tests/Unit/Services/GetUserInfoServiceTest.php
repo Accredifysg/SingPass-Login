@@ -14,12 +14,13 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Jose\Component\Core\JWKSet;
 use Mockery;
+use Mockery\MockInterface;
 
 class GetUserInfoServiceTest extends TestCase
 {
-    private SingPassJwtServiceInterface $singPassJwtServiceMock;
+    private SingPassJwtServiceInterface&MockInterface $singPassJwtServiceMock;
 
-    private GetSingPassJwksServiceInterface $getSingPassJwksServiceMock;
+    private GetSingPassJwksServiceInterface&MockInterface $getSingPassJwksServiceMock;
 
     private GetUserInfoService $service;
 
@@ -27,8 +28,13 @@ class GetUserInfoServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->singPassJwtServiceMock = Mockery::mock(SingPassJwtServiceInterface::class);
-        $this->getSingPassJwksServiceMock = Mockery::mock(GetSingPassJwksServiceInterface::class);
+        /** @var SingPassJwtServiceInterface&MockInterface $singPassJwtServiceMock */
+        $singPassJwtServiceMock = Mockery::mock(SingPassJwtServiceInterface::class);
+        $this->singPassJwtServiceMock = $singPassJwtServiceMock;
+
+        /** @var GetSingPassJwksServiceInterface&MockInterface $getSingPassJwksServiceMock */
+        $getSingPassJwksServiceMock = Mockery::mock(GetSingPassJwksServiceInterface::class);
+        $this->getSingPassJwksServiceMock = $getSingPassJwksServiceMock;
 
         $this->service = new GetUserInfoService(
             $this->singPassJwtServiceMock,
@@ -362,13 +368,16 @@ class GetUserInfoServiceTest extends TestCase
      */
     private function createAccessTokenWithScopes(array $scopes): string
     {
-        $header = base64_encode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
-        $payload = base64_encode(json_encode([
+        $headerJson = json_encode(['alg' => 'RS256', 'typ' => 'JWT']);
+        $payloadJson = json_encode([
             'sub' => '1234567890',
             'scope' => implode(' ', $scopes),
             'iat' => time(),
             'exp' => time() + 3600,
-        ]));
+        ]);
+
+        $header = base64_encode($headerJson !== false ? $headerJson : '{}');
+        $payload = base64_encode($payloadJson !== false ? $payloadJson : '{}');
         $signature = base64_encode('mock-signature');
 
         return "$header.$payload.$signature";
@@ -379,12 +388,15 @@ class GetUserInfoServiceTest extends TestCase
      */
     private function createAccessTokenWithoutScopes(): string
     {
-        $header = base64_encode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
-        $payload = base64_encode(json_encode([
+        $headerJson = json_encode(['alg' => 'RS256', 'typ' => 'JWT']);
+        $payloadJson = json_encode([
             'sub' => '1234567890',
             'iat' => time(),
             'exp' => time() + 3600,
-        ]));
+        ]);
+
+        $header = base64_encode($headerJson !== false ? $headerJson : '{}');
+        $payload = base64_encode($payloadJson !== false ? $payloadJson : '{}');
         $signature = base64_encode('mock-signature');
 
         return "$header.$payload.$signature";
