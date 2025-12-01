@@ -6,7 +6,6 @@ use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class GetAuthenticationEndpointControllerTest extends TestCase
 {
@@ -108,8 +107,11 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         $this->assertEquals('openid name email', $queryParams['scope']);
     }
 
-    public function test_it_filters_invalid_scopes(): void
+    public function test_it_throws_exception_for_invalid_scopes(): void
     {
+        // Disable exception handling to let exceptions bubble up
+        $this->withoutExceptionHandling();
+
         // Mock the HTTP response
         $mockResponse = '{"issuer":"https://example.com","authorization_endpoint":"https://example.com/auth"}';
 
@@ -123,24 +125,12 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         Config::set('singpass-login.client_id', 'test-client-id');
         Config::set('singpass-login.available_scopes', ['openid', 'name', 'email']);
 
-        // Mock Log facade to capture warnings
-        Log::shouldReceive('warning')
-            ->once()
-            ->with('Invalid scope requested: invalid_scope');
+        // Expect an InvalidArgumentException to be thrown
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid scope requested: 'invalid_scope'");
 
         // Call the route with valid and invalid scopes
-        $response = $this->getJson('/sp/login?scopes=openid,name,invalid_scope');
-
-        // Assert response is valid JSON
-        $response->assertStatus(200);
-
-        // Extract redirect URL from response
-        $redirectUrl = $response->json('redirect_url');
-
-        // Assert the URL contains only valid scopes
-        parse_str(parse_url($redirectUrl, PHP_URL_QUERY) ?: '', $queryParams);
-
-        $this->assertEquals('openid name', $queryParams['scope']);
+        $this->getJson('/sp/login?scopes=openid,name,invalid_scope');
     }
 
     public function test_it_ensures_openid_is_always_included(): void
