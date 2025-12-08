@@ -80,6 +80,7 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         // When scope is NOT just 'openid', use MyInfo client ID and redirect URI
         $this->assertEquals('myinfo-client-id', $queryParams['client_id']);
         $this->assertEquals('http://myinfo-redirect.uri', $queryParams['redirect_uri']);
+        $this->assertIsString($queryParams['state']);
         $this->assertStringStartsWith('MYINFO-', $queryParams['state']);
     }
 
@@ -116,6 +117,7 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         // When scope is NOT just 'openid', use MyInfo client ID and redirect URI
         $this->assertEquals('myinfo-client-id', $queryParams['client_id']);
         $this->assertEquals('http://myinfo-redirect.uri', $queryParams['redirect_uri']);
+        $this->assertIsString($queryParams['state']);
         $this->assertStringStartsWith('MYINFO-', $queryParams['state']);
     }
 
@@ -179,6 +181,7 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         $this->assertEquals('openid name email', $queryParams['scope']);
         // When scope has more than just 'openid', use MyInfo credentials
         $this->assertEquals('myinfo-client-id', $queryParams['client_id']);
+        $this->assertIsString($queryParams['state']);
         $this->assertStringStartsWith('MYINFO-', $queryParams['state']);
     }
 
