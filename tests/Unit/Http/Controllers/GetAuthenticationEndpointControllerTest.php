@@ -60,6 +60,8 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
         Config::set('singpass-login.redirect_uri', 'http://redirect.uri');
         Config::set('singpass-login.client_id', 'test-client-id');
+        Config::set('singpass-login.myinfo_redirect_uri', 'http://myinfo-redirect.uri');
+        Config::set('singpass-login.myinfo_client_id', 'myinfo-client-id');
         Config::set('singpass-login.available_scopes', ['openid', 'name', 'email', 'mobileno']);
 
         // Call the route with scopes
@@ -75,6 +77,10 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         parse_str(parse_url($redirectUrl, PHP_URL_QUERY) ?: '', $queryParams);
 
         $this->assertEquals('openid name email', $queryParams['scope']);
+        // When scope is NOT just 'openid', use MyInfo client ID and redirect URI
+        $this->assertEquals('myinfo-client-id', $queryParams['client_id']);
+        $this->assertEquals('http://myinfo-redirect.uri', $queryParams['redirect_uri']);
+        $this->assertStringStartsWith('MYINFO-', $queryParams['state']);
     }
 
     public function test_it_accepts_scopes_as_array(): void
@@ -90,6 +96,8 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
         Config::set('singpass-login.redirect_uri', 'http://redirect.uri');
         Config::set('singpass-login.client_id', 'test-client-id');
+        Config::set('singpass-login.myinfo_redirect_uri', 'http://myinfo-redirect.uri');
+        Config::set('singpass-login.myinfo_client_id', 'myinfo-client-id');
         Config::set('singpass-login.available_scopes', ['openid', 'name', 'email', 'mobileno']);
 
         // Call the route with scopes as array
@@ -105,6 +113,10 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         parse_str(parse_url($redirectUrl, PHP_URL_QUERY) ?: '', $queryParams);
 
         $this->assertEquals('openid name email', $queryParams['scope']);
+        // When scope is NOT just 'openid', use MyInfo client ID and redirect URI
+        $this->assertEquals('myinfo-client-id', $queryParams['client_id']);
+        $this->assertEquals('http://myinfo-redirect.uri', $queryParams['redirect_uri']);
+        $this->assertStringStartsWith('MYINFO-', $queryParams['state']);
     }
 
     public function test_it_throws_exception_for_invalid_scopes(): void
@@ -123,6 +135,8 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
         Config::set('singpass-login.redirect_uri', 'http://redirect.uri');
         Config::set('singpass-login.client_id', 'test-client-id');
+        Config::set('singpass-login.myinfo_redirect_uri', 'http://myinfo-redirect.uri');
+        Config::set('singpass-login.myinfo_client_id', 'myinfo-client-id');
         Config::set('singpass-login.available_scopes', ['openid', 'name', 'email']);
 
         // Expect an InvalidArgumentException to be thrown
@@ -146,6 +160,8 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
         Config::set('singpass-login.redirect_uri', 'http://redirect.uri');
         Config::set('singpass-login.client_id', 'test-client-id');
+        Config::set('singpass-login.myinfo_redirect_uri', 'http://myinfo-redirect.uri');
+        Config::set('singpass-login.myinfo_client_id', 'myinfo-client-id');
         Config::set('singpass-login.available_scopes', ['openid', 'name', 'email']);
 
         // Call the route with scopes that don't include openid
@@ -161,6 +177,9 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         parse_str(parse_url($redirectUrl, PHP_URL_QUERY) ?: '', $queryParams);
 
         $this->assertEquals('openid name email', $queryParams['scope']);
+        // When scope has more than just 'openid', use MyInfo credentials
+        $this->assertEquals('myinfo-client-id', $queryParams['client_id']);
+        $this->assertStringStartsWith('MYINFO-', $queryParams['state']);
     }
 
     public function test_it_allows_openid_even_when_not_in_available_scopes_config(): void
@@ -176,6 +195,8 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
         Config::set('singpass-login.redirect_uri', 'http://redirect.uri');
         Config::set('singpass-login.client_id', 'test-client-id');
+        Config::set('singpass-login.myinfo_redirect_uri', 'http://myinfo-redirect.uri');
+        Config::set('singpass-login.myinfo_client_id', 'myinfo-client-id');
         // Set available_scopes WITHOUT 'openid' - this should trigger line 72
         Config::set('singpass-login.available_scopes', ['name', 'email', 'mobileno']);
 
@@ -192,6 +213,8 @@ class GetAuthenticationEndpointControllerTest extends TestCase
         parse_str(parse_url($redirectUrl, PHP_URL_QUERY) ?: '', $queryParams);
 
         $this->assertEquals('openid name email', $queryParams['scope']);
+        // Since scope is more than just 'openid', MyInfo credentials are used
+        $this->assertEquals('myinfo-client-id', $queryParams['client_id']);
     }
 
     public function test_it_defaults_to_openid_scope_when_available_scopes_missing_openid(): void

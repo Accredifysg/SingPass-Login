@@ -23,18 +23,27 @@ class GetAuthenticationEndpointController extends Controller
         OpenIdDiscoveryService $discoveryService
     ): JsonResponse {
         $discoveryService->cacheOpenIdDiscovery();
-        $redirectUri = config('singpass-login.redirect_uri');
         $responseType = 'code';
-        $statePrefix = $request->query('state', 'LOGIN-');
-        $state = (is_string($statePrefix) ? $statePrefix : 'LOGIN-').Str::uuid();
 
         // Parse, validate, and normalize scopes
         $requestedScopes = $request->query('scopes', 'openid') ?? 'openid';
         $validatedScopes = $scopeService->parseAndValidate($requestedScopes);
         $scope = $scopeService->formatForOAuth($validatedScopes);
 
+        // Determine which client ID to use based on scopes
+        if ($scope === 'openid') {
+            $redirectUri = config('singpass-login.redirect_uri');
+            $clientID = config('singpass-login.client_id');
+            $statePrefix = $request->query('state', 'LOGIN-');
+            $state = (is_string($statePrefix) ? $statePrefix : 'LOGIN-').Str::uuid();
+        } else {
+            $redirectUri = config('singpass-login.myinfo_redirect_uri');
+            $clientID = config('singpass-login.myinfo_client_id');
+            $statePrefix = $request->query('state', 'MYINFO-');
+            $state = (is_string($statePrefix) ? $statePrefix : 'MYINFO-').Str::uuid();
+        }
+
         $singPassAuthenticationEndpoint = Cache::get('openId')->authorization_endpoint;
-        $clientID = config('singpass-login.client_id');
         $nonce = Str::uuid();
 
         // PKCE

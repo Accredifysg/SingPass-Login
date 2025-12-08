@@ -45,7 +45,7 @@ class SingPassLoginTest extends TestCase
         // Set expectations on mock services
         $openIdDiscoveryService->expects($this->once())->method('cacheOpenIdDiscovery');
         $getSingPassTokenService->expects($this->once())->method('getToken')
-            ->with('test_code', 'test-code-verifier')
+            ->with('test_code', 'test-code-verifier', 'test-state')
             ->willReturn($tokenResponseDto);
         $singPassJwtService->expects($this->once())->method('jweDecrypt')
             ->with('jwe_token')
@@ -92,18 +92,6 @@ class SingPassLoginTest extends TestCase
         $getSingPassJwksService = $this->createMock(GetSingPassJwksServiceInterface::class);
         $getUserInfoService = $this->createMock(GetUserInfoServiceInterface::class);
 
-        $jwks = JWKSet::createFromKeyData([
-            'keys' => [
-                [
-                    'kty' => 'RSA',
-                    'kid' => '1b94c',
-                    'use' => 'sig',
-                    'n' => '...',
-                    'e' => 'AQAB',
-                ],
-            ],
-        ]);
-
         $tokenResponseDto = new TokenResponseDto('jwe_token', 'access_token_value');
         $myInfoData = [
             'sub' => 's=S8829314B,u=1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9',
@@ -114,18 +102,13 @@ class SingPassLoginTest extends TestCase
         // Set expectations on mock services
         $openIdDiscoveryService->expects($this->once())->method('cacheOpenIdDiscovery');
         $getSingPassTokenService->expects($this->once())->method('getToken')
-            ->with('test_code', 'test-code-verifier')
+            ->with('test_code', 'test-code-verifier', 'test-state')
             ->willReturn($tokenResponseDto);
-        $singPassJwtService->expects($this->once())->method('jweDecrypt')
-            ->with('jwe_token')
-            ->willReturn('jwt_token');
-        $getSingPassJwksService->expects($this->once())->method('getSingPassJwks')
-            ->willReturn($jwks);
-        $singPassJwtService->expects($this->once())->method('jwtDecode')
-            ->with('jwt_token', $jwks)
-            ->willReturn(['sub' => 's=S8829314B,u=1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9']);
-        $singPassJwtService->expects($this->once())->method('verifyPayload')
-            ->with(['sub' => 's=S8829314B,u=1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9']);
+        // Note: JWT decryption/decoding is NOT called for MyInfo flow (it's in the else block)
+        $singPassJwtService->expects($this->never())->method('jweDecrypt');
+        $getSingPassJwksService->expects($this->never())->method('getSingPassJwks');
+        $singPassJwtService->expects($this->never())->method('jwtDecode');
+        $singPassJwtService->expects($this->never())->method('verifyPayload');
         $getUserInfoService->expects($this->once())->method('shouldCallUserInfo')
             ->with('access_token_value')
             ->willReturn(true);

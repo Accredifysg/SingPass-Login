@@ -17,15 +17,21 @@ final class GetSingPassTokenService implements GetSingPassTokenServiceInterface
      *
      * @throws ConnectionException
      */
-    public function getToken(string $code, string $codeVerifier): TokenResponseDto
+    public function getToken(string $code, string $codeVerifier, string $state): TokenResponseDto
     {
-        $clientId = config('singpass-login.client_id');
-        $redirectUrl = config('singpass-login.redirect_uri');
+        if (str_starts_with($state, 'MYINFO-')) {
+            $clientId = config('singpass-login.myinfo_client_id');
+            $redirectUrl = config('singpass-login.myinfo_redirect_uri');
+        } else {
+            $clientId = config('singpass-login.client_id');
+            $redirectUrl = config('singpass-login.redirect_uri');
+        }
+
         $grantType = 'authorization_code';
         $clientAssertionType = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
 
         $jwk = SingPassJwtService::getSigningJwk();
-        $clientAssertion = SingPassJwtService::generateClientAssertion($jwk, $code);
+        $clientAssertion = SingPassJwtService::generateClientAssertion($jwk, $code, $clientId);
 
         $response = Http::bodyFormat('form_params')
             ->contentType('application/x-www-form-urlencoded; charset=ISO-8859-1')

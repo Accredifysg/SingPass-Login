@@ -29,6 +29,10 @@ return [
     'use_default_listener' => env('SINGPASS_USE_DEFAULT_LISTENER', true),
     'listener_class' => SingPassSuccessfulLoginListener::class,
 
+    // MyInfo
+    'myinfo_client_id' => env('SINGPASS_MYINFO_CLIENT_ID'),
+    'myinfo_redirect_uri' => env('SINGPASS_MYINFO_REDIRECT_URI'),
+
     /*
     |--------------------------------------------------------------------------
     | Available MyInfo Scopes

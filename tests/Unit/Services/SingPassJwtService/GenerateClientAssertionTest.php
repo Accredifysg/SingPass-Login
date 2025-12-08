@@ -39,8 +39,8 @@ class GenerateClientAssertionTest extends TestCase
             'alg' => 'ES512',
         ]);
 
-        // Call the method
-        $clientAssertion = SingPassJwtService::generateClientAssertion($jwk, 'mock-code');
+        // Call the method with explicit client ID
+        $clientAssertion = SingPassJwtService::generateClientAssertion($jwk, 'mock-code', 'test-client-id');
 
         // Assert the client assertion is a non-empty string
         $this->assertNotEmpty($clientAssertion);
@@ -58,7 +58,51 @@ class GenerateClientAssertionTest extends TestCase
         $this->assertEquals('test-client-id', $payload['iss']);
         $this->assertArrayHasKey('iat', $payload);
         $this->assertArrayHasKey('exp', $payload);
-        $this->assertEquals('mock-code', 'mock-code');
+        $this->assertEquals('mock-code', $payload['code']);
+    }
+
+    public function test_generate_client_assertion_with_myinfo_client_id(): void
+    {
+        // Mock Cache to return expected 'openId' values
+        Cache::shouldReceive('get')
+            ->with('openId')
+            ->andReturn((object) [
+                'issuer' => 'https://example.com',
+            ]);
+
+        // Create a mock JWK object
+        $jwk = new JWK([
+            'kty' => 'EC',
+            'd' => 'AMLSmZWRqxafLBkg88gNp-jf3KD9WqYo66RsBIjUBM76OwVOqgHmUR5LhtReXBTiziXaVrWo1bPAZgfn7u_vpK11',
+            'use' => 'sig',
+            'crv' => 'P-521',
+            'kid' => 'test-signing-kid',
+            'x' => 'Abyt-Y7n4eBXxDaV3TdUjcyHstOxdaG427PDy77uDlGHg4KgwLh512UsTlaKpdF-E4gQjykbCNulwZHdGZHb3Qxe',
+            'y' => 'AMTLon1XR5Ve71-t5AXPFPB3O42Ac96wlaHh6wnOkpJYO92_lzL3JEDu32i7alkckl8CrW6SlQCHJ6CFBBL4g2dk',
+            'alg' => 'ES512',
+        ]);
+
+        // Call the method with MyInfo client ID
+        $clientAssertion = SingPassJwtService::generateClientAssertion($jwk, 'mock-code', 'myinfo-client-id');
+
+        // Assert the client assertion is a non-empty string
+        $this->assertNotEmpty($clientAssertion);
+
+        // Further validate the JWS structure
+        $serializer = new JwsCompactSerializer;
+        $jws = $serializer->unserialize($clientAssertion);
+
+        $this->assertEquals(1, $jws->countSignatures());
+
+        $payload = json_decode($jws->getPayload() ?: '{}', true);
+
+        // Verify MyInfo client ID is used in sub and iss claims
+        $this->assertEquals('myinfo-client-id', $payload['sub']);
+        $this->assertEquals('https://example.com', $payload['aud']);
+        $this->assertEquals('myinfo-client-id', $payload['iss']);
+        $this->assertArrayHasKey('iat', $payload);
+        $this->assertArrayHasKey('exp', $payload);
+        $this->assertEquals('mock-code', $payload['code']);
     }
 
     public function test_generate_client_assertion_jwk_failure(): void
@@ -86,7 +130,7 @@ class GenerateClientAssertionTest extends TestCase
         $this->expectException(JwksInvalidException::class);
 
         // Call the method
-        SingPassJwtService::generateClientAssertion($jwk, 'mock-code');
+        SingPassJwtService::generateClientAssertion($jwk, 'mock-code', 'test-client-id');
     }
 
     public function test_generate_client_assertion_json_encode_failure(): void
@@ -120,6 +164,6 @@ class GenerateClientAssertionTest extends TestCase
         $this->expectExceptionMessage('Failed to encode JWT payload.');
 
         // Call the method
-        SingPassJwtService::generateClientAssertion($jwk, 'mock-code');
+        SingPassJwtService::generateClientAssertion($jwk, 'mock-code', 'test-client-id');
     }
 }

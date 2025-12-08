@@ -35,6 +35,10 @@ SINGPASS_CALLBACK_URL=/sp/callback
 
 # Default Listener
 SINGPASS_USE_DEFAULT_LISTENER=true
+
+# Optional MyInfo envs if you want to use MyInfo integration
+SINGPASS_MYINFO_CLIENT_ID=
+SINGPASS_MYINFO_REDIRECT_URI=
 ```
 
 Publish the config file

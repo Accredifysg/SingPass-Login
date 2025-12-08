@@ -6,5 +6,5 @@ use Accredifysg\SingPassLogin\DTOs\TokenResponseDto;
 
 interface GetSingPassTokenServiceInterface
 {
-    public function getToken(string $code, string $codeVerifier): TokenResponseDto;
+    public function getToken(string $code, string $codeVerifier, string $state): TokenResponseDto;
 }

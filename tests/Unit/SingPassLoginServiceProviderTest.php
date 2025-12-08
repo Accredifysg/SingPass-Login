@@ -66,6 +66,8 @@ class SingPassLoginServiceProviderTest extends TestCase
         $this->assertArrayHasKey('post_singpass_callback_controller', config('singpass-login'));
         $this->assertArrayHasKey('use_default_listener', config('singpass-login'));
         $this->assertArrayHasKey('listener_class', config('singpass-login'));
+        $this->assertArrayHasKey('myinfo_client_id', config('singpass-login'));
+        $this->assertArrayHasKey('myinfo_redirect_uri', config('singpass-login'));
     }
 
     protected function setUp(): void
