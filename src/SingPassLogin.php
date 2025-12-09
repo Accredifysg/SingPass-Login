@@ -27,12 +27,7 @@ readonly class SingPassLogin implements SingPassLoginInterface
     public function handleCallback(string $code, string $state, string $codeVerifier): void
     {
         $this->openIdDiscoveryService->cacheOpenIdDiscovery();
-        $tokenResponseDto = $this->getSingPassTokenService->getToken($code, $codeVerifier);
-        $jwtToken = $this->singPassJwtService->jweDecrypt($tokenResponseDto->idToken);
-        $jwksKeyset = $this->getSingPassJwksService->getSingPassJwks();
-        $payload = $this->singPassJwtService->jwtDecode($jwtToken, $jwksKeyset);
-        $this->singPassJwtService->verifyPayload($payload);
-        $singPassUser = $this->getSingPassUser($payload);
+        $tokenResponseDto = $this->getSingPassTokenService->getToken($code, $codeVerifier, $state);
 
         // Check if MyInfo data should be retrieved
         if ($tokenResponseDto->hasAccessToken() && $tokenResponseDto->accessToken !== null
@@ -45,6 +40,11 @@ readonly class SingPassLogin implements SingPassLoginInterface
             }
         } else {
             // Authentication only - emit login event
+            $jwtToken = $this->singPassJwtService->jweDecrypt($tokenResponseDto->idToken);
+            $jwksKeyset = $this->getSingPassJwksService->getSingPassJwks();
+            $payload = $this->singPassJwtService->jwtDecode($jwtToken, $jwksKeyset);
+            $this->singPassJwtService->verifyPayload($payload);
+            $singPassUser = $this->getSingPassUser($payload);
             event(new SingPassSuccessfulLoginEvent($singPassUser, $state));
         }
     }

@@ -22,6 +22,7 @@ use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;
 use Jose\Component\Core\JWKSet;
 use Jose\Component\Encryption\Algorithm\ContentEncryption\A256CBCHS512;
+use Jose\Component\Encryption\Algorithm\ContentEncryption\A256GCM;
 use Jose\Component\Encryption\Algorithm\KeyEncryption\A256KW;
 use Jose\Component\Encryption\Algorithm\KeyEncryption\ECDHESA256KW;
 use Jose\Component\Encryption\JWEDecrypter;
@@ -72,7 +73,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
     /**
      * Generate the client assertion needed to retrieve a token to use for subsequent calls
      */
-    public static function generateClientAssertion(JWK $jwk, string $code): string
+    public static function generateClientAssertion(JWK $jwk, string $code, string $clientId): string
     {
         $algorithmManager = new AlgorithmManager([
             new ES512,
@@ -81,9 +82,9 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
         $jwsBuilder = new JWSBuilder($algorithmManager);
 
         $payload = json_encode([
-            'sub' => config('singpass-login.client_id'),
+            'sub' => $clientId,
             'aud' => Cache::get('openId')->issuer,
-            'iss' => config('singpass-login.client_id'),
+            'iss' => $clientId,
             'iat' => time(),
             'exp' => time() + 119,
             'code' => $code,
@@ -121,6 +122,7 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
             new A256KW,
             new ECDHESA256KW,
             new A256CBCHS512,
+            new A256GCM,
         ]);
 
         $serializerManager = new JWESerializerManager([
