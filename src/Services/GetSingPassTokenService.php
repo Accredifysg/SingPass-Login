@@ -24,19 +24,8 @@ final class GetSingPassTokenService implements GetSingPassTokenServiceInterface
      *
      * @throws ConnectionException
      */
-    public function getToken(string $code, string $codeVerifier, string $state, JWK $dpopKey): TokenResponseDto
+    public function getToken(string $code, string $codeVerifier, JWK $dpopKey, string $clientId, string $redirectUri): TokenResponseDto
     {
-        if (str_starts_with($state, 'MYINFO-')) {
-            $clientId = config('singpass-login.myinfo_client_id');
-            $redirectUrl = config('singpass-login.myinfo_redirect_uri');
-        } else {
-            $clientId = config('singpass-login.client_id');
-            $redirectUrl = config('singpass-login.redirect_uri');
-        }
-
-        $grantType = 'authorization_code';
-        $clientAssertionType = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
-
         $jwk = SingPassJwtService::getSigningJwk();
         $clientAssertion = SingPassJwtService::generateClientAssertion($jwk, $clientId);
 
@@ -51,11 +40,11 @@ final class GetSingPassTokenService implements GetSingPassTokenServiceInterface
             ->contentType('application/x-www-form-urlencoded; charset=ISO-8859-1')
             ->withHeaders(['DPoP' => $dpopProofJwt])
             ->post($tokenEndpoint, [
-                'client_assertion_type' => $clientAssertionType,
+                'client_assertion_type' => 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
                 'code' => $code,
                 'client_id' => $clientId,
-                'grant_type' => $grantType,
-                'redirect_uri' => $redirectUrl,
+                'grant_type' => 'authorization_code',
+                'redirect_uri' => $redirectUri,
                 'client_assertion' => $clientAssertion,
                 'code_verifier' => $codeVerifier,
             ]);

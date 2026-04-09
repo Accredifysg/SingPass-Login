@@ -7,5 +7,5 @@ use Jose\Component\Core\JWK;
 
 interface GetSingPassTokenServiceInterface
 {
-    public function getToken(string $code, string $codeVerifier, string $state, JWK $dpopKey): TokenResponseDto;
+    public function getToken(string $code, string $codeVerifier, JWK $dpopKey, string $clientId, string $redirectUri): TokenResponseDto;
 }

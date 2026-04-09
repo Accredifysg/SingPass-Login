@@ -24,10 +24,10 @@ readonly class SingPassLogin implements SingPassLoginInterface
         private GetUserInfoServiceInterface $getUserInfoService
     ) {}
 
-    public function handleCallback(string $code, string $state, string $codeVerifier, JWK $dpopKey): void
+    public function handleCallback(string $code, string $state, string $codeVerifier, JWK $dpopKey, string $clientId, string $redirectUri): void
     {
         $this->openIdDiscoveryService->cacheOpenIdDiscovery();
-        $tokenResponseDto = $this->getSingPassTokenService->getToken($code, $codeVerifier, $state, $dpopKey);
+        $tokenResponseDto = $this->getSingPassTokenService->getToken($code, $codeVerifier, $dpopKey, $clientId, $redirectUri);
 
         if ($tokenResponseDto->hasAccessToken() && $tokenResponseDto->accessToken !== null
             && $this->getUserInfoService->shouldCallUserInfo($tokenResponseDto->accessToken)) {

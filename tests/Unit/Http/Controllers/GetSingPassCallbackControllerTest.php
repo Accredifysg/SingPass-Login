@@ -32,7 +32,7 @@ class GetSingPassCallbackControllerTest extends TestCase
         $singPassLoginMock = $this->createMock(SingPassLogin::class);
         $singPassLoginMock->expects($this->once())
             ->method('handleCallback')
-            ->with('test-code', 'test-state', 'test-code-verifier', $this->dpopKey);
+            ->with('test-code', 'test-state', 'test-code-verifier', $this->dpopKey, 'test-client-id', 'https://example.com/callback');
 
         /** @var MockObject&DPoPServiceInterface $dpopServiceMock */
         $dpopServiceMock = $this->createMock(DPoPServiceInterface::class);
@@ -51,8 +51,11 @@ class GetSingPassCallbackControllerTest extends TestCase
 
         $request = new Request(['code' => 'test-code', 'state' => 'test-state']);
 
-        // Store code verifier in session
+        // Store auth context in session
+        session()->put('auth_state_test-state', true);
         session()->put('code_verifier_test-state', 'test-code-verifier');
+        session()->put('auth_client_id_test-state', 'test-client-id');
+        session()->put('auth_redirect_uri_test-state', 'https://example.com/callback');
 
         $response = $controller->__invoke($request, $singPassLoginMock, $dpopServiceMock);
 
@@ -78,7 +81,10 @@ class GetSingPassCallbackControllerTest extends TestCase
         $controller = new GetSingPassCallbackController;
 
         $request = new Request(['code' => 'test-code', 'state' => 'test-state']);
+        session()->put('auth_state_test-state', true);
         session()->put('code_verifier_test-state', 'test-code-verifier');
+        session()->put('auth_client_id_test-state', 'test-client-id');
+        session()->put('auth_redirect_uri_test-state', 'https://example.com/callback');
 
         $response = $controller->__invoke($request, $singPassLoginMock, $dpopServiceMock);
 
@@ -155,6 +161,28 @@ class GetSingPassCallbackControllerTest extends TestCase
         $this->assertStringContainsString('The user denied the request', $errors['singpass'][0]['description']);
     }
 
+    public function test_invalid_state_fails_csrf_check(): void
+    {
+        Route::get('/login')->name('login');
+
+        $controller = new GetSingPassCallbackController;
+
+        $request = new Request(['code' => 'test-code', 'state' => 'forged-state']);
+
+        /** @var MockObject&SingPassLogin $singPassLoginMock */
+        $singPassLoginMock = $this->createMock(SingPassLogin::class);
+        $singPassLoginMock->expects($this->never())->method('handleCallback');
+
+        /** @var MockObject&DPoPServiceInterface $dpopServiceMock */
+        $dpopServiceMock = $this->createMock(DPoPServiceInterface::class);
+        $dpopServiceMock->expects($this->never())->method('retrieveKeyForState');
+
+        $response = $controller->__invoke($request, $singPassLoginMock, $dpopServiceMock);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertEquals(route('login'), $response->getTargetUrl());
+    }
+
     public function test_missing_dpop_key_in_session_throws_exception(): void
     {
         Route::get('/login')->name('login');
@@ -162,6 +190,7 @@ class GetSingPassCallbackControllerTest extends TestCase
         $controller = new GetSingPassCallbackController;
 
         $request = new Request(['code' => 'test-code', 'state' => 'test-state']);
+        session()->put('auth_state_test-state', true);
 
         /** @var MockObject&SingPassLogin $singPassLoginMock */
         $singPassLoginMock = $this->createMock(SingPassLogin::class);

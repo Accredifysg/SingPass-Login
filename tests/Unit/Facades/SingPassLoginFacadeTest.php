@@ -19,6 +19,6 @@ class SingPassLoginFacadeTest extends TestCase
         SingPassLoginFacade::swap($mock);
 
         $dpopKey = JWKFactory::createECKey('P-256');
-        SingPassLoginFacade::handleCallback('test-code', 'test-state', 'test-code-verifier', $dpopKey);
+        SingPassLoginFacade::handleCallback('test-code', 'test-state', 'test-code-verifier', $dpopKey, 'test-client-id', 'https://example.com/callback');
     }
 }

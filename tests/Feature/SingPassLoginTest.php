@@ -53,7 +53,7 @@ class SingPassLoginTest extends TestCase
 
         $openIdDiscoveryService->expects($this->once())->method('cacheOpenIdDiscovery');
         $getSingPassTokenService->expects($this->once())->method('getToken')
-            ->with('test_code', 'test-code-verifier', 'test-state', $this->dpopKey)
+            ->with('test_code', 'test-code-verifier', $this->dpopKey, 'test-client-id', 'https://example.com/callback')
             ->willReturn($tokenResponseDto);
         $singPassJwtService->expects($this->once())->method('jweDecrypt')
             ->with('jwe_token')
@@ -82,7 +82,7 @@ class SingPassLoginTest extends TestCase
             $getUserInfoService
         );
 
-        $singPassLogin->handleCallback('test_code', 'test-state', 'test-code-verifier', $this->dpopKey);
+        $singPassLogin->handleCallback('test_code', 'test-state', 'test-code-verifier', $this->dpopKey, 'test-client-id', 'https://example.com/callback');
 
         Event::assertDispatched(SingPassSuccessfulLoginEvent::class, function ($event) {
             return $event->getSingPassUser()->getNric() === 'S8829314B';
@@ -132,7 +132,7 @@ class SingPassLoginTest extends TestCase
             $getUserInfoService
         );
 
-        $singPassLogin->handleCallback('test_code', 'test-state', 'test-code-verifier', $this->dpopKey);
+        $singPassLogin->handleCallback('test_code', 'test-state', 'test-code-verifier', $this->dpopKey, 'test-client-id', 'https://example.com/callback');
 
         Event::assertDispatched(SingPassSuccessfulLoginEvent::class, function ($event) {
             return $event->getSingPassUser()->getUuid() === '1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9'
@@ -157,7 +157,7 @@ class SingPassLoginTest extends TestCase
 
         $openIdDiscoveryService->expects($this->once())->method('cacheOpenIdDiscovery');
         $getSingPassTokenService->expects($this->once())->method('getToken')
-            ->with('test_code', 'test-code-verifier', 'test-state', $this->dpopKey)
+            ->with('test_code', 'test-code-verifier', $this->dpopKey, 'myinfo-client-id', 'https://example.com/myinfo-callback')
             ->willReturn($tokenResponseDto);
         $singPassJwtService->expects($this->never())->method('jweDecrypt');
         $getSingPassJwksService->expects($this->never())->method('getSingPassJwks');
@@ -180,7 +180,7 @@ class SingPassLoginTest extends TestCase
             $getUserInfoService
         );
 
-        $singPassLogin->handleCallback('test_code', 'test-state', 'test-code-verifier', $this->dpopKey);
+        $singPassLogin->handleCallback('test_code', 'test-state', 'test-code-verifier', $this->dpopKey, 'myinfo-client-id', 'https://example.com/myinfo-callback');
 
         Event::assertDispatched(MyInfoDataRetrievedEvent::class, function ($event) use ($myInfoData) {
             return $event->getMyInfoData() === $myInfoData
@@ -212,7 +212,7 @@ class SingPassLoginTest extends TestCase
         $this->expectException(OpenIdDiscoveryException::class);
         $this->expectExceptionMessage('Open ID Discovery call failed');
 
-        $singPassLogin->handleCallback('test-code', 'test-state', 'test-code-verifier', $this->dpopKey);
+        $singPassLogin->handleCallback('test-code', 'test-state', 'test-code-verifier', $this->dpopKey, 'test-client-id', 'https://example.com/callback');
     }
 
     protected function getPackageProviders($app): array

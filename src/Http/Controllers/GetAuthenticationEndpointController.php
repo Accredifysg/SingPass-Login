@@ -41,14 +41,12 @@ class GetAuthenticationEndpointController extends Controller
         if (! $isMyInfo) {
             $redirectUri = config('singpass-login.redirect_uri');
             $clientID = config('singpass-login.client_id');
-            $statePrefix = $request->query('state', 'LOGIN-');
-            $state = (is_string($statePrefix) ? $statePrefix : 'LOGIN-').Str::uuid();
         } else {
             $redirectUri = config('singpass-login.myinfo_redirect_uri');
             $clientID = config('singpass-login.myinfo_client_id');
-            $statePrefix = $request->query('state', 'MYINFO-');
-            $state = (is_string($statePrefix) ? $statePrefix : 'MYINFO-').Str::uuid();
         }
+
+        $state = Str::uuid();
 
         $nonce = Str::uuid();
 
@@ -104,9 +102,12 @@ class GetAuthenticationEndpointController extends Controller
         // Send PAR and get request_uri
         $requestUri = $parService->sendRequest($parParams, $dpopProofJwt);
 
-        // Store DPoP key and code verifier in session keyed by state
+        // Store auth context in session keyed by state (state stored for CSRF verification)
+        session()->put("auth_state_{$state}", true);
         $dpopService->storeKeyForState($state, $dpopKey);
         session()->put("code_verifier_{$state}", $codeVerifier);
+        session()->put("auth_client_id_{$state}", $clientID);
+        session()->put("auth_redirect_uri_{$state}", $redirectUri);
 
         // Build redirect URL with only client_id and request_uri
         $authorizationEndpoint = $openIdConfig->authorizationEndpoint;

@@ -10,7 +10,6 @@ use Accredifysg\SingPassLogin\Services\GetSingPassTokenService;
 use Accredifysg\SingPassLogin\Services\SingPassJwtService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Jose\Component\Core\JWK;
 use Jose\Component\KeyManagement\JWKFactory;
@@ -53,9 +52,6 @@ class GetSingPassTokenServiceTest extends TestCase
 
     public function test_get_token_success(): void
     {
-        Config::set('singpass-login.client_id', 'test-client-id');
-        Config::set('singpass-login.redirect_uri', 'https://example.com/callback');
-
         $mockJwk = (object) ['kty' => 'RSA', 'kid' => 'test-key-id'];
         $mockClientAssertion = 'mock-client-assertion';
 
@@ -75,9 +71,8 @@ class GetSingPassTokenServiceTest extends TestCase
             'https://example.com/token' => Http::response($mockResponse, 200),
         ]);
 
-        // Call the method with LOGIN- state (regular auth flow)
         $service = new GetSingPassTokenService($this->dpopServiceMock);
-        $tokenResponse = $service->getToken('mock-code', 'test-code-verifier', 'LOGIN-test-state', $this->dpopKey);
+        $tokenResponse = $service->getToken('mock-code', 'test-code-verifier', $this->dpopKey, 'test-client-id', 'https://example.com/callback');
 
         $this->assertInstanceOf(TokenResponseDto::class, $tokenResponse);
         $this->assertEquals('mock-id-token', $tokenResponse->idToken);
@@ -85,12 +80,8 @@ class GetSingPassTokenServiceTest extends TestCase
         $this->assertTrue($tokenResponse->hasAccessToken());
     }
 
-    public function test_get_token_with_myinfo_state(): void
+    public function test_get_token_with_myinfo_credentials(): void
     {
-        // Mock configuration values for MyInfo
-        Config::set('singpass-login.myinfo_client_id', 'myinfo-client-id');
-        Config::set('singpass-login.myinfo_redirect_uri', 'https://example.com/myinfo-callback');
-
         $mockJwk = (object) ['kty' => 'RSA', 'kid' => 'test-key-id'];
         $mockClientAssertion = 'mock-client-assertion';
 
@@ -110,9 +101,8 @@ class GetSingPassTokenServiceTest extends TestCase
             'https://example.com/token' => Http::response($mockResponse, 200),
         ]);
 
-        // Call the method with MYINFO- state prefix
         $service = new GetSingPassTokenService($this->dpopServiceMock);
-        $tokenResponse = $service->getToken('mock-code', 'test-code-verifier', 'MYINFO-test-state', $this->dpopKey);
+        $tokenResponse = $service->getToken('mock-code', 'test-code-verifier', $this->dpopKey, 'myinfo-client-id', 'https://example.com/myinfo-callback');
 
         $this->assertInstanceOf(TokenResponseDto::class, $tokenResponse);
         $this->assertEquals('mock-id-token', $tokenResponse->idToken);
@@ -122,9 +112,6 @@ class GetSingPassTokenServiceTest extends TestCase
 
     public function test_get_token_without_access_token(): void
     {
-        Config::set('singpass-login.client_id', 'test-client-id');
-        Config::set('singpass-login.redirect_uri', 'https://example.com/callback');
-
         $mockJwk = (object) ['kty' => 'RSA', 'kid' => 'test-key-id'];
         $mockClientAssertion = 'mock-client-assertion';
 
@@ -134,7 +121,6 @@ class GetSingPassTokenServiceTest extends TestCase
             'generateClientAssertion' => $mockClientAssertion,
         ]);
 
-        // Mock the HTTP response without access_token
         $mockResponse = [
             'id_token' => 'mock-id-token',
         ];
@@ -144,7 +130,7 @@ class GetSingPassTokenServiceTest extends TestCase
         ]);
 
         $service = new GetSingPassTokenService($this->dpopServiceMock);
-        $tokenResponse = $service->getToken('mock-code', 'test-code-verifier', 'LOGIN-test-state', $this->dpopKey);
+        $tokenResponse = $service->getToken('mock-code', 'test-code-verifier', $this->dpopKey, 'test-client-id', 'https://example.com/callback');
 
         $this->assertInstanceOf(TokenResponseDto::class, $tokenResponse);
         $this->assertEquals('mock-id-token', $tokenResponse->idToken);
@@ -154,9 +140,6 @@ class GetSingPassTokenServiceTest extends TestCase
 
     public function test_get_token_exception(): void
     {
-        Config::set('singpass-login.client_id', 'test-client-id');
-        Config::set('singpass-login.redirect_uri', 'https://example.com/callback');
-
         $mockJwk = (object) ['kty' => 'RSA', 'kid' => 'test-key-id'];
         $mockClientAssertion = 'mock-client-assertion';
 
@@ -173,6 +156,6 @@ class GetSingPassTokenServiceTest extends TestCase
         $this->expectException(SingPassTokenException::class);
 
         $service = new GetSingPassTokenService($this->dpopServiceMock);
-        $service->getToken('mock-code', 'test-code-verifier', 'LOGIN-test-state', $this->dpopKey);
+        $service->getToken('mock-code', 'test-code-verifier', $this->dpopKey, 'test-client-id', 'https://example.com/callback');
     }
 }

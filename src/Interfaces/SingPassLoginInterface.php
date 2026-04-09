@@ -6,5 +6,5 @@ use Jose\Component\Core\JWK;
 
 interface SingPassLoginInterface
 {
-    public function handleCallback(string $code, string $state, string $codeVerifier, JWK $dpopKey): void;
+    public function handleCallback(string $code, string $state, string $codeVerifier, JWK $dpopKey, string $clientId, string $redirectUri): void;
 }

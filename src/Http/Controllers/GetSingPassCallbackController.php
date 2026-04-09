@@ -37,19 +37,28 @@ class GetSingPassCallbackController extends Controller
                 throw new SingPassGetEndpointException;
             }
 
-            // Retrieve DPoP key and code verifier from session
-            $dpopKey = $dpopService->retrieveKeyForState($state);
-            $codeVerifier = session()->get("code_verifier_{$state}");
-
-            if (! $dpopKey || ! $codeVerifier) {
+            // Verify state matches a pending auth request (CSRF protection)
+            if (! session()->pull("auth_state_{$state}")) {
                 throw new SingPassGetEndpointException;
             }
 
-            $singPassLogin->handleCallback($code, $state, $codeVerifier, $dpopKey);
+            // Retrieve auth context from session
+            $dpopKey = $dpopService->retrieveKeyForState($state);
+            $codeVerifier = session()->get("code_verifier_{$state}");
+            $clientId = session()->get("auth_client_id_{$state}");
+            $redirectUri = session()->get("auth_redirect_uri_{$state}");
+
+            if (! $dpopKey || ! $codeVerifier || ! $clientId || ! $redirectUri) {
+                throw new SingPassGetEndpointException;
+            }
+
+            $singPassLogin->handleCallback($code, $state, $codeVerifier, $dpopKey, $clientId, $redirectUri);
 
             // Clean up session data
             $dpopService->clearKeyForState($state);
             session()->forget("code_verifier_{$state}");
+            session()->forget("auth_client_id_{$state}");
+            session()->forget("auth_redirect_uri_{$state}");
         } catch (SingPassLoginException|SingPassGetEndpointException|SingPassAuthenticationErrorException $e) {
             return $e->render();
         }
