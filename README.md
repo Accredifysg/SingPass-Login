@@ -2,7 +2,7 @@
 
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Accredifysg_SingPass-Login&metric=coverage&token=11b8dd252687c701584068be55e47e5e432056c8)](https://sonarcloud.io/summary/new_code?id=Accredifysg_SingPass-Login)
 
-PHP Laravel Package for SingPass Login and MyInfo
+PHP Laravel Package for SingPass Login and MyInfo. The authorization flow follows **FAPI 2.0–style** integration: **Pushed Authorization Requests (PAR)** with **DPoP** on the PAR, token, and UserInfo calls, **PKCE**, and private-key **JWT client assertions**. Your OpenID Provider metadata (discovery) must expose a `pushed_authorization_request_endpoint`; the package validates this when caching discovery.
 
 <a href="https://api.singpass.gov.sg/library/login/developers/overview-at-a-glance" rel="noreferrer nofollow">Official SingPass Login Docs</a>
 
@@ -27,6 +27,13 @@ SINGPASS_SIGNING_KID=
 SINGPASS_JWKS=
 SINGPASS_PRIVATE_JWKS=
 
+# FAPI 2.0 / DPoP (optional; default algorithm is ES256)
+SINGPASS_DPOP_SIGNING_ALGORITHM=ES256
+
+# Login app authentication context (see SingPass integration guide)
+SINGPASS_AUTH_CONTEXT_TYPE=APP_AUTHENTICATION_DEFAULT
+# SINGPASS_AUTH_CONTEXT_MESSAGE=
+
 # Default Routes
 SINGPASS_USE_DEFAULT_ROUTES=true
 SINGPASS_JWKS_URL=/sp/jwks
@@ -47,7 +54,7 @@ Publish the config file
 php artisan vendor:publish --provider="Accredifysg\SingPassLogin\SingPassLoginServiceProvider" --tag="config"
 ```
 
-Optionally, you can publish the listener that will listen to the SingPassLoginEvent and log the user in
+Optionally, you can publish the listener that will listen to the `SingPassSuccessfulLoginEvent` and log the user in
 
 ```bash
 php artisan vendor:publish --provider="Accredifysg\SingPassLogin\SingPassLoginServiceProvider" --tag="listener"
@@ -56,23 +63,48 @@ php artisan vendor:publish --provider="Accredifysg\SingPassLogin\SingPassLoginSe
 ## Usage and Customisations
 
 ### Controllers and Routes
-There are three default controllers that handle the login process
+There are three default controllers that handle the login process.
 
-`GetJwksEndpointController` exposes your application's JWKS endpoint to be registered with SingPass. 
-The default route for this controller is `/sp/jwks`
+`GetJwksEndpointController` exposes your application's JWKS endpoint to be registered with SingPass.
+The default route for this controller is `/sp/jwks`.
 
-`GetAuthenticationEndpointController` provides the authentication endpoint to redirect the client's browser to.
-The default route for this controller is `/sp/login`
+`GetAuthenticationEndpointController` runs the PAR step server-side and returns **JSON** with a `redirect_url` the browser should open (SingPass’s authorization endpoint with `client_id` and `request_uri` only). The default route is `/sp/login`. You must call it from a context where the **`web` middleware group runs and sessions work** (the package registers these routes with `web` middleware). The controller stores PKCE verifier, ephemeral DPoP keys, `client_id`, and `redirect_uri` in the session keyed by `state` for CSRF protection and token exchange.
 
-`PostSingPassCallbackController` handles the callback from SingPass, and kick-starts the login process.
-The default route for this controller is `/sp/callback`
+`GetSingPassCallbackController` handles the OAuth callback from SingPass, validates `state`, exchanges the code using DPoP, and runs the rest of the login flow.
+The default route for this controller is `/sp/callback`.
 
 If you prefer to set your own routes you can set `SINGPASS_USE_DEFAULT_ROUTES` to `false`, 
 then edit `SINGPASS_JWKS_URL`, `SINGPASS_CALLBACK_URL`, and `SINGPASS_AUTHENTICATION_URL` in
 your `.env` file and map your own routes. 
 
 If you prefer to write your own controllers you can define them in the config file
-`singpass-login.php` as `get_jwks_endpoint_controller`, `post_singpass_callback_controller` and `get_authentication_endpoint_controller`
+`singpass-login.php` as `get_jwks_endpoint_controller`, `post_singpass_callback_controller`, and `get_authentication_endpoint_controller`.
+
+### Starting a login (JSON redirect_url)
+
+`GET /sp/login` returns `200` JSON: `{ "redirect_url": "..." }`. The browser (or SPA) should request that URL with **same-origin credentials** so the session cookie is sent, then navigate to `redirect_url`.
+
+Optional query parameters for **Login** flows (no MyInfo scopes): `authentication_context_type` and `authentication_context_message` override `SINGPASS_AUTH_CONTEXT_TYPE` / `SINGPASS_AUTH_CONTEXT_MESSAGE` for that request. See the [SingPass authorization request documentation](https://docs.developer.singpass.gov.sg/docs/technical-specifications/integration-guide/1.-authorization-request#possible-authentication_context_type-values) for valid `authentication_context_type` values.
+
+**From JavaScript (recommended):**
+
+```javascript
+async function startSingPassLogin(scopes) {
+  const qs = new URLSearchParams({ scopes: scopes.join(',') });
+  const res = await fetch(`/sp/login?${qs}`, {
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json' },
+  });
+  if (!res.ok) throw new Error('Login bootstrap failed');
+  const { redirect_url } = await res.json();
+  window.location.assign(redirect_url);
+}
+
+// Example: login scopes only (see config `login_scopes`)
+await startSingPassLogin(['openid', 'name', 'email', 'mobileno']);
+```
+
+**From a Laravel Blade view or inline script**, use the same `fetch` pattern; a simple `redirect('/sp/login?...')` only sends the client to a JSON response, not to SingPass.
 
 ### Listener
 If you published the default listener, you should edit it and map your user retrieval via NRIC accordingly.
@@ -97,47 +129,40 @@ your `.env` and replace `listener_class` in the config file `singpass-login.php`
 
 ## MyInfo Integration
 
-This package supports retrieving user data from MyInfo through scope-based data retrieval. By default, the package performs authentication-only flow using the `openid` scope. To retrieve additional user data, you can request specific MyInfo scopes during the authentication process.
+This package supports retrieving user data from MyInfo through scope-based data retrieval. **Login scopes** (config key `login_scopes`, including `openid`, `user.identity`, `name`, `email`, `mobileno`, etc.) are satisfied from the ID token where applicable; **any other requested scope** that is not a login scope is treated as a MyInfo scope and triggers the UserInfo endpoint (with DPoP), using `SINGPASS_MYINFO_CLIENT_ID` and `SINGPASS_MYINFO_REDIRECT_URI`.
 
 ### How It Works
 
-MyInfo functionality is scope-driven:
-- **Authentication Only**: When only the `openid` scope is requested (default), the package performs standard authentication without calling the UserInfo endpoint
-- **MyInfo Data Retrieval**: When additional MyInfo scopes are requested, the package calls the UserInfo endpoint after successful authentication to retrieve the consented user data
+MyInfo behaviour is scope-driven:
+
+- **Login-only data**: When every requested scope is in `login_scopes`, the package does **not** call the UserInfo endpoint; profile fields available from the ID token are mapped on `SingPassUser` where supported.
+- **MyInfo data retrieval**: When at least one scope is **not** in `login_scopes`, the package uses the MyInfo client credentials, calls UserInfo after authentication, and emits `MyInfoDataRetrievedEvent`.
 
 ### Requesting MyInfo Scopes
 
-Pass scopes as query parameters when redirecting users to the authentication endpoint:
+Pass scopes as the `scopes` query parameter on `GET /sp/login`, then follow the JSON `redirect_url` using the same `fetch` pattern as in **Starting a login**.
 
 **From JavaScript/Frontend:**
+
 ```javascript
-// Basic authentication only (default behavior)
-window.location.href = '/sp/login';
-
-// Request basic profile information
-const scopes = ['openid', 'name', 'email', 'mobileno'];
-window.location.href = `/sp/login?scopes=${scopes.join(',')}`;
-
-// Request extended user data
-const extendedScopes = [
-    'openid',
-    'name',
-    'email',
-    'mobileno',
-    'nationality',
-    'dob'
-];
-window.location.href = `/sp/login?scopes=${extendedScopes.join(',')}`;
-```
-
-**From Laravel Controller:**
-```php
-public function redirectToSingPass()
-{
-    $scopes = ['openid', 'name', 'email', 'mobileno'];
-    return redirect('/sp/login?' . http_build_query(['scopes' => implode(',', $scopes)]));
+async function startSingPassLogin(scopes) {
+  const qs = new URLSearchParams({ scopes: scopes.join(',') });
+  const res = await fetch(`/sp/login?${qs}`, {
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json' },
+  });
+  const { redirect_url } = await res.json();
+  window.location.assign(redirect_url);
 }
+
+// Login scopes only (no UserInfo call)
+await startSingPassLogin(['openid', 'name', 'email', 'mobileno']);
+
+// Includes MyInfo-only scopes → UserInfo + MyInfoDataRetrievedEvent
+await startSingPassLogin(['openid', 'name', 'email', 'mobileno', 'nationality', 'dob']);
 ```
+
+Render a page or button that runs the above; avoid `window.location.href = '/sp/login'` alone because the route returns JSON, not an HTTP redirect.
 
 ### Available MyInfo Scopes
 
@@ -235,12 +260,12 @@ use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvi
 class EventServiceProvider extends ServiceProvider
 {
     protected $listen = [
-        // Authentication only (no MyInfo scopes)
+        // Login scopes only (no UserInfo / MyInfoDataRetrievedEvent)
         SingPassSuccessfulLoginEvent::class => [
             SingPassSuccessfulLoginListener::class,
         ],
         
-        // MyInfo data retrieval (with additional scopes)
+        // MyInfo scopes (UserInfo retrieval)
         MyInfoDataRetrievedEvent::class => [
             MyInfoDataRetrievedListener::class,
         ],
@@ -250,17 +275,17 @@ class EventServiceProvider extends ServiceProvider
 
 ### Event Flow
 
-- **Authentication Only**: When only `openid` scope is requested → `SingPassSuccessfulLoginEvent` is emitted
-- **MyInfo Data Retrieval**: When additional MyInfo scopes are requested → `MyInfoDataRetrievedEvent` is emitted
+- **Login scopes only**: All requested scopes are in `login_scopes` → `SingPassSuccessfulLoginEvent` is emitted
+- **MyInfo scopes present**: At least one scope is outside `login_scopes` → `MyInfoDataRetrievedEvent` is emitted
 
-This separation allows you to handle authentication-only flows differently from flows that include MyInfo data retrieval.
+This separation allows you to handle login-only flows differently from flows that include MyInfo UserInfo retrieval.
 
-### Backward Compatibility
+### Upgrading from pre–FAPI 2.0 versions
 
-Existing implementations continue to work without any changes:
-- Default behavior remains authentication-only with `openid` scope
-- `SingPassSuccessfulLoginEvent` is still emitted for authentication-only flows
-- No configuration changes required for existing applications
+- The login route returns **JSON** with `redirect_url`; update clients to `fetch` (with credentials) then navigate.
+- Ensure your app uses **session**-backed routes for `/sp/login` and `/sp/callback` (default `web` middleware).
+- Discovery metadata must include **`pushed_authorization_request_endpoint`**.
+- Review `login_scopes` and `available_scopes` in `singpass-login.php` (including FAPI login scopes such as `user.identity`).
 
 ## Exceptions
 ```php
@@ -273,12 +298,19 @@ use Accredifysg\SingPassLogin\Exceptions\OpenIdDiscoveryException;
 use Accredifysg\SingPassLogin\Exceptions\SingPassJwksException;
 use Accredifysg\SingPassLogin\Exceptions\SingPassTokenException;
 use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
+use Accredifysg\SingPassLogin\Exceptions\SingPassAuthenticationErrorException;
+use Accredifysg\SingPassLogin\Exceptions\PushedAuthorizationRequestException;
 
 // MyInfo-specific exceptions
 use Accredifysg\SingPassLogin\Exceptions\UserInfoRequestException;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoDecryptionException;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoVerificationException;
 ```
+
+### FAPI / PAR exception handling
+
+- **`PushedAuthorizationRequestException`**: The PAR endpoint returned an error or an invalid response (includes OAuth error codes when provided).
+- **`SingPassAuthenticationErrorException`**: SingPass returned an OAuth error to the callback (`error` / `error_description` query parameters).
 
 ### MyInfo Exception Handling
 
