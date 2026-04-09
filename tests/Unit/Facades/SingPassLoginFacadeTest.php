@@ -4,6 +4,7 @@ namespace Accredifysg\SingPassLogin\Tests\Unit\Facades;
 
 use Accredifysg\SingPassLogin\Facades\SingPassLoginFacade;
 use Accredifysg\SingPassLogin\SingPassLogin;
+use Jose\Component\KeyManagement\JWKFactory;
 use PHPUnit\Framework\TestCase;
 
 class SingPassLoginFacadeTest extends TestCase
@@ -17,6 +18,7 @@ class SingPassLoginFacadeTest extends TestCase
 
         SingPassLoginFacade::swap($mock);
 
-        SingPassLoginFacade::handleCallback('test-code', 'test-state', 'test-code-verifier');
+        $dpopKey = JWKFactory::createECKey('P-256');
+        SingPassLoginFacade::handleCallback('test-code', 'test-state', 'test-code-verifier', $dpopKey);
     }
 }

@@ -14,6 +14,13 @@ return [
     'jwks' => env('SINGPASS_JWKS'),
     'private_jwks' => env('SINGPASS_PRIVATE_JWKS'),
 
+    // FAPI 2.0 / DPoP
+    'dpop_signing_algorithm' => env('SINGPASS_DPOP_SIGNING_ALGORITHM', 'ES256'),
+
+    // Authentication context (Login apps only)
+    'authentication_context_type' => env('SINGPASS_AUTH_CONTEXT_TYPE', 'APP_AUTHENTICATION_DEFAULT'), // Possible values: https://docs.developer.singpass.gov.sg/docs/technical-specifications/integration-guide/1.-authorization-request#possible-authentication_context_type-values
+    'authentication_context_message' => env('SINGPASS_AUTH_CONTEXT_MESSAGE'),
+
     // Default routes
     'enable_default_singpass_routes' => env('SINGPASS_USE_DEFAULT_ROUTES', true),
     'get_jwks_endpoint_url' => env('SINGPASS_JWKS_URL', '/sp/jwks'),
@@ -35,19 +42,41 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Available MyInfo Scopes
+    | Login Scopes
     |--------------------------------------------------------------------------
     |
-    | This array defines the valid MyInfo scopes that can be requested during
-    | the OAuth authorization flow. These scopes determine what user data can
-    | be retrieved from the MyInfo UserInfo endpoint.
+    | Scopes that are fulfilled via the ID token (sub_attributes) and do NOT
+    | require a call to the UserInfo endpoint. When only these scopes are
+    | requested, the Login client_id/redirect_uri are used and the flow
+    | emits SingPassSuccessfulLoginEvent.
     |
-    | The 'openid' scope is always required and allowed for authentication.
-    | Additional scopes enable retrieval of specific user data categories.
+    | Any scope NOT in this list is considered a MyInfo scope, which triggers
+    | a UserInfo endpoint call and emits MyInfoDataRetrievedEvent.
     |
-    | Scope validation occurs when scopes are passed as query parameters to
-    | the authentication endpoint. Invalid scopes will be filtered out and
-    | logged as warnings.
+    */
+    'login_scopes' => [
+        'openid',
+        'user.identity',
+        'name',
+        'email',
+        'mobileno',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Available Scopes
+    |--------------------------------------------------------------------------
+    |
+    | This array defines all valid scopes that can be requested during
+    | the OAuth authorization flow. Scopes are divided into two categories:
+    |
+    | Login scopes (defined in 'login_scopes' above):
+    |   Returned in the ID token's sub_attributes claim. No UserInfo call needed.
+    |
+    | MyInfo scopes (everything else below):
+    |   Returned from the UserInfo endpoint. Requires a MyInfo app configuration.
+    |
+    | The 'openid' scope is always required as per the OIDC spec.
     |
     | For the complete and up-to-date list of available MyInfo data items,
     | refer to the official MyInfo Data Catalog:
@@ -71,10 +100,15 @@ return [
         // Core authentication scope (always required)
         'openid',
 
-        // Personal Information
+        // FAPI 2.0 Login scopes (returned in ID token)
+        'user.identity',
+        'name',
+        'email',
+        'mobileno',
+
+        // Personal Information (MyInfo - requires UserInfo endpoint)
         'uinfin',
         'partialuinfin',
-        'name',
         'aliasname',
         'hanyupinyinname',
         'hanyupinyinaliasname',
@@ -95,8 +129,6 @@ return [
         'employmentsector',
 
         // Contact Information
-        'mobileno',
-        'email',
         'regadd',
         'mailadd',
         'billadd',

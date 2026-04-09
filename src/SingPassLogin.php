@@ -12,7 +12,7 @@ use Accredifysg\SingPassLogin\Interfaces\OpenIdDiscoveryServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\SingPassLoginInterface;
 use Accredifysg\SingPassLogin\Models\SingPassUser;
-use Exception;
+use Jose\Component\Core\JWK;
 
 readonly class SingPassLogin implements SingPassLoginInterface
 {
@@ -24,22 +24,19 @@ readonly class SingPassLogin implements SingPassLoginInterface
         private GetUserInfoServiceInterface $getUserInfoService
     ) {}
 
-    public function handleCallback(string $code, string $state, string $codeVerifier): void
+    public function handleCallback(string $code, string $state, string $codeVerifier, JWK $dpopKey): void
     {
         $this->openIdDiscoveryService->cacheOpenIdDiscovery();
-        $tokenResponseDto = $this->getSingPassTokenService->getToken($code, $codeVerifier, $state);
+        $tokenResponseDto = $this->getSingPassTokenService->getToken($code, $codeVerifier, $state, $dpopKey);
 
-        // Check if MyInfo data should be retrieved
         if ($tokenResponseDto->hasAccessToken() && $tokenResponseDto->accessToken !== null
             && $this->getUserInfoService->shouldCallUserInfo($tokenResponseDto->accessToken)) {
-            // Retrieve MyInfo data and emit MyInfo event
-            $myInfoData = $this->getUserInfoService->getUserInfo($tokenResponseDto->accessToken);
+            $myInfoData = $this->getUserInfoService->getUserInfo($tokenResponseDto->accessToken, $dpopKey);
 
             if ($myInfoData) {
                 event(new MyInfoDataRetrievedEvent($myInfoData, $state));
             }
         } else {
-            // Authentication only - emit login event
             $jwtToken = $this->singPassJwtService->jweDecrypt($tokenResponseDto->idToken);
             $jwksKeyset = $this->getSingPassJwksService->getSingPassJwks();
             $payload = $this->singPassJwtService->jwtDecode($jwtToken, $jwksKeyset);
@@ -54,25 +51,22 @@ readonly class SingPassLogin implements SingPassLoginInterface
      */
     private function getSingPassUser(array $payload): SingPassUser
     {
-        // Get NRIC and UUID
-        $sub = $payload['sub'];
+        $sub = $payload['sub'] ?? '';
         if ($sub === '') {
             throw new JwtPayloadException(400, 'Sub is empty');
         }
 
-        $subParts = explode(',', $sub);
+        $uuid = $sub;
+        $subAttributes = $payload['sub_attributes'] ?? [];
 
-        try {
-            $nric = substr($subParts[0], 2);
-            $uuid = substr($subParts[1], 2);
-        } catch (Exception) {
-            throw new JwtPayloadException(400, 'Cannot get IC and UUID');
-        }
-
-        if ($nric === '' || $uuid === '') {
-            throw new JwtPayloadException(400, 'NRIC or UUID is empty');
-        }
-
-        return new SingPassUser($uuid, $nric);
+        return new SingPassUser(
+            uuid: $uuid,
+            nric: $subAttributes['identity_number'] ?? null,
+            accountType: $subAttributes['account_type'] ?? null,
+            identityCoi: $subAttributes['identity_coi'] ?? null,
+            name: $subAttributes['name'] ?? null,
+            email: $subAttributes['email'] ?? null,
+            mobileNo: $subAttributes['mobileno'] ?? null,
+        );
     }
 }

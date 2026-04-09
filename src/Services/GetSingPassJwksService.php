@@ -2,6 +2,7 @@
 
 namespace Accredifysg\SingPassLogin\Services;
 
+use Accredifysg\SingPassLogin\DTOs\OpenIdConfigurationDto;
 use Accredifysg\SingPassLogin\Exceptions\SingPassJwksException;
 use Accredifysg\SingPassLogin\Interfaces\GetSingPassJwksServiceInterface;
 use Exception;
@@ -19,7 +20,9 @@ final class GetSingPassJwksService implements GetSingPassJwksServiceInterface
     public function getSingPassJwks(): JWKSet
     {
         try {
-            $response = Http::get(Cache::get('openId')->jwks_uri)->throwUnlessStatus(200)->body();
+            /** @var OpenIdConfigurationDto $openIdConfig */
+            $openIdConfig = Cache::get('openId');
+            $response = Http::get($openIdConfig->jwksUri)->throwUnlessStatus(200)->body();
 
             return JWKSet::createFromJson($response);
         } catch (Exception) {

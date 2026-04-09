@@ -15,13 +15,22 @@ use Accredifysg\SingPassLogin\SingPassLogin;
 use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Support\Facades\Event;
+use Jose\Component\Core\JWK;
 use Jose\Component\Core\JWKSet;
+use Jose\Component\KeyManagement\JWKFactory;
 
 class SingPassLoginTest extends TestCase
 {
+    private JWK $dpopKey;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->dpopKey = JWKFactory::createECKey('P-256');
+    }
+
     public function test_handle_callback(): void
     {
-        // Create mock services
         $openIdDiscoveryService = $this->createMock(OpenIdDiscoveryServiceInterface::class);
         $getSingPassTokenService = $this->createMock(GetSingPassTokenServiceInterface::class);
         $singPassJwtService = $this->createMock(SingPassJwtServiceInterface::class);
@@ -42,10 +51,9 @@ class SingPassLoginTest extends TestCase
 
         $tokenResponseDto = new TokenResponseDto('jwe_token');
 
-        // Set expectations on mock services
         $openIdDiscoveryService->expects($this->once())->method('cacheOpenIdDiscovery');
         $getSingPassTokenService->expects($this->once())->method('getToken')
-            ->with('test_code', 'test-code-verifier', 'test-state')
+            ->with('test_code', 'test-code-verifier', 'test-state', $this->dpopKey)
             ->willReturn($tokenResponseDto);
         $singPassJwtService->expects($this->once())->method('jweDecrypt')
             ->with('jwe_token')
@@ -54,14 +62,18 @@ class SingPassLoginTest extends TestCase
             ->willReturn($jwks);
         $singPassJwtService->expects($this->once())->method('jwtDecode')
             ->with('jwt_token', $jwks)
-            ->willReturn(['sub' => 's=S8829314B,u=1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9']);
-        $singPassJwtService->expects($this->once())->method('verifyPayload')
-            ->with(['sub' => 's=S8829314B,u=1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9']);
+            ->willReturn([
+                'sub' => '1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9',
+                'sub_attributes' => [
+                    'identity_number' => 'S8829314B',
+                    'account_type' => 'standard',
+                    'identity_coi' => 'SG',
+                ],
+            ]);
+        $singPassJwtService->expects($this->once())->method('verifyPayload');
 
-        // Spy on the event
         Event::fake();
 
-        // Create an instance of SingPassLogin
         $singPassLogin = new SingPassLogin(
             $openIdDiscoveryService,
             $getSingPassTokenService,
@@ -70,10 +82,8 @@ class SingPassLoginTest extends TestCase
             $getUserInfoService
         );
 
-        // Call the method
-        $singPassLogin->handleCallback('test_code', 'test-state', 'test-code-verifier');
+        $singPassLogin->handleCallback('test_code', 'test-state', 'test-code-verifier', $this->dpopKey);
 
-        // Assert that the event was dispatched
         Event::assertDispatched(SingPassSuccessfulLoginEvent::class, function ($event) {
             return $event->getSingPassUser()->getNric() === 'S8829314B';
         });
@@ -81,11 +91,57 @@ class SingPassLoginTest extends TestCase
         Event::assertDispatched(SingPassSuccessfulLoginEvent::class, function ($event) {
             return $event->getSingPassUser()->getUuid() === '1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9';
         });
+
+        Event::assertDispatched(SingPassSuccessfulLoginEvent::class, function ($event) {
+            return $event->getSingPassUser()->getAccountType() === 'standard';
+        });
+    }
+
+    public function test_handle_callback_without_sub_attributes(): void
+    {
+        $openIdDiscoveryService = $this->createMock(OpenIdDiscoveryServiceInterface::class);
+        $getSingPassTokenService = $this->createMock(GetSingPassTokenServiceInterface::class);
+        $singPassJwtService = $this->createMock(SingPassJwtServiceInterface::class);
+        $getSingPassJwksService = $this->createMock(GetSingPassJwksServiceInterface::class);
+        $getUserInfoService = $this->createMock(GetUserInfoServiceInterface::class);
+
+        $jwks = JWKSet::createFromKeyData([
+            'keys' => [['kty' => 'RSA', 'kid' => '1b94c', 'use' => 'sig', 'n' => '...', 'e' => 'AQAB']],
+        ]);
+
+        $tokenResponseDto = new TokenResponseDto('jwe_token');
+
+        $openIdDiscoveryService->expects($this->once())->method('cacheOpenIdDiscovery');
+        $getSingPassTokenService->expects($this->once())->method('getToken')
+            ->willReturn($tokenResponseDto);
+        $singPassJwtService->expects($this->once())->method('jweDecrypt')
+            ->willReturn('jwt_token');
+        $getSingPassJwksService->expects($this->once())->method('getSingPassJwks')
+            ->willReturn($jwks);
+        $singPassJwtService->expects($this->once())->method('jwtDecode')
+            ->willReturn(['sub' => '1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9']);
+        $singPassJwtService->expects($this->once())->method('verifyPayload');
+
+        Event::fake();
+
+        $singPassLogin = new SingPassLogin(
+            $openIdDiscoveryService,
+            $getSingPassTokenService,
+            $singPassJwtService,
+            $getSingPassJwksService,
+            $getUserInfoService
+        );
+
+        $singPassLogin->handleCallback('test_code', 'test-state', 'test-code-verifier', $this->dpopKey);
+
+        Event::assertDispatched(SingPassSuccessfulLoginEvent::class, function ($event) {
+            return $event->getSingPassUser()->getUuid() === '1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9'
+                && $event->getSingPassUser()->getNric() === null;
+        });
     }
 
     public function test_handle_callback_with_myinfo_data(): void
     {
-        // Create mock services
         $openIdDiscoveryService = $this->createMock(OpenIdDiscoveryServiceInterface::class);
         $getSingPassTokenService = $this->createMock(GetSingPassTokenServiceInterface::class);
         $singPassJwtService = $this->createMock(SingPassJwtServiceInterface::class);
@@ -94,17 +150,15 @@ class SingPassLoginTest extends TestCase
 
         $tokenResponseDto = new TokenResponseDto('jwe_token', 'access_token_value');
         $myInfoData = [
-            'sub' => 's=S8829314B,u=1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9',
+            'uinfin' => ['value' => 'S8829314B'],
             'name' => ['value' => 'John Doe'],
             'email' => ['value' => 'john@example.com'],
         ];
 
-        // Set expectations on mock services
         $openIdDiscoveryService->expects($this->once())->method('cacheOpenIdDiscovery');
         $getSingPassTokenService->expects($this->once())->method('getToken')
-            ->with('test_code', 'test-code-verifier', 'test-state')
+            ->with('test_code', 'test-code-verifier', 'test-state', $this->dpopKey)
             ->willReturn($tokenResponseDto);
-        // Note: JWT decryption/decoding is NOT called for MyInfo flow (it's in the else block)
         $singPassJwtService->expects($this->never())->method('jweDecrypt');
         $getSingPassJwksService->expects($this->never())->method('getSingPassJwks');
         $singPassJwtService->expects($this->never())->method('jwtDecode');
@@ -113,13 +167,11 @@ class SingPassLoginTest extends TestCase
             ->with('access_token_value')
             ->willReturn(true);
         $getUserInfoService->expects($this->once())->method('getUserInfo')
-            ->with('access_token_value')
+            ->with('access_token_value', $this->dpopKey)
             ->willReturn($myInfoData);
 
-        // Spy on the event
         Event::fake();
 
-        // Create an instance of SingPassLogin
         $singPassLogin = new SingPassLogin(
             $openIdDiscoveryService,
             $getSingPassTokenService,
@@ -128,33 +180,27 @@ class SingPassLoginTest extends TestCase
             $getUserInfoService
         );
 
-        // Call the method
-        $singPassLogin->handleCallback('test_code', 'test-state', 'test-code-verifier');
+        $singPassLogin->handleCallback('test_code', 'test-state', 'test-code-verifier', $this->dpopKey);
 
-        // Assert that MyInfoDataRetrievedEvent was dispatched
         Event::assertDispatched(MyInfoDataRetrievedEvent::class, function ($event) use ($myInfoData) {
             return $event->getMyInfoData() === $myInfoData
                 && $event->getState() === 'test-state';
         });
 
-        // Assert that SingPassSuccessfulLoginEvent was NOT dispatched
         Event::assertNotDispatched(SingPassSuccessfulLoginEvent::class);
     }
 
     public function test_handle_callback_with_exception(): void
     {
-        // Create mock services
         $openIdDiscoveryService = $this->createMock(OpenIdDiscoveryServiceInterface::class);
         $getSingPassTokenService = $this->createMock(GetSingPassTokenServiceInterface::class);
         $singPassJwtService = $this->createMock(SingPassJwtServiceInterface::class);
         $getSingPassJwksService = $this->createMock(GetSingPassJwksServiceInterface::class);
         $getUserInfoService = $this->createMock(GetUserInfoServiceInterface::class);
 
-        // Set expectation to throw an exception
         $openIdDiscoveryService->expects($this->once())->method('cacheOpenIdDiscovery')
             ->willThrowException(new OpenIdDiscoveryException);
 
-        // Create an instance of SingPassLogin
         $singPassLogin = new SingPassLogin(
             $openIdDiscoveryService,
             $getSingPassTokenService,
@@ -163,12 +209,10 @@ class SingPassLoginTest extends TestCase
             $getUserInfoService
         );
 
-        // Expect an exception
         $this->expectException(OpenIdDiscoveryException::class);
         $this->expectExceptionMessage('Open ID Discovery call failed');
 
-        // Call the method
-        $singPassLogin->handleCallback('test-code', 'test-state', 'test-code-verifier');
+        $singPassLogin->handleCallback('test-code', 'test-state', 'test-code-verifier', $this->dpopKey);
     }
 
     protected function getPackageProviders($app): array

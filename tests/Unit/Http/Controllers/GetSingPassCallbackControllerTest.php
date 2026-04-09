@@ -4,6 +4,7 @@ namespace Accredifysg\SingPassLogin\Tests\Unit\Http\Controllers;
 
 use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
 use Accredifysg\SingPassLogin\Http\Controllers\GetSingPassCallbackController;
+use Accredifysg\SingPassLogin\Interfaces\DPoPServiceInterface;
 use Accredifysg\SingPassLogin\SingPassLogin;
 use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
 use Accredifysg\SingPassLogin\Tests\TestCase;
@@ -11,33 +12,50 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Route;
+use Jose\Component\Core\JWK;
+use Jose\Component\KeyManagement\JWKFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 
 class GetSingPassCallbackControllerTest extends TestCase
 {
+    private JWK $dpopKey;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->dpopKey = JWKFactory::createECKey('P-256');
+    }
+
     public function test_invoke_calls_handle_callback_and_redirects(): void
     {
-        // Create a mock of SingPassLogin using PHPUnit's mocking
         /** @var MockObject&SingPassLogin $singPassLoginMock */
         $singPassLoginMock = $this->createMock(SingPassLogin::class);
         $singPassLoginMock->expects($this->once())
             ->method('handleCallback')
-            ->with('test-code', 'test-state', 'test-code-verifier');
+            ->with('test-code', 'test-state', 'test-code-verifier', $this->dpopKey);
 
-        // Mock the redirect response
+        /** @var MockObject&DPoPServiceInterface $dpopServiceMock */
+        $dpopServiceMock = $this->createMock(DPoPServiceInterface::class);
+        $dpopServiceMock->expects($this->once())
+            ->method('retrieveKeyForState')
+            ->with('test-state')
+            ->willReturn($this->dpopKey);
+        $dpopServiceMock->expects($this->once())
+            ->method('clearKeyForState')
+            ->with('test-state');
+
         $redirectMock = $this->createMock(RedirectResponse::class);
         Redirect::shouldReceive('intended')->once()->andReturn($redirectMock);
 
-        // Create an instance of the controller
         $controller = new GetSingPassCallbackController;
 
-        // Create the request
-        $request = new Request(['code' => 'test-code', 'state' => 'test-state'], [], [], ['code_verifier' => 'test-code-verifier']);
+        $request = new Request(['code' => 'test-code', 'state' => 'test-state']);
 
-        // Call the __invoke method
-        $response = $controller->__invoke($request, $singPassLoginMock);
+        // Store code verifier in session
+        session()->put('code_verifier_test-state', 'test-code-verifier');
 
-        // Assert that the response is a RedirectResponse
+        $response = $controller->__invoke($request, $singPassLoginMock, $dpopServiceMock);
+
         $this->assertInstanceOf(RedirectResponse::class, $response);
     }
 
@@ -45,30 +63,28 @@ class GetSingPassCallbackControllerTest extends TestCase
     {
         Route::get('/login')->name('login');
 
-        // Mock the SingPassLogin class
         $singPassLoginMock = $this->createMock(SingPassLogin::class);
-
         $singPassLoginMock->expects($this->once())
             ->method('handleCallback')
-            ->with('test-code', 'test-state', 'test-code-verifier')
             ->willThrowException(new SingPassLoginException);
 
-        // Create an instance of the controller
+        /** @var MockObject&DPoPServiceInterface $dpopServiceMock */
+        $dpopServiceMock = $this->createMock(DPoPServiceInterface::class);
+        $dpopServiceMock->expects($this->once())
+            ->method('retrieveKeyForState')
+            ->with('test-state')
+            ->willReturn($this->dpopKey);
+
         $controller = new GetSingPassCallbackController;
 
-        // Create the request
-        $request = new Request(['code' => 'test-code', 'state' => 'test-state'], [], [], ['code_verifier' => 'test-code-verifier']);
+        $request = new Request(['code' => 'test-code', 'state' => 'test-state']);
+        session()->put('code_verifier_test-state', 'test-code-verifier');
 
-        // Call the method and capture the response
-        $response = $controller->__invoke($request, $singPassLoginMock);
+        $response = $controller->__invoke($request, $singPassLoginMock, $dpopServiceMock);
 
-        // Assert that the response is a redirect
         $this->assertInstanceOf(RedirectResponse::class, $response);
-
-        // Assert that it redirects back
         $this->assertEquals(route('login'), $response->getTargetUrl());
 
-        // Assert that the session contains the expected error message
         $this->assertEquals([
             'singpass' => [
                 [
@@ -83,27 +99,23 @@ class GetSingPassCallbackControllerTest extends TestCase
     {
         Route::get('/login')->name('login');
 
-        // Create an instance of the controller
         $controller = new GetSingPassCallbackController;
 
         // Create the request with missing parameters
-        $request = new Request([], [], [], []); // Empty request with no parameters
+        $request = new Request([], [], [], []);
 
-        // Create a mock of SingPassLogin (though it shouldn't be called)
         /** @var MockObject&SingPassLogin $singPassLoginMock */
         $singPassLoginMock = $this->createMock(SingPassLogin::class);
         $singPassLoginMock->expects($this->never())->method('handleCallback');
 
-        // Call the method and capture the response
-        $response = $controller->__invoke($request, $singPassLoginMock);
+        /** @var MockObject&DPoPServiceInterface $dpopServiceMock */
+        $dpopServiceMock = $this->createMock(DPoPServiceInterface::class);
 
-        // Assert that the response is a redirect
+        $response = $controller->__invoke($request, $singPassLoginMock, $dpopServiceMock);
+
         $this->assertInstanceOf(RedirectResponse::class, $response);
-
-        // Assert that it redirects to login
         $this->assertEquals(route('login'), $response->getTargetUrl());
 
-        // Assert that the session contains the expected error message
         $this->assertEquals([
             'singpass' => [
                 [
@@ -112,6 +124,60 @@ class GetSingPassCallbackControllerTest extends TestCase
                 ],
             ],
         ], session('errors')->getBag('default')->messages());
+    }
+
+    public function test_authentication_error_response(): void
+    {
+        Route::get('/login')->name('login');
+
+        $controller = new GetSingPassCallbackController;
+
+        $request = new Request([
+            'error' => 'access_denied',
+            'error_description' => 'The user denied the request',
+            'state' => 'test-state',
+        ]);
+
+        /** @var MockObject&SingPassLogin $singPassLoginMock */
+        $singPassLoginMock = $this->createMock(SingPassLogin::class);
+        $singPassLoginMock->expects($this->never())->method('handleCallback');
+
+        /** @var MockObject&DPoPServiceInterface $dpopServiceMock */
+        $dpopServiceMock = $this->createMock(DPoPServiceInterface::class);
+
+        $response = $controller->__invoke($request, $singPassLoginMock, $dpopServiceMock);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertEquals(route('login'), $response->getTargetUrl());
+
+        $errors = session('errors')->getBag('default')->messages();
+        $this->assertEquals('Authentication Error', $errors['singpass'][0]['title']);
+        $this->assertStringContainsString('The user denied the request', $errors['singpass'][0]['description']);
+    }
+
+    public function test_missing_dpop_key_in_session_throws_exception(): void
+    {
+        Route::get('/login')->name('login');
+
+        $controller = new GetSingPassCallbackController;
+
+        $request = new Request(['code' => 'test-code', 'state' => 'test-state']);
+
+        /** @var MockObject&SingPassLogin $singPassLoginMock */
+        $singPassLoginMock = $this->createMock(SingPassLogin::class);
+        $singPassLoginMock->expects($this->never())->method('handleCallback');
+
+        /** @var MockObject&DPoPServiceInterface $dpopServiceMock */
+        $dpopServiceMock = $this->createMock(DPoPServiceInterface::class);
+        $dpopServiceMock->expects($this->once())
+            ->method('retrieveKeyForState')
+            ->with('test-state')
+            ->willReturn(null);
+
+        $response = $controller->__invoke($request, $singPassLoginMock, $dpopServiceMock);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertEquals(route('login'), $response->getTargetUrl());
     }
 
     protected function getPackageProviders($app): array

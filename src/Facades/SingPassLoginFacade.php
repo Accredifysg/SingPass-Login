@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Facade;
 /**
  * @see SingPassLogin
  *
- * @method static void handleCallback(string $code, string $state, string $codeVerifier)
+ * @method static void handleCallback(string $code, string $state, string $codeVerifier, \Jose\Component\Core\JWK $dpopKey)
  */
 class SingPassLoginFacade extends Facade
 {

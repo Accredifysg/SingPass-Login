@@ -2,9 +2,13 @@
 
 namespace Accredifysg\SingPassLogin\Http\Controllers;
 
+use Accredifysg\SingPassLogin\DTOs\OpenIdConfigurationDto;
+use Accredifysg\SingPassLogin\Interfaces\DPoPServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\PushedAuthorizationRequestServiceInterface;
 use Accredifysg\SingPassLogin\Services\CodeChallengeVerifierService;
 use Accredifysg\SingPassLogin\Services\OpenIdDiscoveryService;
 use Accredifysg\SingPassLogin\Services\ScopeValidationService;
+use Accredifysg\SingPassLogin\Services\SingPassJwtService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -20,18 +24,21 @@ class GetAuthenticationEndpointController extends Controller
         Request $request,
         ScopeValidationService $scopeService,
         CodeChallengeVerifierService $codeChallengeService,
-        OpenIdDiscoveryService $discoveryService
+        OpenIdDiscoveryService $discoveryService,
+        DPoPServiceInterface $dpopService,
+        PushedAuthorizationRequestServiceInterface $parService,
     ): JsonResponse {
         $discoveryService->cacheOpenIdDiscovery();
-        $responseType = 'code';
 
         // Parse, validate, and normalize scopes
         $requestedScopes = $request->query('scopes', 'openid') ?? 'openid';
         $validatedScopes = $scopeService->parseAndValidate($requestedScopes);
         $scope = $scopeService->formatForOAuth($validatedScopes);
 
-        // Determine which client ID to use based on scopes
-        if ($scope === 'openid') {
+        // Determine whether any MyInfo scopes are present (requires UserInfo endpoint)
+        $isMyInfo = $scopeService->hasMyInfoScopes($validatedScopes);
+
+        if (! $isMyInfo) {
             $redirectUri = config('singpass-login.redirect_uri');
             $clientID = config('singpass-login.client_id');
             $statePrefix = $request->query('state', 'LOGIN-');
@@ -43,17 +50,71 @@ class GetAuthenticationEndpointController extends Controller
             $state = (is_string($statePrefix) ? $statePrefix : 'MYINFO-').Str::uuid();
         }
 
-        $singPassAuthenticationEndpoint = Cache::get('openId')->authorization_endpoint;
         $nonce = Str::uuid();
 
         // PKCE
-        $codeChallengeMethod = 'S256';
         $codeVerifier = $codeChallengeService->generateCodeVerifier();
         $codeChallenge = $codeChallengeService->generateCodeChallenge($codeVerifier);
 
-        $singPassQuery = "redirect_uri=$redirectUri&response_type=$responseType&state=$state&scope=$scope&client_id=$clientID&nonce=$nonce&code_challenge_method=$codeChallengeMethod&code_challenge=$codeChallenge";
-        $redirectUrl = "{$singPassAuthenticationEndpoint}?{$singPassQuery}";
+        // DPoP - generate ephemeral key pair
+        $dpopKey = $dpopService->generateKeyPair();
 
-        return response()->json(['redirect_url' => $redirectUrl])->cookie('code_verifier', $codeVerifier);
+        /** @var OpenIdConfigurationDto $openIdConfig */
+        $openIdConfig = Cache::get('openId');
+        $parEndpoint = $openIdConfig->pushedAuthorizationRequestEndpoint;
+
+        // Generate DPoP proof JWT for the PAR endpoint
+        $dpopProofJwt = $dpopService->generateProofJwt($dpopKey, 'POST', $parEndpoint);
+
+        // Generate client assertion
+        $jwk = SingPassJwtService::getSigningJwk();
+        $clientAssertion = SingPassJwtService::generateClientAssertion($jwk, $clientID);
+
+        // Build PAR request parameters
+        $parParams = [
+            'response_type' => 'code',
+            'scope' => $scope,
+            'state' => $state,
+            'nonce' => $nonce,
+            'client_id' => $clientID,
+            'redirect_uri' => $redirectUri,
+            'code_challenge' => $codeChallenge,
+            'code_challenge_method' => 'S256',
+            'client_assertion_type' => 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+            'client_assertion' => $clientAssertion,
+        ];
+
+        // Add authentication_context_type for Login apps
+        if (! $isMyInfo) {
+            $authContextType = $request->query('authentication_context_type')
+                ?? config('singpass-login.authentication_context_type');
+
+            if ($authContextType !== null) {
+                $parParams['authentication_context_type'] = $authContextType;
+            }
+
+            $authContextMessage = $request->query('authentication_context_message')
+                ?? config('singpass-login.authentication_context_message');
+
+            if ($authContextMessage !== null) {
+                $parParams['authentication_context_message'] = $authContextMessage;
+            }
+        }
+
+        // Send PAR and get request_uri
+        $requestUri = $parService->sendRequest($parParams, $dpopProofJwt);
+
+        // Store DPoP key and code verifier in session keyed by state
+        $dpopService->storeKeyForState($state, $dpopKey);
+        session()->put("code_verifier_{$state}", $codeVerifier);
+
+        // Build redirect URL with only client_id and request_uri
+        $authorizationEndpoint = $openIdConfig->authorizationEndpoint;
+        $redirectUrl = $authorizationEndpoint.'?'.http_build_query([
+            'client_id' => $clientID,
+            'request_uri' => $requestUri,
+        ]);
+
+        return response()->json(['redirect_url' => $redirectUrl]);
     }
 }

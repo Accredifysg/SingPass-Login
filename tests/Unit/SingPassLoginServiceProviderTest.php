@@ -68,6 +68,10 @@ class SingPassLoginServiceProviderTest extends TestCase
         $this->assertArrayHasKey('listener_class', config('singpass-login'));
         $this->assertArrayHasKey('myinfo_client_id', config('singpass-login'));
         $this->assertArrayHasKey('myinfo_redirect_uri', config('singpass-login'));
+        $this->assertArrayHasKey('dpop_signing_algorithm', config('singpass-login'));
+        $this->assertArrayHasKey('authentication_context_type', config('singpass-login'));
+        $this->assertArrayHasKey('authentication_context_message', config('singpass-login'));
+        $this->assertArrayHasKey('login_scopes', config('singpass-login'));
     }
 
     protected function setUp(): void

@@ -22,7 +22,6 @@ class GetSingPassUserTest extends TestCase
     {
         parent::setUp();
 
-        // Create mock services
         /** @var OpenIdDiscoveryServiceInterface $openIdDiscoveryService */
         $openIdDiscoveryService = Mockery::mock(OpenIdDiscoveryServiceInterface::class);
         /** @var GetSingPassTokenServiceInterface $getSingPassTokenService */
@@ -34,7 +33,6 @@ class GetSingPassUserTest extends TestCase
         /** @var GetUserInfoServiceInterface $getUserInfoService */
         $getUserInfoService = Mockery::mock(GetUserInfoServiceInterface::class);
 
-        // Initialize your class here if needed
         $this->singPassLogin = new SingPassLogin($openIdDiscoveryService, $getSingPassTokenService, $singPassJwtService, $getSingPassJwksService, $getUserInfoService);
     }
 
@@ -48,66 +46,94 @@ class GetSingPassUserTest extends TestCase
         return $reflection->invokeArgs($object, $parameters);
     }
 
-    public function test_get_sing_pass_user_success(): void
+    public function test_get_sing_pass_user_with_sub_attributes(): void
     {
-        // Create a mock payload
         $payload = [
-            'sub' => 's=S8829314B,u=1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9',
+            'sub' => '1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9',
+            'sub_attributes' => [
+                'identity_number' => 'S8829314B',
+                'account_type' => 'standard',
+                'identity_coi' => 'SG',
+                'name' => 'John Doe',
+                'email' => 'john@example.com',
+                'mobileno' => '91234567',
+            ],
         ];
 
-        // Call the private method using reflection
         $singPassUser = $this->callPrivateMethod($this->singPassLogin, 'getSingPassUser', [$payload]);
 
-        // Assert the method returns a SingPassUser object
         $this->assertInstanceOf(SingPassUser::class, $singPassUser);
-
-        // Assert the SingPassUser object contains the expected values
-        $this->assertEquals('S8829314B', $singPassUser->getNric());
         $this->assertEquals('1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9', $singPassUser->getUuid());
+        $this->assertEquals('S8829314B', $singPassUser->getNric());
+        $this->assertEquals('standard', $singPassUser->getAccountType());
+        $this->assertEquals('SG', $singPassUser->getIdentityCoi());
+        $this->assertEquals('John Doe', $singPassUser->getName());
+        $this->assertEquals('john@example.com', $singPassUser->getEmail());
+        $this->assertEquals('91234567', $singPassUser->getMobileNo());
     }
 
-    public function test_get_sing_pass_user_invalid_payload(): void
+    public function test_get_sing_pass_user_uuid_only(): void
     {
-        // Create a mock payload with missing NRIC and UUID
         $payload = [
-            'sub' => 'S1234567A,',
+            'sub' => '1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9',
         ];
 
-        // Expect the JwtPayloadException to be thrown
-        $this->expectException(JwtPayloadException::class);
-        $this->expectExceptionMessage('NRIC or UUID is empty');
+        $singPassUser = $this->callPrivateMethod($this->singPassLogin, 'getSingPassUser', [$payload]);
 
-        // Call the private method using reflection
-        $this->callPrivateMethod($this->singPassLogin, 'getSingPassUser', [$payload]);
+        $this->assertInstanceOf(SingPassUser::class, $singPassUser);
+        $this->assertEquals('1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9', $singPassUser->getUuid());
+        $this->assertNull($singPassUser->getNric());
+        $this->assertNull($singPassUser->getAccountType());
+        $this->assertNull($singPassUser->getIdentityCoi());
+        $this->assertNull($singPassUser->getName());
+        $this->assertNull($singPassUser->getEmail());
+        $this->assertNull($singPassUser->getMobileNo());
+    }
+
+    public function test_get_sing_pass_user_foreign_account(): void
+    {
+        $payload = [
+            'sub' => '7c9c72ec-5be2-495a-a78e-61e809a2a236',
+            'sub_attributes' => [
+                'identity_number' => 'K28394589',
+                'account_type' => 'foreign',
+                'identity_coi' => 'TK',
+                'name' => 'Larry Doe',
+                'email' => 'larrydoe@gmail.com',
+            ],
+        ];
+
+        $singPassUser = $this->callPrivateMethod($this->singPassLogin, 'getSingPassUser', [$payload]);
+
+        $this->assertInstanceOf(SingPassUser::class, $singPassUser);
+        $this->assertEquals('7c9c72ec-5be2-495a-a78e-61e809a2a236', $singPassUser->getUuid());
+        $this->assertEquals('K28394589', $singPassUser->getNric());
+        $this->assertEquals('foreign', $singPassUser->getAccountType());
+        $this->assertEquals('TK', $singPassUser->getIdentityCoi());
+        $this->assertEquals('Larry Doe', $singPassUser->getName());
+        $this->assertEquals('larrydoe@gmail.com', $singPassUser->getEmail());
+        $this->assertNull($singPassUser->getMobileNo());
     }
 
     public function test_get_sing_pass_user_empty_sub(): void
     {
-        // Create a mock payload with empty sub
         $payload = [
             'sub' => '',
         ];
 
-        // Expect the JwtPayloadException to be thrown
         $this->expectException(JwtPayloadException::class);
         $this->expectExceptionMessage('Sub is empty');
 
-        // Call the private method using reflection
         $this->callPrivateMethod($this->singPassLogin, 'getSingPassUser', [$payload]);
     }
 
-    public function test_get_sing_pass_user_invalid_sub_format(): void
+    public function test_get_sing_pass_user_missing_sub(): void
     {
-        // Create a mock payload with invalid sub format
-        $payload = [
-            'sub' => 'invalidformat',
-        ];
+        $payload = [];
 
-        // Expect the JwtPayloadException to be thrown
         $this->expectException(JwtPayloadException::class);
-        $this->expectExceptionMessage('Cannot get IC and UUID');
+        $this->expectExceptionMessage('Sub is empty');
 
-        // Call the private method using reflection
         $this->callPrivateMethod($this->singPassLogin, 'getSingPassUser', [$payload]);
     }
 }

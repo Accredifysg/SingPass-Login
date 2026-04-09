@@ -2,6 +2,7 @@
 
 namespace Accredifysg\SingPassLogin\Services;
 
+use Accredifysg\SingPassLogin\DTOs\OpenIdConfigurationDto;
 use Accredifysg\SingPassLogin\Exceptions\JweDecryptionFailedException;
 use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
 use Accredifysg\SingPassLogin\Exceptions\JwtDecodeFailedException;
@@ -9,6 +10,7 @@ use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
 use Exception;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Jose\Component\Checker\AlgorithmChecker;
 use Jose\Component\Checker\AudienceChecker;
@@ -71,9 +73,9 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
     }
 
     /**
-     * Generate the client assertion needed to retrieve a token to use for subsequent calls
+     * Generate the client assertion needed to authenticate with the SingPass API
      */
-    public static function generateClientAssertion(JWK $jwk, string $code, string $clientId): string
+    public static function generateClientAssertion(JWK $jwk, string $clientId): string
     {
         $algorithmManager = new AlgorithmManager([
             new ES512,
@@ -81,13 +83,16 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
 
         $jwsBuilder = new JWSBuilder($algorithmManager);
 
+        /** @var OpenIdConfigurationDto $openIdConfig */
+        $openIdConfig = Cache::get('openId');
+
         $payload = json_encode([
             'sub' => $clientId,
-            'aud' => Cache::get('openId')->issuer,
+            'aud' => $openIdConfig->issuer,
             'iss' => $clientId,
             'iat' => time(),
             'exp' => time() + 119,
-            'code' => $code,
+            'jti' => Str::uuid(),
         ]);
 
         if ($payload === false) {

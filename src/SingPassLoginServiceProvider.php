@@ -3,16 +3,20 @@
 namespace Accredifysg\SingPassLogin;
 
 use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
+use Accredifysg\SingPassLogin\Interfaces\DPoPServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\GetSingPassJwksServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\GetSingPassTokenServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\GetUserInfoServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\OpenIdDiscoveryServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\PushedAuthorizationRequestServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\SingPassLoginInterface;
+use Accredifysg\SingPassLogin\Services\DPoPService;
 use Accredifysg\SingPassLogin\Services\GetSingPassJwksService;
 use Accredifysg\SingPassLogin\Services\GetSingPassTokenService;
 use Accredifysg\SingPassLogin\Services\GetUserInfoService;
 use Accredifysg\SingPassLogin\Services\OpenIdDiscoveryService;
+use Accredifysg\SingPassLogin\Services\PushedAuthorizationRequestService;
 use Accredifysg\SingPassLogin\Services\SingPassJwtService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
@@ -56,6 +60,8 @@ class SingPassLoginServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->singleton(DPoPServiceInterface::class, DPoPService::class);
+        $this->app->singleton(PushedAuthorizationRequestServiceInterface::class, PushedAuthorizationRequestService::class);
         $this->app->singleton(GetSingPassJwksServiceInterface::class, GetSingPassJwksService::class);
         $this->app->singleton(GetSingPassTokenServiceInterface::class, GetSingPassTokenService::class);
         $this->app->singleton(OpenIdDiscoveryServiceInterface::class, OpenIdDiscoveryService::class);

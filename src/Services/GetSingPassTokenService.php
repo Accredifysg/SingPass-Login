@@ -2,22 +2,29 @@
 
 namespace Accredifysg\SingPassLogin\Services;
 
+use Accredifysg\SingPassLogin\DTOs\OpenIdConfigurationDto;
 use Accredifysg\SingPassLogin\DTOs\TokenResponseDto;
 use Accredifysg\SingPassLogin\Exceptions\SingPassTokenException;
+use Accredifysg\SingPassLogin\Interfaces\DPoPServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\GetSingPassTokenServiceInterface;
 use Exception;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Jose\Component\Core\JWK;
 
 final class GetSingPassTokenService implements GetSingPassTokenServiceInterface
 {
+    public function __construct(
+        private readonly DPoPServiceInterface $dpopService
+    ) {}
+
     /**
      * Handles the POST Request to SingPass's token endpoint
      *
      * @throws ConnectionException
      */
-    public function getToken(string $code, string $codeVerifier, string $state): TokenResponseDto
+    public function getToken(string $code, string $codeVerifier, string $state, JWK $dpopKey): TokenResponseDto
     {
         if (str_starts_with($state, 'MYINFO-')) {
             $clientId = config('singpass-login.myinfo_client_id');
@@ -31,11 +38,19 @@ final class GetSingPassTokenService implements GetSingPassTokenServiceInterface
         $clientAssertionType = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
 
         $jwk = SingPassJwtService::getSigningJwk();
-        $clientAssertion = SingPassJwtService::generateClientAssertion($jwk, $code, $clientId);
+        $clientAssertion = SingPassJwtService::generateClientAssertion($jwk, $clientId);
+
+        /** @var OpenIdConfigurationDto $openIdConfig */
+        $openIdConfig = Cache::get('openId');
+        $tokenEndpoint = $openIdConfig->tokenEndpoint;
+
+        // Generate DPoP proof JWT for the token endpoint
+        $dpopProofJwt = $this->dpopService->generateProofJwt($dpopKey, 'POST', $tokenEndpoint);
 
         $response = Http::bodyFormat('form_params')
             ->contentType('application/x-www-form-urlencoded; charset=ISO-8859-1')
-            ->post(Cache::get('openId')->token_endpoint, [
+            ->withHeaders(['DPoP' => $dpopProofJwt])
+            ->post($tokenEndpoint, [
                 'client_assertion_type' => $clientAssertionType,
                 'code' => $code,
                 'client_id' => $clientId,

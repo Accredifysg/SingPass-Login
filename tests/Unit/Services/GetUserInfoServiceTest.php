@@ -2,9 +2,11 @@
 
 namespace Accredifysg\SingPassLogin\Tests\Unit\Services;
 
+use Accredifysg\SingPassLogin\DTOs\OpenIdConfigurationDto;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoDecryptionException;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoRequestException;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoVerificationException;
+use Accredifysg\SingPassLogin\Interfaces\DPoPServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\GetSingPassJwksServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
 use Accredifysg\SingPassLogin\Services\GetUserInfoService;
@@ -12,7 +14,9 @@ use Accredifysg\SingPassLogin\Tests\TestCase;
 use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Jose\Component\Core\JWK;
 use Jose\Component\Core\JWKSet;
+use Jose\Component\KeyManagement\JWKFactory;
 use Mockery;
 use Mockery\MockInterface;
 
@@ -22,7 +26,11 @@ class GetUserInfoServiceTest extends TestCase
 
     private GetSingPassJwksServiceInterface&MockInterface $getSingPassJwksServiceMock;
 
+    private DPoPServiceInterface&MockInterface $dpopServiceMock;
+
     private GetUserInfoService $service;
+
+    private JWK $dpopKey;
 
     protected function setUp(): void
     {
@@ -36,15 +44,28 @@ class GetUserInfoServiceTest extends TestCase
         $getSingPassJwksServiceMock = Mockery::mock(GetSingPassJwksServiceInterface::class);
         $this->getSingPassJwksServiceMock = $getSingPassJwksServiceMock;
 
+        /** @var DPoPServiceInterface&MockInterface $dpopServiceMock */
+        $dpopServiceMock = Mockery::mock(DPoPServiceInterface::class);
+        $this->dpopServiceMock = $dpopServiceMock;
+        $this->dpopServiceMock->shouldReceive('computeAccessTokenHash')->andReturn('mock-ath');
+        $this->dpopServiceMock->shouldReceive('generateProofJwt')->andReturn('mock-dpop-proof-jwt');
+
         $this->service = new GetUserInfoService(
             $this->singPassJwtServiceMock,
-            $this->getSingPassJwksServiceMock
+            $this->getSingPassJwksServiceMock,
+            $this->dpopServiceMock
         );
 
-        // Set up the cache with a mock OpenId configuration
-        Cache::put('openId', (object) [
-            'userinfo_endpoint' => 'https://example.com/userinfo',
-        ]);
+        $this->dpopKey = JWKFactory::createECKey('P-256');
+
+        Cache::put('openId', new OpenIdConfigurationDto(
+            issuer: 'https://example.com',
+            authorizationEndpoint: 'https://example.com/auth',
+            tokenEndpoint: 'https://example.com/token',
+            userinfoEndpoint: 'https://example.com/userinfo',
+            jwksUri: 'https://example.com/jwks',
+            pushedAuthorizationRequestEndpoint: 'https://example.com/par',
+        ));
     }
 
     protected function tearDown(): void
@@ -57,7 +78,6 @@ class GetUserInfoServiceTest extends TestCase
 
     public function test_should_call_user_info_returns_false_for_openid_only_scope(): void
     {
-        // Access token with only 'openid' scope
         $accessToken = $this->createAccessTokenWithScopes(['openid']);
 
         $result = $this->service->shouldCallUserInfo($accessToken);
@@ -65,30 +85,45 @@ class GetUserInfoServiceTest extends TestCase
         $this->assertFalse($result);
     }
 
-    public function test_should_call_user_info_returns_true_for_multiple_scopes(): void
+    public function test_should_call_user_info_returns_false_for_login_scopes_only(): void
     {
-        // Access token with 'openid' and other scopes
-        $accessToken = $this->createAccessTokenWithScopes(['openid', 'profile']);
+        $accessToken = $this->createAccessTokenWithScopes(['openid', 'user.identity', 'name', 'email', 'mobileno']);
+
+        $result = $this->service->shouldCallUserInfo($accessToken);
+
+        $this->assertFalse($result);
+    }
+
+    public function test_should_call_user_info_returns_false_for_openid_and_user_identity(): void
+    {
+        $accessToken = $this->createAccessTokenWithScopes(['openid', 'user.identity']);
+
+        $result = $this->service->shouldCallUserInfo($accessToken);
+
+        $this->assertFalse($result);
+    }
+
+    public function test_should_call_user_info_returns_true_for_myinfo_scopes(): void
+    {
+        $accessToken = $this->createAccessTokenWithScopes(['openid', 'uinfin', 'regadd']);
 
         $result = $this->service->shouldCallUserInfo($accessToken);
 
         $this->assertTrue($result);
     }
 
-    public function test_should_call_user_info_returns_true_for_non_openid_scope(): void
+    public function test_should_call_user_info_returns_true_for_mixed_login_and_myinfo_scopes(): void
     {
-        // Access token with only non-openid scope
-        $accessToken = $this->createAccessTokenWithScopes(['profile']);
+        $accessToken = $this->createAccessTokenWithScopes(['openid', 'name', 'uinfin']);
 
         $result = $this->service->shouldCallUserInfo($accessToken);
 
         $this->assertTrue($result);
     }
 
-    public function test_should_call_user_info_returns_true_for_openid_and_email_scopes(): void
+    public function test_should_call_user_info_returns_true_for_single_myinfo_scope(): void
     {
-        // Access token with 'openid' and 'email' scopes
-        $accessToken = $this->createAccessTokenWithScopes(['openid', 'email']);
+        $accessToken = $this->createAccessTokenWithScopes(['uinfin']);
 
         $result = $this->service->shouldCallUserInfo($accessToken);
 
@@ -97,23 +132,19 @@ class GetUserInfoServiceTest extends TestCase
 
     public function test_should_call_user_info_handles_malformed_token(): void
     {
-        // Malformed token (not 3 parts)
         $accessToken = 'invalid.token';
 
         $result = $this->service->shouldCallUserInfo($accessToken);
 
-        // Should default to false (only openid scope)
         $this->assertFalse($result);
     }
 
     public function test_should_call_user_info_handles_token_without_scope(): void
     {
-        // Token without scope claim
         $accessToken = $this->createAccessTokenWithoutScopes();
 
         $result = $this->service->shouldCallUserInfo($accessToken);
 
-        // Should default to false (only openid scope)
         $this->assertFalse($result);
     }
 
@@ -121,162 +152,148 @@ class GetUserInfoServiceTest extends TestCase
 
     public function test_get_user_info_returns_null_when_should_not_call(): void
     {
-        // Access token with only 'openid' scope
         $accessToken = $this->createAccessTokenWithScopes(['openid']);
 
-        $result = $this->service->getUserInfo($accessToken);
+        $result = $this->service->getUserInfo($accessToken, $this->dpopKey);
 
         $this->assertNull($result);
     }
 
-    public function test_get_user_info_throws_exception_when_endpoint_not_in_cache(): void
-    {
-        // Clear cache
-        Cache::forget('openId');
-
-        // Access token with multiple scopes
-        $accessToken = $this->createAccessTokenWithScopes(['openid', 'profile']);
-
-        $this->expectException(UserInfoRequestException::class);
-        $this->expectExceptionMessage('UserInfo endpoint not found in OpenID discovery.');
-
-        $this->service->getUserInfo($accessToken);
-    }
-
-    public function test_get_user_info_throws_exception_when_userinfo_endpoint_missing(): void
-    {
-        // Cache without userinfo_endpoint
-        Cache::put('openId', (object) [
-            'issuer' => 'https://example.com',
-        ]);
-
-        // Access token with multiple scopes
-        $accessToken = $this->createAccessTokenWithScopes(['openid', 'profile']);
-
-        $this->expectException(UserInfoRequestException::class);
-        $this->expectExceptionMessage('UserInfo endpoint not found in OpenID discovery.');
-
-        $this->service->getUserInfo($accessToken);
-    }
-
     public function test_get_user_info_throws_exception_on_http_failure(): void
     {
-        // Mock HTTP response to fail
         Http::fake([
             'https://example.com/userinfo' => Http::response(null, 500),
         ]);
 
-        // Access token with multiple scopes
-        $accessToken = $this->createAccessTokenWithScopes(['openid', 'profile']);
+        $accessToken = $this->createAccessTokenWithScopes(['openid', 'uinfin']);
 
         $this->expectException(UserInfoRequestException::class);
         $this->expectExceptionMessage('UserInfo endpoint request failed with status 500');
 
-        $this->service->getUserInfo($accessToken);
+        $this->service->getUserInfo($accessToken, $this->dpopKey);
     }
 
     public function test_get_user_info_throws_exception_on_decryption_failure(): void
     {
-        // Mock successful HTTP response
         Http::fake([
             'https://example.com/userinfo' => Http::response('encrypted-jwe-token', 200),
         ]);
 
-        // Mock JWE decryption to throw exception
         $this->singPassJwtServiceMock
             ->shouldReceive('jweDecrypt')
             ->once()
             ->with('encrypted-jwe-token')
             ->andThrow(new Exception('Decryption failed'));
 
-        // Access token with multiple scopes
-        $accessToken = $this->createAccessTokenWithScopes(['openid', 'profile']);
+        $accessToken = $this->createAccessTokenWithScopes(['openid', 'uinfin']);
 
         $this->expectException(UserInfoDecryptionException::class);
         $this->expectExceptionMessage('Failed to decrypt UserInfo JWE token: Decryption failed');
 
-        $this->service->getUserInfo($accessToken);
+        $this->service->getUserInfo($accessToken, $this->dpopKey);
     }
 
     public function test_get_user_info_throws_exception_on_verification_failure(): void
     {
-        // Mock successful HTTP response
         Http::fake([
             'https://example.com/userinfo' => Http::response('encrypted-jwe-token', 200),
         ]);
 
-        // Mock successful JWE decryption
         $this->singPassJwtServiceMock
             ->shouldReceive('jweDecrypt')
             ->once()
             ->with('encrypted-jwe-token')
             ->andReturn('decrypted-jwt-token');
 
-        // Mock JWKS retrieval
         $mockJwks = JWKSet::createFromKeyData([
-            'keys' => [
-                [
-                    'kty' => 'RSA',
-                    'kid' => 'test-key',
-                    'use' => 'sig',
-                    'n' => 'xGOr-H7A',
-                    'e' => 'AQAB',
-                ],
-            ],
+            'keys' => [['kty' => 'RSA', 'kid' => 'test-key', 'use' => 'sig', 'n' => 'xGOr-H7A', 'e' => 'AQAB']],
         ]);
         $this->getSingPassJwksServiceMock
             ->shouldReceive('getSingPassJwks')
             ->once()
             ->andReturn($mockJwks);
 
-        // Mock JWT verification to throw exception
         $this->singPassJwtServiceMock
             ->shouldReceive('jwtDecode')
             ->once()
             ->with('decrypted-jwt-token', $mockJwks)
             ->andThrow(new Exception('Verification failed'));
 
-        // Access token with multiple scopes
-        $accessToken = $this->createAccessTokenWithScopes(['openid', 'profile']);
+        $accessToken = $this->createAccessTokenWithScopes(['openid', 'uinfin']);
 
         $this->expectException(UserInfoVerificationException::class);
         $this->expectExceptionMessage('Failed to verify UserInfo JWT token: Verification failed');
 
-        $this->service->getUserInfo($accessToken);
+        $this->service->getUserInfo($accessToken, $this->dpopKey);
     }
 
-    public function test_get_user_info_success(): void
+    public function test_get_user_info_extracts_person_info(): void
     {
-        // Mock successful HTTP response
         Http::fake([
             'https://example.com/userinfo' => Http::response('encrypted-jwe-token', 200),
         ]);
 
-        // Mock successful JWE decryption
         $this->singPassJwtServiceMock
             ->shouldReceive('jweDecrypt')
             ->once()
             ->with('encrypted-jwe-token')
             ->andReturn('decrypted-jwt-token');
 
-        // Mock JWKS retrieval
         $mockJwks = JWKSet::createFromKeyData([
-            'keys' => [
-                [
-                    'kty' => 'RSA',
-                    'kid' => 'test-key',
-                    'use' => 'sig',
-                    'n' => 'xGOr-H7A',
-                    'e' => 'AQAB',
-                ],
-            ],
+            'keys' => [['kty' => 'RSA', 'kid' => 'test-key', 'use' => 'sig', 'n' => 'xGOr-H7A', 'e' => 'AQAB']],
         ]);
         $this->getSingPassJwksServiceMock
             ->shouldReceive('getSingPassJwks')
             ->once()
             ->andReturn($mockJwks);
 
-        // Mock successful JWT verification and decoding
+        $personInfo = [
+            'uinfin' => ['value' => 'S9000001B', 'source' => '1'],
+            'name' => ['value' => 'SOH HAO FENG', 'source' => '1'],
+        ];
+        $fullPayload = [
+            'person_info' => $personInfo,
+            'iss' => 'https://id.singpass.gov.sg/fapi',
+            'sub' => 'd45d8f21-6178-4713-b962-8635ed2a945a',
+            'aud' => 'T5sM5a53Yaw3URyDEv2y9129CbElCN2F',
+            'iat' => 1746678089,
+        ];
+
+        $this->singPassJwtServiceMock
+            ->shouldReceive('jwtDecode')
+            ->once()
+            ->with('decrypted-jwt-token', $mockJwks)
+            ->andReturn($fullPayload);
+
+        $accessToken = $this->createAccessTokenWithScopes(['openid', 'uinfin', 'name']);
+
+        $result = $this->service->getUserInfo($accessToken, $this->dpopKey);
+
+        $this->assertIsArray($result);
+        $this->assertEquals($personInfo, $result);
+        $this->assertEquals('S9000001B', $result['uinfin']['value']);
+        $this->assertEquals('SOH HAO FENG', $result['name']['value']);
+    }
+
+    public function test_get_user_info_falls_back_to_full_payload_without_person_info(): void
+    {
+        Http::fake([
+            'https://example.com/userinfo' => Http::response('encrypted-jwe-token', 200),
+        ]);
+
+        $this->singPassJwtServiceMock
+            ->shouldReceive('jweDecrypt')
+            ->once()
+            ->andReturn('decrypted-jwt-token');
+
+        $mockJwks = JWKSet::createFromKeyData([
+            'keys' => [['kty' => 'RSA', 'kid' => 'test-key', 'use' => 'sig', 'n' => 'xGOr-H7A', 'e' => 'AQAB']],
+        ]);
+        $this->getSingPassJwksServiceMock
+            ->shouldReceive('getSingPassJwks')
+            ->once()
+            ->andReturn($mockJwks);
+
         $expectedPayload = [
             'sub' => '1234567890',
             'name' => 'John Doe',
@@ -285,85 +302,19 @@ class GetUserInfoServiceTest extends TestCase
         $this->singPassJwtServiceMock
             ->shouldReceive('jwtDecode')
             ->once()
-            ->with('decrypted-jwt-token', $mockJwks)
             ->andReturn($expectedPayload);
 
-        // Access token with multiple scopes
-        $accessToken = $this->createAccessTokenWithScopes(['openid', 'profile', 'email']);
+        $accessToken = $this->createAccessTokenWithScopes(['openid', 'uinfin', 'regadd']);
 
-        $result = $this->service->getUserInfo($accessToken);
+        $result = $this->service->getUserInfo($accessToken, $this->dpopKey);
 
         $this->assertIsArray($result);
         $this->assertEquals($expectedPayload, $result);
-        $this->assertEquals('1234567890', $result['sub']);
-        $this->assertEquals('John Doe', $result['name']);
-        $this->assertEquals('john@example.com', $result['email']);
-    }
-
-    public function test_get_user_info_success_with_complex_payload(): void
-    {
-        // Mock successful HTTP response
-        Http::fake([
-            'https://example.com/userinfo' => Http::response('encrypted-jwe-token', 200),
-        ]);
-
-        // Mock successful JWE decryption
-        $this->singPassJwtServiceMock
-            ->shouldReceive('jweDecrypt')
-            ->once()
-            ->andReturn('decrypted-jwt-token');
-
-        // Mock JWKS retrieval
-        $mockJwks = JWKSet::createFromKeyData([
-            'keys' => [
-                [
-                    'kty' => 'RSA',
-                    'kid' => 'test-key',
-                    'use' => 'sig',
-                    'n' => 'xGOr-H7A',
-                    'e' => 'AQAB',
-                ],
-            ],
-        ]);
-        $this->getSingPassJwksServiceMock
-            ->shouldReceive('getSingPassJwks')
-            ->once()
-            ->andReturn($mockJwks);
-
-        // Mock successful JWT verification with complex payload
-        $expectedPayload = [
-            'sub' => '1234567890',
-            'name' => 'Jane Smith',
-            'email' => 'jane@example.com',
-            'birthdate' => '1990-01-01',
-            'address' => [
-                'street_address' => '123 Main St',
-                'locality' => 'Springfield',
-                'postal_code' => '12345',
-            ],
-        ];
-        $this->singPassJwtServiceMock
-            ->shouldReceive('jwtDecode')
-            ->once()
-            ->andReturn($expectedPayload);
-
-        // Access token with multiple scopes
-        $accessToken = $this->createAccessTokenWithScopes(['openid', 'profile', 'email', 'address']);
-
-        $result = $this->service->getUserInfo($accessToken);
-
-        $this->assertIsArray($result);
-        $this->assertEquals($expectedPayload, $result);
-        $this->assertArrayHasKey('address', $result);
-        $this->assertIsArray($result['address']);
-        $this->assertEquals('Springfield', $result['address']['locality']);
     }
 
     // ========== Helper Methods ==========
 
     /**
-     * Create a mock access token with specified scopes
-     *
      * @param  array<int, string>  $scopes
      */
     private function createAccessTokenWithScopes(array $scopes): string
@@ -383,9 +334,6 @@ class GetUserInfoServiceTest extends TestCase
         return "$header.$payload.$signature";
     }
 
-    /**
-     * Create a mock access token without scope claim
-     */
     private function createAccessTokenWithoutScopes(): string
     {
         $headerJson = json_encode(['alg' => 'RS256', 'typ' => 'JWT']);

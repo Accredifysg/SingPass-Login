@@ -2,6 +2,7 @@
 
 namespace Accredifysg\SingPassLogin\Tests\Unit\Services;
 
+use Accredifysg\SingPassLogin\DTOs\OpenIdConfigurationDto;
 use Accredifysg\SingPassLogin\Exceptions\SingPassJwksException;
 use Accredifysg\SingPassLogin\Services\GetSingPassJwksService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
@@ -15,9 +16,14 @@ class GetSingPassJwksServiceTest extends TestCase
     {
         parent::setUp();
         // Set up the cache with a mock OpenId configuration
-        Cache::put('openId', (object) [
-            'jwks_uri' => 'https://example.com/jwks',
-        ]);
+        Cache::put('openId', new OpenIdConfigurationDto(
+            issuer: 'https://example.com',
+            authorizationEndpoint: 'https://example.com/auth',
+            tokenEndpoint: 'https://example.com/token',
+            userinfoEndpoint: 'https://example.com/userinfo',
+            jwksUri: 'https://example.com/jwks',
+            pushedAuthorizationRequestEndpoint: 'https://example.com/par',
+        ));
     }
 
     public function test_get_sing_pass_jwks_success(): void

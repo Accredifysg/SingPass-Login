@@ -84,6 +84,42 @@ class ScopeValidationService
     }
 
     /**
+     * Determine whether the given scopes contain any MyInfo scopes
+     * (i.e. scopes that require a UserInfo endpoint call).
+     *
+     * @param  array<int, string>  $scopes
+     */
+    public function hasMyInfoScopes(array $scopes): bool
+    {
+        $loginScopes = $this->getLoginScopes();
+
+        foreach ($scopes as $scope) {
+            if (! in_array($scope, $loginScopes)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get login scopes from configuration.
+     * These scopes are returned in the ID token and do not require UserInfo.
+     *
+     * @return array<int, string>
+     */
+    private function getLoginScopes(): array
+    {
+        return config('singpass-login.login_scopes', [
+            'openid',
+            'user.identity',
+            'name',
+            'email',
+            'mobileno',
+        ]);
+    }
+
+    /**
      * Get available scopes from configuration
      * Always includes 'openid' scope
      *
