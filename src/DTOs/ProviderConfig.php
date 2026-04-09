@@ -33,6 +33,19 @@ readonly class ProviderConfig
         );
     }
 
+    public static function corpPass(): self
+    {
+        return new self(
+            discoveryEndpoint: config('corppass-login.discovery_endpoint'),
+            clientId: config('corppass-login.client_id'),
+            redirectUri: config('corppass-login.redirect_uri'),
+            domain: config('corppass-login.domain'),
+            cacheKey: 'openId:corppass',
+            availableScopes: config('corppass-login.available_scopes', []),
+            loginScopes: config('corppass-login.login_scopes', []),
+        );
+    }
+
     public static function singPassMyInfo(): self
     {
         return new self(

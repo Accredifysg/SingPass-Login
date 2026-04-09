@@ -2,6 +2,7 @@
 
 namespace Accredifysg\SingPassLogin;
 
+use Accredifysg\SingPassLogin\Events\CorpPassSuccessfulLoginEvent;
 use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
 use Accredifysg\SingPassLogin\Interfaces\DPoPServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\GetUserInfoServiceInterface;
@@ -28,23 +29,31 @@ class SingPassLoginServiceProvider extends ServiceProvider
     {
         $this->publishes([
             __DIR__.'/../config/singpass-login.php' => config_path('singpass-login.php'),
+            __DIR__.'/../config/corppass-login.php' => config_path('corppass-login.php'),
         ], 'config');
 
         $this->publishes([
             __DIR__.'/Listeners/SingPassSuccessfulLoginListener.php' => app_path('Listeners/SingPassSuccessfulLoginListener.php'),
         ], 'listener');
 
-        $this->registerEventListener();
+        $this->registerEventListeners();
 
         $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
     }
 
-    protected function registerEventListener(): void
+    protected function registerEventListeners(): void
     {
         if (config('singpass-login.use_default_listener')) {
             Event::listen(
                 SingPassSuccessfulLoginEvent::class,
                 config('singpass-login.listener_class')
+            );
+        }
+
+        if (config('corppass-login.use_default_listener') && config('corppass-login.listener_class')) {
+            Event::listen(
+                CorpPassSuccessfulLoginEvent::class,
+                config('corppass-login.listener_class')
             );
         }
     }
@@ -64,6 +73,11 @@ class SingPassLoginServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(
             __DIR__.'/../config/singpass-login.php',
             'singpass-login'
+        );
+
+        $this->mergeConfigFrom(
+            __DIR__.'/../config/corppass-login.php',
+            'corppass-login'
         );
     }
 }

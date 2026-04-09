@@ -6,6 +6,7 @@ use Accredifysg\SingPassLogin\DTOs\ProviderConfig;
 use Accredifysg\SingPassLogin\Events\MyInfoDataRetrievedEvent;
 use Accredifysg\SingPassLogin\Exceptions\AuthenticationErrorException;
 use Accredifysg\SingPassLogin\Exceptions\AuthFlowException;
+use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
 use Accredifysg\SingPassLogin\Services\FapiCallbackService;
 use Illuminate\Http\RedirectResponse;
@@ -28,6 +29,8 @@ class MyInfoCallbackController extends Controller
             if ($result->userInfoData !== null) {
                 event(new MyInfoDataRetrievedEvent($result->userInfoData, $session->state));
             }
+        } catch (JwtPayloadException) {
+            return (new AuthFlowException(400, 'Invalid identity token payload'))->render();
         } catch (SingPassLoginException|AuthFlowException|AuthenticationErrorException $e) {
             return $e->render();
         } finally {

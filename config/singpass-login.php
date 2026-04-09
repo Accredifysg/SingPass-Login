@@ -25,6 +25,7 @@ return [
 
     // Default routes
     'enable_default_singpass_routes' => env('SINGPASS_USE_DEFAULT_ROUTES', true),
+    'enable_default_myinfo_routes' => env('SINGPASS_USE_DEFAULT_MYINFO_ROUTES', true),
 
     // SingPass Login routes
     'get_authentication_endpoint_url' => env('SINGPASS_AUTHENTICATION_URL', '/ndi/sp/login'),

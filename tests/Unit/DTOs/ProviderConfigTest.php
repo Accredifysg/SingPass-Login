@@ -48,6 +48,26 @@ class ProviderConfigTest extends TestCase
         $this->assertEquals(['openid'], $config->loginScopes);
     }
 
+    public function test_corppass_factory(): void
+    {
+        Config::set('corppass-login.discovery_endpoint', 'https://corppass.example.com/discovery');
+        Config::set('corppass-login.client_id', 'cp-client-id');
+        Config::set('corppass-login.redirect_uri', 'https://example.com/cp-callback');
+        Config::set('corppass-login.domain', 'https://corppass.example.com');
+        Config::set('corppass-login.available_scopes', ['openid', 'entity.identity', 'authinfo']);
+        Config::set('corppass-login.login_scopes', ['openid', 'entity.identity']);
+
+        $config = ProviderConfig::corpPass();
+
+        $this->assertEquals('https://corppass.example.com/discovery', $config->discoveryEndpoint);
+        $this->assertEquals('cp-client-id', $config->clientId);
+        $this->assertEquals('https://example.com/cp-callback', $config->redirectUri);
+        $this->assertEquals('https://corppass.example.com', $config->domain);
+        $this->assertEquals('openId:corppass', $config->cacheKey);
+        $this->assertEquals(['openid', 'entity.identity', 'authinfo'], $config->availableScopes);
+        $this->assertEquals(['openid', 'entity.identity'], $config->loginScopes);
+    }
+
     public function test_manual_construction(): void
     {
         $config = new ProviderConfig(

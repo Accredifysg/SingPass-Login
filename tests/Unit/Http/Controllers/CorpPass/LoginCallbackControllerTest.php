@@ -1,13 +1,15 @@
 <?php
 
-namespace Accredifysg\SingPassLogin\Tests\Unit\Http\Controllers\SingPass;
+namespace Accredifysg\SingPassLogin\Tests\Unit\Http\Controllers\CorpPass;
 
 use Accredifysg\SingPassLogin\DTOs\FapiCallbackResult;
 use Accredifysg\SingPassLogin\DTOs\FapiSessionContext;
-use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
+use Accredifysg\SingPassLogin\Events\CorpPassDataRetrievedEvent;
+use Accredifysg\SingPassLogin\Events\CorpPassSuccessfulLoginEvent;
 use Accredifysg\SingPassLogin\Exceptions\AuthFlowException;
+use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
-use Accredifysg\SingPassLogin\Http\Controllers\SingPass\LoginCallbackController;
+use Accredifysg\SingPassLogin\Http\Controllers\CorpPass\LoginCallbackController;
 use Accredifysg\SingPassLogin\Services\FapiCallbackService;
 use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
 use Accredifysg\SingPassLogin\Tests\TestCase;
@@ -29,10 +31,10 @@ class LoginCallbackControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Config::set('singpass-login.client_id', 'test-client-id');
-        Config::set('singpass-login.redirect_uri', 'https://example.com/callback');
-        Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
-        Config::set('singpass-login.domain', 'https://example.com');
+        Config::set('corppass-login.client_id', 'cp-client-id');
+        Config::set('corppass-login.redirect_uri', 'https://example.com/cp-callback');
+        Config::set('corppass-login.discovery_endpoint', 'https://corppass.example.com/discovery');
+        Config::set('corppass-login.domain', 'https://corppass.example.com');
     }
 
     protected function tearDown(): void
@@ -41,7 +43,7 @@ class LoginCallbackControllerTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_successful_login_fires_event(): void
+    public function test_id_token_path_fires_login_event(): void
     {
         Event::fake();
 
@@ -52,14 +54,18 @@ class LoginCallbackControllerTest extends TestCase
             state: 'test-state',
             codeVerifier: 'test-verifier',
             dpopKey: $dpopKey,
-            clientId: 'test-client-id',
-            redirectUri: 'https://example.com/callback',
+            clientId: 'cp-client-id',
+            redirectUri: 'https://example.com/cp-callback',
         );
 
         $result = new FapiCallbackResult(
             idTokenPayload: [
-                'sub' => 'test-uuid',
-                'sub_attributes' => ['identity_number' => 'S1234567A'],
+                'sub' => '200000001A',
+                'sub_attributes' => ['entity_name' => 'Test Corp'],
+                'act' => [
+                    'sub' => 'actor-uuid',
+                    'sub_attributes' => ['identity_number' => 'S1234567A'],
+                ],
             ],
             userInfoData: null,
         );
@@ -75,10 +81,55 @@ class LoginCallbackControllerTest extends TestCase
         $response = $controller->__invoke($request, $fapiCallbackMock);
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
-        Event::assertDispatched(SingPassSuccessfulLoginEvent::class, function ($event) {
-            return $event->getSingPassUser()->getNric() === 'S1234567A'
+        Event::assertDispatched(CorpPassSuccessfulLoginEvent::class, function ($event) {
+            return $event->getCorpPassUser()->getEntityId() === '200000001A'
+                && $event->getCorpPassUser()->getIdentityNumber() === 'S1234567A'
                 && $event->getState() === 'test-state';
         });
+        Event::assertNotDispatched(CorpPassDataRetrievedEvent::class);
+    }
+
+    public function test_userinfo_path_fires_data_event(): void
+    {
+        Event::fake();
+
+        $dpopKey = JWKFactory::createECKey('P-256');
+
+        $session = new FapiSessionContext(
+            code: 'test-code',
+            state: 'test-state',
+            codeVerifier: 'test-verifier',
+            dpopKey: $dpopKey,
+            clientId: 'cp-client-id',
+            redirectUri: 'https://example.com/cp-callback',
+        );
+
+        $authData = ['auth_info' => ['role' => 'admin']];
+
+        $result = new FapiCallbackResult(
+            idTokenPayload: [
+                'sub' => '200000001A',
+                'act' => ['sub' => 'actor-uuid'],
+            ],
+            userInfoData: $authData,
+        );
+
+        $fapiCallbackMock = Mockery::mock(FapiCallbackService::class);
+        $fapiCallbackMock->shouldReceive('validateAndRetrieveSession')->once()->andReturn($session);
+        $fapiCallbackMock->shouldReceive('processCallback')->once()->andReturn($result);
+        $fapiCallbackMock->shouldReceive('cleanupSession')->once()->with('test-state');
+
+        $controller = new LoginCallbackController;
+        $request = new Request(['code' => 'test-code', 'state' => 'test-state']);
+
+        $response = $controller->__invoke($request, $fapiCallbackMock);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        Event::assertDispatched(CorpPassDataRetrievedEvent::class, function ($event) use ($authData) {
+            return $event->getCorpPassData() === $authData
+                && $event->getState() === 'test-state';
+        });
+        Event::assertDispatched(CorpPassSuccessfulLoginEvent::class);
     }
 
     public function test_auth_flow_exception_renders_redirect(): void
@@ -110,8 +161,8 @@ class LoginCallbackControllerTest extends TestCase
             state: 'test-state',
             codeVerifier: 'test-verifier',
             dpopKey: $dpopKey,
-            clientId: 'test-client-id',
-            redirectUri: 'https://example.com/callback',
+            clientId: 'cp-client-id',
+            redirectUri: 'https://example.com/cp-callback',
         );
 
         $fapiCallbackMock = Mockery::mock(FapiCallbackService::class);
@@ -141,18 +192,15 @@ class LoginCallbackControllerTest extends TestCase
             state: 'test-state',
             codeVerifier: 'test-verifier',
             dpopKey: $dpopKey,
-            clientId: 'test-client-id',
-            redirectUri: 'https://example.com/callback',
-        );
-
-        $result = new FapiCallbackResult(
-            idTokenPayload: [],
-            userInfoData: null,
+            clientId: 'cp-client-id',
+            redirectUri: 'https://example.com/cp-callback',
         );
 
         $fapiCallbackMock = Mockery::mock(FapiCallbackService::class);
         $fapiCallbackMock->shouldReceive('validateAndRetrieveSession')->once()->andReturn($session);
-        $fapiCallbackMock->shouldReceive('processCallback')->once()->andReturn($result);
+        $fapiCallbackMock->shouldReceive('processCallback')
+            ->once()
+            ->andThrow(new JwtPayloadException(400, 'Sub (entity ID) is empty'));
         $fapiCallbackMock->shouldReceive('cleanupSession')->once()->with('test-state');
 
         $controller = new LoginCallbackController;
@@ -164,40 +212,6 @@ class LoginCallbackControllerTest extends TestCase
         $this->assertEquals(route('login'), $response->getTargetUrl());
     }
 
-    public function test_null_id_token_payload_does_not_fire_event(): void
-    {
-        Event::fake();
-
-        $dpopKey = JWKFactory::createECKey('P-256');
-
-        $session = new FapiSessionContext(
-            code: 'test-code',
-            state: 'test-state',
-            codeVerifier: 'test-verifier',
-            dpopKey: $dpopKey,
-            clientId: 'test-client-id',
-            redirectUri: 'https://example.com/callback',
-        );
-
-        $result = new FapiCallbackResult(
-            idTokenPayload: null,
-            userInfoData: ['person_info' => []],
-        );
-
-        $fapiCallbackMock = Mockery::mock(FapiCallbackService::class);
-        $fapiCallbackMock->shouldReceive('validateAndRetrieveSession')->once()->andReturn($session);
-        $fapiCallbackMock->shouldReceive('processCallback')->once()->andReturn($result);
-        $fapiCallbackMock->shouldReceive('cleanupSession')->once()->with('test-state');
-
-        $controller = new LoginCallbackController;
-        $request = new Request(['code' => 'test-code', 'state' => 'test-state']);
-
-        $response = $controller->__invoke($request, $fapiCallbackMock);
-
-        $this->assertInstanceOf(RedirectResponse::class, $response);
-        Event::assertNotDispatched(SingPassSuccessfulLoginEvent::class);
-    }
-
     public function test_session_cleanup_happens_on_unhandled_exception(): void
     {
         $dpopKey = JWKFactory::createECKey('P-256');
@@ -207,8 +221,8 @@ class LoginCallbackControllerTest extends TestCase
             state: 'test-state',
             codeVerifier: 'test-verifier',
             dpopKey: $dpopKey,
-            clientId: 'test-client-id',
-            redirectUri: 'https://example.com/callback',
+            clientId: 'cp-client-id',
+            redirectUri: 'https://example.com/cp-callback',
         );
 
         $fapiCallbackMock = Mockery::mock(FapiCallbackService::class);
@@ -223,5 +237,42 @@ class LoginCallbackControllerTest extends TestCase
 
         $this->expectException(\RuntimeException::class);
         $controller->__invoke($request, $fapiCallbackMock);
+    }
+
+    public function test_null_userinfo_does_not_fire_data_event(): void
+    {
+        Event::fake();
+
+        $dpopKey = JWKFactory::createECKey('P-256');
+
+        $session = new FapiSessionContext(
+            code: 'test-code',
+            state: 'test-state',
+            codeVerifier: 'test-verifier',
+            dpopKey: $dpopKey,
+            clientId: 'cp-client-id',
+            redirectUri: 'https://example.com/cp-callback',
+        );
+
+        $result = new FapiCallbackResult(
+            idTokenPayload: [
+                'sub' => '200000001A',
+                'act' => ['sub' => 'actor-uuid'],
+            ],
+            userInfoData: null,
+        );
+
+        $fapiCallbackMock = Mockery::mock(FapiCallbackService::class);
+        $fapiCallbackMock->shouldReceive('validateAndRetrieveSession')->once()->andReturn($session);
+        $fapiCallbackMock->shouldReceive('processCallback')->once()->andReturn($result);
+        $fapiCallbackMock->shouldReceive('cleanupSession')->once();
+
+        $controller = new LoginCallbackController;
+        $request = new Request(['code' => 'test-code', 'state' => 'test-state']);
+
+        $controller->__invoke($request, $fapiCallbackMock);
+
+        Event::assertNotDispatched(CorpPassDataRetrievedEvent::class);
+        Event::assertDispatched(CorpPassSuccessfulLoginEvent::class);
     }
 }

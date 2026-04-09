@@ -1,14 +1,15 @@
 <?php
 
-namespace Accredifysg\SingPassLogin\Http\Controllers\SingPass;
+namespace Accredifysg\SingPassLogin\Http\Controllers\CorpPass;
 
 use Accredifysg\SingPassLogin\DTOs\ProviderConfig;
-use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
+use Accredifysg\SingPassLogin\Events\CorpPassDataRetrievedEvent;
+use Accredifysg\SingPassLogin\Events\CorpPassSuccessfulLoginEvent;
 use Accredifysg\SingPassLogin\Exceptions\AuthenticationErrorException;
 use Accredifysg\SingPassLogin\Exceptions\AuthFlowException;
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
-use Accredifysg\SingPassLogin\Models\SingPassUser;
+use Accredifysg\SingPassLogin\Models\CorpPassUser;
 use Accredifysg\SingPassLogin\Services\FapiCallbackService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,12 +25,16 @@ class LoginCallbackController extends Controller
 
         try {
             $session = $fapiCallback->validateAndRetrieveSession($request);
-            $config = ProviderConfig::singPassLogin();
+            $config = ProviderConfig::corpPass();
             $result = $fapiCallback->processCallback($session, $config);
 
+            if ($result->userInfoData !== null) {
+                event(new CorpPassDataRetrievedEvent($result->userInfoData, $session->state));
+            }
+
             if ($result->idTokenPayload !== null) {
-                $singPassUser = SingPassUser::fromPayload($result->idTokenPayload);
-                event(new SingPassSuccessfulLoginEvent($singPassUser, $session->state));
+                $corpPassUser = CorpPassUser::fromPayload($result->idTokenPayload);
+                event(new CorpPassSuccessfulLoginEvent($corpPassUser, $session->state));
             }
         } catch (JwtPayloadException) {
             return (new AuthFlowException(400, 'Invalid identity token payload'))->render();

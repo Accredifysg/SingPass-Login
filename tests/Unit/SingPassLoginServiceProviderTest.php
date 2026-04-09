@@ -6,8 +6,10 @@ use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
 use Accredifysg\SingPassLogin\Listeners\SingPassSuccessfulLoginListener;
 use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
 use Accredifysg\SingPassLogin\Tests\TestCase;
+use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
+use Orchestra\Testbench\Attributes\DefineEnvironment;
 
 class SingPassLoginServiceProviderTest extends TestCase
 {
@@ -39,6 +41,57 @@ class SingPassLoginServiceProviderTest extends TestCase
         $this->assertTrue($routeCollection->hasNamedRoute('singpass.jwks'));
         $this->assertTrue($routeCollection->hasNamedRoute('myinfo.login'));
         $this->assertTrue($routeCollection->hasNamedRoute('myinfo.callback'));
+        $this->assertTrue($routeCollection->hasNamedRoute('corppass.login'));
+        $this->assertTrue($routeCollection->hasNamedRoute('corppass.callback'));
+    }
+
+    protected function disableSingpassRoutes(Application $app): void
+    {
+        $app['config']->set('singpass-login.enable_default_singpass_routes', false);
+    }
+
+    #[DefineEnvironment('disableSingpassRoutes')]
+    public function test_singpass_routes_can_be_disabled(): void
+    {
+        $routeCollection = app('router')->getRoutes();
+
+        $this->assertFalse($routeCollection->hasNamedRoute('singpass.login'));
+        $this->assertFalse($routeCollection->hasNamedRoute('singpass.callback'));
+        $this->assertTrue($routeCollection->hasNamedRoute('singpass.jwks'));
+        $this->assertTrue($routeCollection->hasNamedRoute('myinfo.login'));
+        $this->assertTrue($routeCollection->hasNamedRoute('corppass.login'));
+    }
+
+    protected function disableMyinfoRoutes(Application $app): void
+    {
+        $app['config']->set('singpass-login.enable_default_myinfo_routes', false);
+    }
+
+    #[DefineEnvironment('disableMyinfoRoutes')]
+    public function test_myinfo_routes_can_be_disabled(): void
+    {
+        $routeCollection = app('router')->getRoutes();
+
+        $this->assertTrue($routeCollection->hasNamedRoute('singpass.login'));
+        $this->assertFalse($routeCollection->hasNamedRoute('myinfo.login'));
+        $this->assertFalse($routeCollection->hasNamedRoute('myinfo.callback'));
+        $this->assertTrue($routeCollection->hasNamedRoute('corppass.login'));
+    }
+
+    protected function disableCorppassRoutes(Application $app): void
+    {
+        $app['config']->set('corppass-login.enable_default_corppass_routes', false);
+    }
+
+    #[DefineEnvironment('disableCorppassRoutes')]
+    public function test_corppass_routes_can_be_disabled(): void
+    {
+        $routeCollection = app('router')->getRoutes();
+
+        $this->assertTrue($routeCollection->hasNamedRoute('singpass.login'));
+        $this->assertTrue($routeCollection->hasNamedRoute('myinfo.login'));
+        $this->assertFalse($routeCollection->hasNamedRoute('corppass.login'));
+        $this->assertFalse($routeCollection->hasNamedRoute('corppass.callback'));
     }
 
     public function test_event_listener_is_registered(): void
@@ -63,6 +116,7 @@ class SingPassLoginServiceProviderTest extends TestCase
         $this->assertArrayHasKey('jwks', config('singpass-login'));
         $this->assertArrayHasKey('private_jwks', config('singpass-login'));
         $this->assertArrayHasKey('enable_default_singpass_routes', config('singpass-login'));
+        $this->assertArrayHasKey('enable_default_myinfo_routes', config('singpass-login'));
         $this->assertArrayHasKey('get_jwks_endpoint_url', config('singpass-login'));
         $this->assertArrayHasKey('post_singpass_callback_url', config('singpass-login'));
         $this->assertArrayHasKey('get_jwks_endpoint_controller', config('singpass-login'));
@@ -81,21 +135,47 @@ class SingPassLoginServiceProviderTest extends TestCase
         $this->assertArrayHasKey('post_myinfo_callback_controller', config('singpass-login'));
     }
 
+    public function test_corppass_config_is_merged(): void
+    {
+        $this->assertNotNull(config('corppass-login'));
+
+        $this->assertArrayHasKey('client_id', config('corppass-login'));
+        $this->assertArrayHasKey('redirect_uri', config('corppass-login'));
+        $this->assertArrayHasKey('domain', config('corppass-login'));
+        $this->assertArrayHasKey('discovery_endpoint', config('corppass-login'));
+        $this->assertArrayHasKey('enable_default_corppass_routes', config('corppass-login'));
+        $this->assertArrayHasKey('login_scopes', config('corppass-login'));
+        $this->assertArrayHasKey('available_scopes', config('corppass-login'));
+        $this->assertArrayHasKey('use_default_listener', config('corppass-login'));
+        $this->assertArrayHasKey('listener_class', config('corppass-login'));
+    }
+
+    public function test_corppass_config_is_published(): void
+    {
+        $this->artisan('vendor:publish', ['--provider' => 'Accredifysg\SingPassLogin\SingPassLoginServiceProvider', '--tag' => 'config']);
+
+        $this->assertFileExists(config_path('corppass-login.php'));
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        // Ensure we're starting with a clean slate
         if (File::exists(config_path('singpass-login.php'))) {
             File::delete(config_path('singpass-login.php'));
+        }
+        if (File::exists(config_path('corppass-login.php'))) {
+            File::delete(config_path('corppass-login.php'));
         }
     }
 
     protected function tearDown(): void
     {
-        // Clean up after tests
         if (File::exists(config_path('singpass-login.php'))) {
             File::delete(config_path('singpass-login.php'));
+        }
+        if (File::exists(config_path('corppass-login.php'))) {
+            File::delete(config_path('corppass-login.php'));
         }
 
         parent::tearDown();

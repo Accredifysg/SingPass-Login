@@ -2,19 +2,32 @@
 
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Accredifysg_SingPass-Login&metric=coverage&token=11b8dd252687c701584068be55e47e5e432056c8)](https://sonarcloud.io/summary/new_code?id=Accredifysg_SingPass-Login)
 
-PHP Laravel Package for SingPass Login and MyInfo. The authorization flow follows **FAPI 2.0–style** integration: **Pushed Authorization Requests (PAR)** with **DPoP** on the PAR, token, and UserInfo calls, **PKCE**, and private-key **JWT client assertions**. Your OpenID Provider metadata (discovery) must expose a `pushed_authorization_request_endpoint`; the package validates this when caching discovery.
+PHP Laravel Package for **SingPass Login**, **MyInfo**, and **CorpPass**. The authorization flow follows **FAPI 2.0–style** integration: **Pushed Authorization Requests (PAR)** with **DPoP** on the PAR, token, and UserInfo calls, **PKCE**, and private-key **JWT client assertions**. Your OpenID Provider metadata (discovery) must expose a `pushed_authorization_request_endpoint`; the package validates this when caching discovery.
 
-<a href="https://api.singpass.gov.sg/library/login/developers/overview-at-a-glance" rel="noreferrer nofollow">Official SingPass Login Docs</a>
+<a href="https://api.singpass.gov.sg/library/login/developers/overview-at-a-glance" rel="noreferrer nofollow">Official SingPass Login Docs</a> · <a href="https://docs.corppass.gov.sg/technical-specifications/corppass-authorization-api-fapi-2.0/integration-guide" rel="noreferrer nofollow">Official CorpPass Docs</a>
 
 ## Architecture
 
 The package separates **shared FAPI 2.0 choreography** from **provider-specific logic**:
 
 - **Shared layer** (`FapiAuthenticationService`, `FapiCallbackService`) handles discovery, PAR, DPoP, PKCE, token exchange, and JWE/JWS processing.
-- **Thin controllers** for each flow (SingPass Login, MyInfo) delegate to the shared layer and fire provider-specific events.
+- **Thin controllers** for each flow (SingPass Login, MyInfo, CorpPass) delegate to the shared layer and fire provider-specific events.
 - A `ProviderConfig` DTO encapsulates per-provider configuration (client ID, redirect URI, cache key, scopes).
 
-This design makes it straightforward to add new FAPI 2.0 providers (e.g. CorpPass) without duplicating protocol logic.
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                  Shared FAPI 2.0 Services                       │
+│  FapiAuthenticationService · FapiCallbackService · DPoPService  │
+│  PARService · TokenExchangeService · JwtService · JwksService   │
+│  OpenIdDiscoveryService · GetUserInfoService · PKCEService      │
+└──────────┬──────────────────┬──────────────────┬────────────────┘
+           │                  │                  │
+    ┌──────┴──────┐   ┌──────┴──────┐   ┌──────┴──────┐
+    │  SingPass   │   │   MyInfo    │   │  CorpPass   │
+    │  Login +    │   │  Login +    │   │  Login +    │
+    │  Callback   │   │  Callback   │   │  Callback   │
+    └─────────────┘   └─────────────┘   └─────────────┘
+```
 
 ## Installation
 
@@ -24,10 +37,28 @@ You can install the package via composer:
 composer require accredifysg/singpass-login
 ```
 
-Add the following variables to your `.env` file.
+Publish the config files:
+
+```bash
+php artisan vendor:publish --provider="Accredifysg\SingPassLogin\SingPassLoginServiceProvider" --tag="config"
+```
+
+This publishes both `config/singpass-login.php` and `config/corppass-login.php`.
+
+Optionally, publish the default listener that logs in a user on `SingPassSuccessfulLoginEvent`:
+
+```bash
+php artisan vendor:publish --provider="Accredifysg\SingPassLogin\SingPassLoginServiceProvider" --tag="listener"
+```
+
+## Configuration
+
+### SingPass / MyInfo
+
+Add the following to your `.env`:
 
 ```.dotenv
-# SingPass variables
+# SingPass credentials
 SINGPASS_CLIENT_ID=
 SINGPASS_REDIRECT_URI=
 SINGPASS_DOMAIN=
@@ -43,14 +74,6 @@ SINGPASS_DPOP_SIGNING_ALGORITHM=ES256
 SINGPASS_AUTH_CONTEXT_TYPE=APP_AUTHENTICATION_DEFAULT
 # SINGPASS_AUTH_CONTEXT_MESSAGE=
 
-# Default Routes
-SINGPASS_USE_DEFAULT_ROUTES=true
-SINGPASS_JWKS_URL=/ndi/jwks
-SINGPASS_AUTHENTICATION_URL=/ndi/sp/login
-SINGPASS_CALLBACK_URL=/ndi/sp/callback
-SINGPASS_MYINFO_AUTHENTICATION_URL=/ndi/mi/initiate
-SINGPASS_MYINFO_CALLBACK_URL=/ndi/mi/callback
-
 # Default Listener
 SINGPASS_USE_DEFAULT_LISTENER=true
 
@@ -59,47 +82,68 @@ SINGPASS_MYINFO_CLIENT_ID=
 SINGPASS_MYINFO_REDIRECT_URI=
 ```
 
-Publish the config file
+### CorpPass
 
-```bash
-php artisan vendor:publish --provider="Accredifysg\SingPassLogin\SingPassLoginServiceProvider" --tag="config"
+```.dotenv
+# CorpPass credentials
+CORPPASS_CLIENT_ID=
+CORPPASS_REDIRECT_URI=
+CORPPASS_DOMAIN=
+CORPPASS_DISCOVERY_ENDPOINT=
+
+# Default Listener (disabled by default)
+CORPPASS_USE_DEFAULT_LISTENER=false
 ```
 
-Optionally, you can publish the listener that will listen to the `SingPassSuccessfulLoginEvent` and log the user in
+### Enabling / Disabling Modules
 
-```bash
-php artisan vendor:publish --provider="Accredifysg\SingPassLogin\SingPassLoginServiceProvider" --tag="listener"
+Each flow can be independently toggled via environment variables. All are enabled by default.
+
+| Variable | Default | Controls |
+|---|---|---|
+| `SINGPASS_USE_DEFAULT_ROUTES` | `true` | SingPass Login routes + JWKS endpoint |
+| `SINGPASS_USE_DEFAULT_MYINFO_ROUTES` | `true` | MyInfo routes |
+| `CORPPASS_USE_DEFAULT_ROUTES` | `true` | CorpPass routes |
+
+The JWKS endpoint (`/ndi/jwks`) is always registered regardless of these flags, as it is shared across all providers.
+
+Route URLs are also configurable:
+
+```.dotenv
+SINGPASS_AUTHENTICATION_URL=/ndi/sp/login
+SINGPASS_CALLBACK_URL=/ndi/sp/callback
+SINGPASS_MYINFO_AUTHENTICATION_URL=/ndi/mi/initiate
+SINGPASS_MYINFO_CALLBACK_URL=/ndi/mi/callback
+SINGPASS_JWKS_URL=/ndi/jwks
+CORPPASS_AUTHENTICATION_URL=/ndi/cp/login
+CORPPASS_CALLBACK_URL=/ndi/cp/callback
 ```
 
-## Usage and Customisations
-
-### Controllers and Routes
+## Routes
 
 The package registers the following routes under the `web` middleware group:
 
 | Route | Controller | Name | Purpose |
 |---|---|---|---|
-| `GET /ndi/sp/login` | `SingPass\LoginController` | `singpass.login` | Initiate SingPass Login (PAR + redirect URL) |
+| `GET /ndi/jwks` | `GetJwksEndpointController` | `singpass.jwks` | Expose your application's JWKS (always active) |
+| `GET /ndi/sp/login` | `SingPass\LoginController` | `singpass.login` | Initiate SingPass Login |
 | `GET /ndi/sp/callback` | `SingPass\LoginCallbackController` | `singpass.callback` | Handle SingPass Login callback |
-| `GET /ndi/mi/initiate` | `SingPass\MyInfoController` | `myinfo.login` | Initiate MyInfo flow (PAR + redirect URL) |
+| `GET /ndi/mi/initiate` | `SingPass\MyInfoController` | `myinfo.login` | Initiate MyInfo flow |
 | `GET /ndi/mi/callback` | `SingPass\MyInfoCallbackController` | `myinfo.callback` | Handle MyInfo callback |
-| `GET /ndi/jwks` | `GetJwksEndpointController` | `singpass.jwks` | Expose your application's JWKS |
+| `GET /ndi/cp/login` | `CorpPass\LoginController` | `corppass.login` | Initiate CorpPass Login |
+| `GET /ndi/cp/callback` | `CorpPass\LoginCallbackController` | `corppass.callback` | Handle CorpPass callback |
 
-Each auth controller returns **JSON** with a `redirect_url` the browser should navigate to. The callback controllers handle the OAuth redirect from SingPass, validate `state` (CSRF), exchange the code using DPoP, and fire the appropriate event.
+Each auth controller returns **JSON** with a `redirect_url` the browser should navigate to. The callback controllers handle the OAuth redirect, validate `state` (CSRF), exchange the code using DPoP, and fire the appropriate event.
 
-If you prefer to set your own routes you can set `SINGPASS_USE_DEFAULT_ROUTES` to `false`, 
-then configure the route URLs in your `.env` and map your own routes.
+If you prefer custom controllers, override the `*_controller` keys in the respective config file.
 
-If you prefer to write your own controllers you can define them in the config file
-`singpass-login.php` using the `*_controller` keys.
+## SingPass Login
 
 ### Starting a Login
 
 `GET /ndi/sp/login` returns `200` JSON: `{ "redirect_url": "..." }`. The browser (or SPA) should request that URL with **same-origin credentials** so the session cookie is sent, then navigate to `redirect_url`.
 
-Optional query parameters for Login flows: `authentication_context_type` and `authentication_context_message` override `SINGPASS_AUTH_CONTEXT_TYPE` / `SINGPASS_AUTH_CONTEXT_MESSAGE` for that request. See the [SingPass authorization request documentation](https://docs.developer.singpass.gov.sg/docs/technical-specifications/integration-guide/1.-authorization-request#possible-authentication_context_type-values) for valid `authentication_context_type` values.
-
-**From JavaScript (recommended):**
+Optional query parameters: `authentication_context_type` and `authentication_context_message` override config defaults for that request. See the [SingPass authorization request documentation](https://docs.developer.singpass.gov.sg/docs/technical-specifications/integration-guide/1.-authorization-request#possible-authentication_context_type-values) for valid values.
 
 ```javascript
 async function startSingPassLogin(scopes) {
@@ -117,14 +161,12 @@ async function startSingPassLogin(scopes) {
 await startSingPassLogin(['openid', 'name', 'email', 'mobileno']);
 ```
 
-**From a Laravel Blade view or inline script**, use the same `fetch` pattern; a simple `redirect('/ndi/sp/login?...')` only sends the client to a JSON response, not to SingPass.
-
 ### Listener
 
-If you published the default listener, you should edit it and map your user retrieval via NRIC accordingly.
+If you published the default listener, edit it to map your user retrieval via NRIC:
 
 ```php
-public function handle(SingPassSuccessfulLoginEvent $event): RedirectResponse
+public function handle(SingPassSuccessfulLoginEvent $event): void
 {
     $singPassUser = $event->getSingPassUser();
     $nric = $singPassUser->getNric();
@@ -144,8 +186,7 @@ public function handle(SingPassSuccessfulLoginEvent $event): RedirectResponse
 }
 ```
 
-If you prefer to write your own, you can set `SINGPASS_USE_DEFAULT_LISTENER` to `false` in
-your `.env` and replace `listener_class` in the config file `singpass-login.php`.
+If you prefer a custom listener, set `SINGPASS_USE_DEFAULT_LISTENER=false` and replace `listener_class` in `singpass-login.php`.
 
 ## MyInfo Integration
 
@@ -165,33 +206,16 @@ async function startMyInfo(scopes) {
   window.location.assign(redirect_url);
 }
 
-// Request MyInfo scopes
 await startMyInfo(['openid', 'name', 'email', 'mobileno', 'nationality', 'dob']);
 ```
 
 ### How It Works
 
-The MyInfo callback controller calls the UserInfo endpoint (with DPoP) to retrieve the requested data and emits `MyInfoDataRetrievedEvent`. The SingPass Login callback uses the ID token path and emits `SingPassSuccessfulLoginEvent`.
-
-Internally, `FapiCallbackService` uses `shouldCallUserInfo()` with the provider's `loginScopes` configuration to determine the correct path: if the access token contains only login scopes, the ID token path is taken; otherwise the UserInfo endpoint is called.
-
-### Available MyInfo Scopes
-
-For the complete and up-to-date list of available MyInfo data items and their descriptions, refer to the official MyInfo Data Catalog:
-
-**[MyInfo Data Catalog Documentation](https://docs.developer.singpass.gov.sg/docs/data-catalog-myinfo/catalog)**
-
-The package validates requested scopes against the `available_scopes` configuration. Invalid scopes throw an `InvalidArgumentException`.
+The MyInfo callback controller calls the UserInfo endpoint (with DPoP) to retrieve the requested data and emits `MyInfoDataRetrievedEvent`. Internally, `FapiCallbackService` uses `shouldCallUserInfo()` with the provider's `loginScopes` to determine the correct path: if the access token contains only login scopes, the ID token path is taken; otherwise the UserInfo endpoint is called.
 
 ### Handling MyInfo Data
 
-When MyInfo data is successfully retrieved, the package emits a `MyInfoDataRetrievedEvent`:
-
 ```php
-<?php
-
-namespace App\Listeners;
-
 use Accredifysg\SingPassLogin\Events\MyInfoDataRetrievedEvent;
 
 class MyInfoDataRetrievedListener
@@ -200,8 +224,7 @@ class MyInfoDataRetrievedListener
     {
         $myInfoData = $event->getMyInfoData();
         $state = $event->getState();
-        
-        // Update user profile with MyInfo data
+
         $user->update([
             'name' => $myInfoData['name']['value'] ?? null,
             'email' => $myInfoData['email']['value'] ?? null,
@@ -213,68 +236,132 @@ class MyInfoDataRetrievedListener
 }
 ```
 
-#### MyInfo Data Structure
+### Available MyInfo Scopes
 
-MyInfo data is returned as an associative array nested under `person_info`. Each field typically contains:
-- `value`: The actual data value
-- `source`: Data source identifier (e.g., '1' for government-verified)
-- `classification`: Data classification level
-- `lastupdated`: Timestamp of last update
+For the complete list, see the [MyInfo Data Catalog](https://docs.developer.singpass.gov.sg/docs/data-catalog-myinfo/catalog). The package validates requested scopes against the `available_scopes` configuration.
 
-Example structure:
-```php
-[
-    'name' => [
-        'value' => 'John Doe',
-        'source' => '1',
-        'classification' => 'C',
-        'lastupdated' => '2023-01-15'
-    ],
-    'email' => [
-        'value' => 'john@example.com',
-        'source' => '2',
-        'classification' => 'C',
-        'lastupdated' => '2023-01-15'
-    ],
-    // Additional fields based on requested scopes
-]
+## CorpPass Integration
+
+CorpPass uses the same FAPI 2.0 flow as SingPass, with a hierarchical entity + actor identity model. The entity represents the company/organisation (`sub`), and the actor represents the individual user (`act.sub`).
+
+### Starting a CorpPass Login
+
+```javascript
+async function startCorpPassLogin(scopes) {
+  const qs = new URLSearchParams({ scopes: scopes.join(',') });
+  const res = await fetch(`/ndi/cp/login?${qs}`, {
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json' },
+  });
+  if (!res.ok) throw new Error('CorpPass login bootstrap failed');
+  const { redirect_url } = await res.json();
+  window.location.assign(redirect_url);
+}
+
+// Login scopes only (entity + actor data in ID token)
+await startCorpPassLogin(['openid', 'entity.identity', 'user.identity', 'user.name']);
+
+// With UserInfo scopes (authorization data via UserInfo endpoint)
+await startCorpPassLogin(['openid', 'entity.identity', 'user.identity', 'authinfo']);
 ```
 
-#### Registering the Listener
+### CorpPass Scopes
 
-Register the listener in your `EventServiceProvider`:
+| Scope | Source | Description |
+|---|---|---|
+| `openid` | Required | Core OIDC scope |
+| `entity.identity` | ID token | Entity type, registration number, COI |
+| `entity.basic_profile.name` | ID token | Entity name |
+| `entity.basic_profile.uen_status` | ID token | Entity UEN status |
+| `user.identity` | ID token | Actor identity number (NRIC/FIN), COI |
+| `user.name` | ID token | Actor name |
+| `user.corppass.email` | ID token | Actor CorpPass email |
+| `authinfo` | UserInfo | Authorization info for the entity |
+| `tpauthinfo` | UserInfo | Third-party authorization info |
+
+### Handling CorpPass Events
+
+The CorpPass callback controller fires up to two events:
+
+- **`CorpPassSuccessfulLoginEvent`** — Always fired when an ID token payload is present. Carries a `CorpPassUser` model.
+- **`CorpPassDataRetrievedEvent`** — Fired when UserInfo scopes (`authinfo`, `tpauthinfo`) were requested. Carries the authorization data array.
 
 ```php
-<?php
+use Accredifysg\SingPassLogin\Events\CorpPassSuccessfulLoginEvent;
 
-namespace App\Providers;
-
-use Accredifysg\SingPassLogin\Events\MyInfoDataRetrievedEvent;
-use Accredifysg\SingPassLogin\Events\SingPassSuccessfulLoginEvent;
-use App\Listeners\MyInfoDataRetrievedListener;
-use App\Listeners\SingPassSuccessfulLoginListener;
-use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-
-class EventServiceProvider extends ServiceProvider
+class CorpPassLoginListener
 {
-    protected $listen = [
-        SingPassSuccessfulLoginEvent::class => [
-            SingPassSuccessfulLoginListener::class,
-        ],
-        
-        MyInfoDataRetrievedEvent::class => [
-            MyInfoDataRetrievedListener::class,
-        ],
-    ];
+    public function handle(CorpPassSuccessfulLoginEvent $event): void
+    {
+        $corpPassUser = $event->getCorpPassUser();
+
+        // Entity (company/organisation)
+        $entityId = $corpPassUser->getEntityId();       // UEN
+        $entityName = $corpPassUser->getEntityName();
+
+        // Actor (individual user)
+        $actorId = $corpPassUser->getActorId();          // User UUID
+        $nric = $corpPassUser->getIdentityNumber();      // NRIC/FIN (requires user.identity scope)
+        $name = $corpPassUser->getName();                // Requires user.name scope
+
+        // Look up or create the user in your system
+        $user = User::firstOrCreate(
+            ['corppass_entity_id' => $entityId, 'corppass_actor_id' => $actorId],
+            ['name' => $name, 'nric' => $nric, 'entity_name' => $entityName],
+        );
+
+        Auth::login($user);
+    }
 }
 ```
 
-### Event Flow
+```php
+use Accredifysg\SingPassLogin\Events\CorpPassDataRetrievedEvent;
 
-- **SingPass Login** (`/ndi/sp/login` → `/ndi/sp/callback`): `SingPassSuccessfulLoginEvent` with a `SingPassUser` model
-- **MyInfo** (`/ndi/mi/initiate` → `/ndi/mi/callback`): `MyInfoDataRetrievedEvent` with the UserInfo data array
+class CorpPassDataListener
+{
+    public function handle(CorpPassDataRetrievedEvent $event): void
+    {
+        $data = $event->getCorpPassData();
 
-### Upgrading from pre–FAPI 2.0 versions
+        // Authorization data from the UserInfo endpoint
+        $authInfo = $data['auth_info'] ?? [];
+        $tpAuthInfo = $data['tp_auth_info'] ?? [];
+    }
+}
+```
+
+### Registering CorpPass Listeners
+
+Configure the built-in listener via `corppass-login.php`:
+
+```php
+'use_default_listener' => true,
+'listener_class' => \App\Listeners\CorpPassLoginListener::class,
+```
+
+Or register manually in your `EventServiceProvider`:
+
+```php
+protected $listen = [
+    CorpPassSuccessfulLoginEvent::class => [
+        CorpPassLoginListener::class,
+    ],
+    CorpPassDataRetrievedEvent::class => [
+        CorpPassDataListener::class,
+    ],
+];
+```
+
+## Event Flow Summary
+
+| Flow | Initiation Route | Callback Route | Events |
+|---|---|---|---|
+| SingPass Login | `/ndi/sp/login` | `/ndi/sp/callback` | `SingPassSuccessfulLoginEvent` |
+| MyInfo | `/ndi/mi/initiate` | `/ndi/mi/callback` | `MyInfoDataRetrievedEvent` |
+| CorpPass | `/ndi/cp/login` | `/ndi/cp/callback` | `CorpPassSuccessfulLoginEvent`, `CorpPassDataRetrievedEvent` |
+
+## Upgrading from pre–FAPI 2.0 versions
 
 - The login route returns **JSON** with `redirect_url`; update clients to `fetch` (with credentials) then navigate.
 - Ensure your app uses **session**-backed routes (default `web` middleware).
@@ -288,51 +375,38 @@ class EventServiceProvider extends ServiceProvider
 ## Exceptions
 
 ```php
-<?php
+use Accredifysg\SingPassLogin\Exceptions\AuthFlowException;
+use Accredifysg\SingPassLogin\Exceptions\AuthenticationErrorException;
+use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Accredifysg\SingPassLogin\Exceptions\JweDecryptionFailedException;
 use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
-use Accredifysg\SingPassLogin\Exceptions\JwtDecodeFailedException;
-use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
-use Accredifysg\SingPassLogin\Exceptions\OpenIdDiscoveryException;
 use Accredifysg\SingPassLogin\Exceptions\JwksException;
-use Accredifysg\SingPassLogin\Exceptions\TokenExchangeException;
-use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
-use Accredifysg\SingPassLogin\Exceptions\AuthenticationErrorException;
-use Accredifysg\SingPassLogin\Exceptions\AuthFlowException;
+use Accredifysg\SingPassLogin\Exceptions\JwtDecodeFailedException;
+use Accredifysg\SingPassLogin\Exceptions\OpenIdDiscoveryException;
 use Accredifysg\SingPassLogin\Exceptions\PushedAuthorizationRequestException;
-
-// MyInfo-specific exceptions
+use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
+use Accredifysg\SingPassLogin\Exceptions\TokenExchangeException;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoRequestException;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoDecryptionException;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoVerificationException;
 ```
 
-### FAPI / PAR exception handling
+### FAPI / PAR Exceptions
 
 - **`PushedAuthorizationRequestException`**: The PAR endpoint returned an error or an invalid response (includes OAuth error codes when provided).
-- **`AuthenticationErrorException`**: SingPass returned an OAuth error to the callback (`error` / `error_description` query parameters).
-- **`AuthFlowException`**: The callback request was missing required parameters or failed CSRF/session validation.
+- **`AuthenticationErrorException`**: The provider returned an OAuth error to the callback (`error` / `error_description` query parameters).
+- **`AuthFlowException`**: The callback request was missing required parameters, failed CSRF/session validation, or the ID token payload was invalid.
 
-### MyInfo Exception Handling
+### Token / JWT Exceptions
 
-When retrieving MyInfo data, the following exceptions may be thrown:
+- **`TokenExchangeException`**: The token endpoint returned an error, an unparseable response, or was missing `id_token`.
+- **`JwtPayloadException`**: The decoded ID token payload failed validation (e.g. missing `sub` claim).
+- **`JweDecryptionFailedException`** / **`JwtDecodeFailedException`**: JWE decryption or JWS verification of the ID token failed.
+- **`JwksException`** / **`JwksInvalidException`**: JWKS retrieval or parsing failed.
+- **`OpenIdDiscoveryException`**: OpenID discovery endpoint returned invalid or incomplete configuration.
 
-- **`UserInfoRequestException`**: Thrown when the UserInfo endpoint HTTP request fails. Includes HTTP status code and endpoint URL.
-- **`UserInfoDecryptionException`**: Thrown when the UserInfo JWE token decryption fails. Includes decryption failure details.
-- **`UserInfoVerificationException`**: Thrown when the UserInfo JWS token verification fails. Includes verification failure reason.
+### UserInfo Exceptions
 
-```php
-use Accredifysg\SingPassLogin\Exceptions\UserInfoRequestException;
-use Accredifysg\SingPassLogin\Exceptions\UserInfoDecryptionException;
-use Accredifysg\SingPassLogin\Exceptions\UserInfoVerificationException;
-
-try {
-    // MyInfo data retrieval happens automatically during callback
-} catch (UserInfoRequestException $e) {
-    Log::error('MyInfo request failed: ' . $e->getMessage());
-} catch (UserInfoDecryptionException $e) {
-    Log::error('MyInfo decryption failed: ' . $e->getMessage());
-} catch (UserInfoVerificationException $e) {
-    Log::error('MyInfo verification failed: ' . $e->getMessage());
-}
-```
+- **`UserInfoRequestException`**: The UserInfo endpoint HTTP request failed.
+- **`UserInfoDecryptionException`**: The UserInfo JWE token decryption failed.
+- **`UserInfoVerificationException`**: The UserInfo JWS token verification failed.
