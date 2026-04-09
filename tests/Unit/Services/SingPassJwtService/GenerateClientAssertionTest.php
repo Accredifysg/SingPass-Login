@@ -2,11 +2,9 @@
 
 namespace Accredifysg\SingPassLogin\Tests\Unit\Services\SingPassJwtService;
 
-use Accredifysg\SingPassLogin\DTOs\OpenIdConfigurationDto;
 use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
-use Accredifysg\SingPassLogin\Services\SingPassJwtService;
+use Accredifysg\SingPassLogin\Services\JwtService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
-use Illuminate\Support\Facades\Cache;
 use Jose\Component\Core\JWK;
 use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerializer;
 
@@ -20,17 +18,6 @@ class GenerateClientAssertionTest extends TestCase
 
     public function test_generate_client_assertion_success(): void
     {
-        Cache::shouldReceive('get')
-            ->with('openId')
-            ->andReturn(new OpenIdConfigurationDto(
-                issuer: 'https://example.com',
-                authorizationEndpoint: 'https://example.com/auth',
-                tokenEndpoint: 'https://example.com/token',
-                userinfoEndpoint: 'https://example.com/userinfo',
-                jwksUri: 'https://example.com/jwks',
-                pushedAuthorizationRequestEndpoint: 'https://example.com/par',
-            ));
-
         $jwk = new JWK([
             'kty' => 'EC',
             'd' => 'AMLSmZWRqxafLBkg88gNp-jf3KD9WqYo66RsBIjUBM76OwVOqgHmUR5LhtReXBTiziXaVrWo1bPAZgfn7u_vpK11',
@@ -42,7 +29,7 @@ class GenerateClientAssertionTest extends TestCase
             'alg' => 'ES512',
         ]);
 
-        $clientAssertion = SingPassJwtService::generateClientAssertion($jwk, 'test-client-id');
+        $clientAssertion = JwtService::generateClientAssertion($jwk, 'test-client-id', 'https://example.com');
 
         $this->assertNotEmpty($clientAssertion);
 
@@ -65,17 +52,6 @@ class GenerateClientAssertionTest extends TestCase
 
     public function test_generate_client_assertion_with_myinfo_client_id(): void
     {
-        Cache::shouldReceive('get')
-            ->with('openId')
-            ->andReturn(new OpenIdConfigurationDto(
-                issuer: 'https://example.com',
-                authorizationEndpoint: 'https://example.com/auth',
-                tokenEndpoint: 'https://example.com/token',
-                userinfoEndpoint: 'https://example.com/userinfo',
-                jwksUri: 'https://example.com/jwks',
-                pushedAuthorizationRequestEndpoint: 'https://example.com/par',
-            ));
-
         $jwk = new JWK([
             'kty' => 'EC',
             'd' => 'AMLSmZWRqxafLBkg88gNp-jf3KD9WqYo66RsBIjUBM76OwVOqgHmUR5LhtReXBTiziXaVrWo1bPAZgfn7u_vpK11',
@@ -87,7 +63,7 @@ class GenerateClientAssertionTest extends TestCase
             'alg' => 'ES512',
         ]);
 
-        $clientAssertion = SingPassJwtService::generateClientAssertion($jwk, 'myinfo-client-id');
+        $clientAssertion = JwtService::generateClientAssertion($jwk, 'myinfo-client-id', 'https://example.com');
 
         $this->assertNotEmpty($clientAssertion);
 
@@ -109,17 +85,6 @@ class GenerateClientAssertionTest extends TestCase
 
     public function test_generate_client_assertion_jwk_failure(): void
     {
-        Cache::shouldReceive('get')
-            ->with('openId')
-            ->andReturn(new OpenIdConfigurationDto(
-                issuer: 'https://example.com',
-                authorizationEndpoint: 'https://example.com/auth',
-                tokenEndpoint: 'https://example.com/token',
-                userinfoEndpoint: 'https://example.com/userinfo',
-                jwksUri: 'https://example.com/jwks',
-                pushedAuthorizationRequestEndpoint: 'https://example.com/par',
-            ));
-
         $jwk = new JWK([
             'kty' => '',
             'd' => '',
@@ -133,22 +98,11 @@ class GenerateClientAssertionTest extends TestCase
 
         $this->expectException(JwksInvalidException::class);
 
-        SingPassJwtService::generateClientAssertion($jwk, 'test-client-id');
+        JwtService::generateClientAssertion($jwk, 'test-client-id', 'https://example.com');
     }
 
     public function test_generate_client_assertion_json_encode_failure(): void
     {
-        Cache::shouldReceive('get')
-            ->with('openId')
-            ->andReturn(new OpenIdConfigurationDto(
-                issuer: 'https://example.com',
-                authorizationEndpoint: 'https://example.com/auth',
-                tokenEndpoint: 'https://example.com/token',
-                userinfoEndpoint: 'https://example.com/userinfo',
-                jwksUri: 'https://example.com/jwks',
-                pushedAuthorizationRequestEndpoint: 'https://example.com/par',
-            ));
-
         $jwk = new JWK([
             'kty' => 'EC',
             'd' => 'AMLSmZWRqxafLBkg88gNp-jf3KD9WqYo66RsBIjUBM76OwVOqgHmUR5LhtReXBTiziXaVrWo1bPAZgfn7u_vpK11',
@@ -163,6 +117,6 @@ class GenerateClientAssertionTest extends TestCase
         $this->expectException(JwksInvalidException::class);
         $this->expectExceptionMessage('Failed to encode JWT payload.');
 
-        SingPassJwtService::generateClientAssertion($jwk, "\xB1\x31");
+        JwtService::generateClientAssertion($jwk, "\xB1\x31", 'https://example.com');
     }
 }

@@ -6,7 +6,7 @@ use Exception;
 use Illuminate\Http\RedirectResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
-class SingPassAuthenticationErrorException extends HttpException
+class AuthenticationErrorException extends HttpException
 {
     protected string $errorCode;
 

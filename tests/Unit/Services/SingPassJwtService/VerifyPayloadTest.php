@@ -3,116 +3,90 @@
 namespace Accredifysg\SingPassLogin\Tests\Unit\Services\SingPassJwtService;
 
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
-use Accredifysg\SingPassLogin\Services\SingPassJwtService;
+use Accredifysg\SingPassLogin\Services\JwtService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
 
 class VerifyPayloadTest extends TestCase
 {
-    protected function defineEnvironment($app): void
-    {
-        // Set up default configuration values
-        $app['config']->set('singpass-login.client_id', 'test-client-id');
-        $app['config']->set('singpass-login.domain', 'test-domain');
-    }
-
     public function test_verify_payload_success(): void
     {
-        // Mock configuration values
         $clientId = 'test-client-id';
         $domain = 'test-domain';
-        Config::set('singpass-login.client_id', $clientId);
-        Config::set('singpass-login.domain', $domain);
 
         // Create a valid payload
         $now = (int) Carbon::now()->timestamp;
         $payload = [
-            'iat' => $now - 60, // Issued 1 minute ago
-            'exp' => $now + 60, // Expires in 1 minute
+            'iat' => $now - 60,
+            'exp' => $now + 60,
             'aud' => $clientId,
             'iss' => $domain,
         ];
 
-        // Call the method - it returns void, so we just verify no exception is thrown
-        (new SingPassJwtService)->verifyPayload($payload);
+        (new JwtService)->verifyPayload($payload, $clientId, $domain);
 
-        // If we reach here, no exception was thrown
         $this->expectNotToPerformAssertions();
     }
 
     public function test_verify_payload_expired_token(): void
     {
-        // Mock configuration values
         $clientId = 'test-client-id';
         $domain = 'test-domain';
-        Config::set('singpass-login.client_id', $clientId);
-        Config::set('singpass-login.domain', $domain);
 
         // Create an expired payload
         $now = (int) Carbon::now()->timestamp;
         $payload = [
-            'iat' => $now - 120, // Issued 2 minutes ago
-            'exp' => $now - 60,  // Expired 1 minute ago
+            'iat' => $now - 120,
+            'exp' => $now - 60,
             'aud' => $clientId,
             'iss' => $domain,
         ];
 
-        // Expect the JwtPayloadException to be thrown
         $this->expectException(JwtPayloadException::class);
         $this->expectExceptionMessage('The token expired.');
 
-        // Call the method
-        (new SingPassJwtService)->verifyPayload($payload);
+        (new JwtService)->verifyPayload($payload, $clientId, $domain);
     }
 
     public function test_verify_payload_wrong_client_id(): void
     {
-        // Mock configuration values
         $clientId = 'test-client-id';
         $domain = 'test-domain';
-        Config::set('singpass-login.client_id', $clientId);
-        Config::set('singpass-login.domain', $domain);
 
         // Create a payload with the wrong client ID
         $now = (int) Carbon::now()->timestamp;
         $payload = [
-            'iat' => $now - 60, // Issued 1 minute ago
-            'exp' => $now + 60, // Expires in 1 minute
+            'iat' => $now - 60,
+            'exp' => $now + 60,
             'aud' => 'wrong-client-id',
             'iss' => $domain,
         ];
 
-        // Expect the JwtPayloadException to be thrown
         $this->expectException(JwtPayloadException::class);
         $this->expectExceptionMessage('Bad audience.');
 
-        // Call the method
-        (new SingPassJwtService)->verifyPayload($payload);
+        (new JwtService)->verifyPayload($payload, $clientId, $domain);
     }
 
     public function test_verify_payload_wrong_principal(): void
     {
-        // Mock configuration values
         $clientId = 'test-client-id';
         $domain = 'test-domain';
         Config::set('singpass-login.client_id', $clientId);
         Config::set('singpass-login.domain', $domain);
 
-        // Create a payload with the wrong principal
         $now = (int) Carbon::now()->timestamp;
         $payload = [
-            'iat' => $now - 60, // Issued 1 minute ago
-            'exp' => $now + 60, // Expires in 1 minute
+            'iat' => $now - 60,
+            'exp' => $now + 60,
             'aud' => $clientId,
             'iss' => 'wrong-domain',
         ];
 
-        // Expect the JwtPayloadException to be thrown
         $this->expectException(JwtPayloadException::class);
         $this->expectExceptionMessage('Unknown issuer.');
 
-        // Call the method
-        (new SingPassJwtService)->verifyPayload($payload);
+        (new JwtService)->verifyPayload($payload, $clientId, $domain);
     }
 }

@@ -3,7 +3,7 @@
 namespace Accredifysg\SingPassLogin\Tests\Unit\Exceptions;
 
 use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
-use Accredifysg\SingPassLogin\Exceptions\SingPassTokenException;
+use Accredifysg\SingPassLogin\Exceptions\TokenExchangeException;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
@@ -26,7 +26,7 @@ class SingPassLoginExceptionTest extends TestCase
 
     public function test_custom_values(): void
     {
-        $exception = new SingPassTokenException(400, 'Custom message');
+        $exception = new TokenExchangeException(400, 'Custom message');
         $this->assertEquals(400, $exception->getStatusCode());
         $this->assertEquals('Custom message', $exception->getMessage());
     }

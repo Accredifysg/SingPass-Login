@@ -7,9 +7,9 @@ use Accredifysg\SingPassLogin\Exceptions\UserInfoDecryptionException;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoRequestException;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoVerificationException;
 use Accredifysg\SingPassLogin\Interfaces\DPoPServiceInterface;
-use Accredifysg\SingPassLogin\Interfaces\GetSingPassJwksServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\GetUserInfoServiceInterface;
-use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\JwksServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\JwtServiceInterface;
 use Exception;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
@@ -19,31 +19,17 @@ use Jose\Component\Core\JWK;
 final readonly class GetUserInfoService implements GetUserInfoServiceInterface
 {
     public function __construct(
-        private SingPassJwtServiceInterface $singPassJwtService,
-        private GetSingPassJwksServiceInterface $getSingPassJwksService,
+        private JwtServiceInterface $jwtService,
+        private JwksServiceInterface $jwksService,
         private DPoPServiceInterface $dpopService
     ) {}
 
     /**
-     * Determine if the UserInfo endpoint should be called based on access token scopes.
-     * Returns true only when the access token contains MyInfo scopes (scopes that are
-     * NOT login scopes). Login scopes like user.identity, name, email, mobileno are
-     * returned in the ID token and do not require a UserInfo call.
-     *
-     * @param  string  $accessToken  The access token JWT to decode
-     * @return bool True if UserInfo should be called, false otherwise
+     * @param  array<int, string>  $loginScopes
      */
-    public function shouldCallUserInfo(string $accessToken): bool
+    public function shouldCallUserInfo(string $accessToken, array $loginScopes): bool
     {
         $scopes = $this->extractScopesFromAccessToken($accessToken);
-
-        $loginScopes = config('singpass-login.login_scopes', [
-            'openid',
-            'user.identity',
-            'name',
-            'email',
-            'mobileno',
-        ]);
 
         foreach ($scopes as $scope) {
             if (! in_array($scope, $loginScopes)) {
@@ -55,9 +41,6 @@ final readonly class GetUserInfoService implements GetUserInfoServiceInterface
     }
 
     /**
-     * Extract scopes from the access token JWT
-     *
-     * @param  string  $accessToken  The access token JWT
      * @return array<int, string>
      */
     private function extractScopesFromAccessToken(string $accessToken): array
@@ -87,26 +70,20 @@ final readonly class GetUserInfoService implements GetUserInfoServiceInterface
     }
 
     /**
-     * Retrieve user information from the UserInfo endpoint
-     *
-     * @param  string  $accessToken  The access token to use for authentication
-     * @param  JWK  $dpopKey  The DPoP private key for proof generation
-     * @return array<string, mixed>|null The user info data as an associative array, or null if not applicable
+     * @return array<string, mixed>
      *
      * @throws ConnectionException
      */
-    public function getUserInfo(string $accessToken, JWK $dpopKey): ?array
+    public function getUserInfo(string $accessToken, JWK $dpopKey, string $cacheKey): array
     {
-        // Check if UserInfo should be called based on access token scopes
-        if (! $this->shouldCallUserInfo($accessToken)) {
-            return null;
+        $openIdConfig = Cache::get($cacheKey);
+
+        if (! $openIdConfig instanceof OpenIdConfigurationDto) {
+            throw new UserInfoRequestException(500, 'OpenID configuration not found in cache');
         }
 
-        /** @var OpenIdConfigurationDto $openIdConfig */
-        $openIdConfig = Cache::get('openId');
         $userinfoEndpoint = $openIdConfig->userinfoEndpoint;
 
-        // Generate DPoP proof JWT with access token hash
         $ath = $this->dpopService->computeAccessTokenHash($accessToken);
         $dpopProofJwt = $this->dpopService->generateProofJwt($dpopKey, 'GET', $userinfoEndpoint, $ath);
 
@@ -123,8 +100,7 @@ final readonly class GetUserInfoService implements GetUserInfoServiceInterface
         }
 
         try {
-            // Decrypt JWE response using existing SingPassJwtService
-            $jwtToken = $this->singPassJwtService->jweDecrypt($response->body());
+            $jwtToken = $this->jwtService->jweDecrypt($response->body());
         } catch (Exception $e) {
             throw new UserInfoDecryptionException(
                 500,
@@ -134,9 +110,8 @@ final readonly class GetUserInfoService implements GetUserInfoServiceInterface
         }
 
         try {
-            // Verify and decode JWT using existing SingPassJwtService
-            $jwksKeyset = $this->getSingPassJwksService->getSingPassJwks();
-            $payload = $this->singPassJwtService->jwtDecode($jwtToken, $jwksKeyset);
+            $jwksKeyset = $this->jwksService->getJwks($cacheKey);
+            $payload = $this->jwtService->jwtDecode($jwtToken, $jwksKeyset);
         } catch (Exception $e) {
             throw new UserInfoVerificationException(
                 500,
@@ -145,7 +120,6 @@ final readonly class GetUserInfoService implements GetUserInfoServiceInterface
             );
         }
 
-        // Extract person_info from the response (FAPI 2.0 nesting)
         return $payload['person_info'] ?? $payload;
     }
 }

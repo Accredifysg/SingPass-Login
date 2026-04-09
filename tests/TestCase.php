@@ -2,7 +2,6 @@
 
 namespace Accredifysg\SingPassLogin\Tests;
 
-use Accredifysg\SingPassLogin\Facades\SingPassLoginFacade;
 use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Orchestra\Testbench\Attributes\WithMigration;
@@ -23,16 +22,6 @@ class TestCase extends \Orchestra\Testbench\TestCase
     {
         return [
             SingPassLoginServiceProvider::class,
-        ];
-    }
-
-    /**
-     * @return array<string, class-string>
-     */
-    protected function getPackageAliases($app): array
-    {
-        return [
-            'SingPassLogin' => SingPassLoginFacade::class,
         ];
     }
 }

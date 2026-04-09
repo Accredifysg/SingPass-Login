@@ -6,7 +6,7 @@ use Exception;
 use Illuminate\Http\RedirectResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
-class SingPassGetEndpointException extends HttpException
+class AuthFlowException extends HttpException
 {
     /**
      * @param  array<string, mixed>  $headers

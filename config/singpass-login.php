@@ -1,8 +1,10 @@
 <?php
 
-use Accredifysg\SingPassLogin\Http\Controllers\GetAuthenticationEndpointController;
 use Accredifysg\SingPassLogin\Http\Controllers\GetJwksEndpointController;
-use Accredifysg\SingPassLogin\Http\Controllers\GetSingPassCallbackController;
+use Accredifysg\SingPassLogin\Http\Controllers\SingPass\LoginCallbackController;
+use Accredifysg\SingPassLogin\Http\Controllers\SingPass\LoginController;
+use Accredifysg\SingPassLogin\Http\Controllers\SingPass\MyInfoCallbackController;
+use Accredifysg\SingPassLogin\Http\Controllers\SingPass\MyInfoController;
 use Accredifysg\SingPassLogin\Listeners\SingPassSuccessfulLoginListener;
 
 return [
@@ -23,14 +25,22 @@ return [
 
     // Default routes
     'enable_default_singpass_routes' => env('SINGPASS_USE_DEFAULT_ROUTES', true),
-    'get_jwks_endpoint_url' => env('SINGPASS_JWKS_URL', '/sp/jwks'),
-    'get_authentication_endpoint_url' => env('SINGPASS_AUTHENTICATION_URL', '/sp/login'),
-    'post_singpass_callback_url' => env('SINGPASS_CALLBACK_URL', '/sp/callback'),
 
-    // Default controllers
+    // SingPass Login routes
+    'get_authentication_endpoint_url' => env('SINGPASS_AUTHENTICATION_URL', '/ndi/sp/login'),
+    'get_authentication_endpoint_controller' => LoginController::class,
+    'post_singpass_callback_url' => env('SINGPASS_CALLBACK_URL', '/ndi/sp/callback'),
+    'post_singpass_callback_controller' => LoginCallbackController::class,
+
+    // MyInfo routes
+    'get_myinfo_authentication_endpoint_url' => env('SINGPASS_MYINFO_AUTHENTICATION_URL', '/ndi/mi/initiate'),
+    'get_myinfo_authentication_endpoint_controller' => MyInfoController::class,
+    'post_myinfo_callback_url' => env('SINGPASS_MYINFO_CALLBACK_URL', '/ndi/mi/callback'),
+    'post_myinfo_callback_controller' => MyInfoCallbackController::class,
+
+    // JWKS endpoint
+    'get_jwks_endpoint_url' => env('SINGPASS_JWKS_URL', '/ndi/jwks'),
     'get_jwks_endpoint_controller' => GetJwksEndpointController::class,
-    'get_authentication_endpoint_controller' => GetAuthenticationEndpointController::class,
-    'post_singpass_callback_controller' => GetSingPassCallbackController::class,
 
     // Listener
     'use_default_listener' => env('SINGPASS_USE_DEFAULT_LISTENER', true),

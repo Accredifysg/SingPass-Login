@@ -3,7 +3,7 @@
 namespace Accredifysg\SingPassLogin\Tests\Unit\Services\SingPassJwtService;
 
 use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
-use Accredifysg\SingPassLogin\Services\SingPassJwtService;
+use Accredifysg\SingPassLogin\Services\JwtService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Support\Facades\Config;
 use Jose\Component\Core\JWK;
@@ -28,7 +28,7 @@ class GetSigningJwkTest extends TestCase
         Config::set('singpass-login.signing_kid', 'test-kid-id');
 
         // Call the method
-        $jwk = SingPassJwtService::getSigningJwk();
+        $jwk = JwtService::getSigningJwk();
 
         // Assert the method returns a JWK object
         $this->assertInstanceOf(JWK::class, $jwk);
@@ -44,7 +44,7 @@ class GetSigningJwkTest extends TestCase
         $this->expectExceptionMessage('Private JWKS not set.');
 
         // Call the method
-        SingPassJwtService::getSigningJwk();
+        JwtService::getSigningJwk();
     }
 
     public function test_get_signing_jwk_invalid_json_exception(): void
@@ -57,7 +57,7 @@ class GetSigningJwkTest extends TestCase
         $this->expectExceptionMessage('JWKS JSON Invalid.');
 
         // Call the method
-        SingPassJwtService::getSigningJwk();
+        JwtService::getSigningJwk();
     }
 
     public function test_get_signing_jwk_key_not_found_exception(): void
@@ -81,6 +81,6 @@ class GetSigningJwkTest extends TestCase
         $this->expectExceptionMessage('Signing key not found.');
 
         // Call the method
-        SingPassJwtService::getSigningJwk();
+        JwtService::getSigningJwk();
     }
 }

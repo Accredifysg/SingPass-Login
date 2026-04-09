@@ -7,8 +7,8 @@ use Accredifysg\SingPassLogin\Exceptions\UserInfoDecryptionException;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoRequestException;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoVerificationException;
 use Accredifysg\SingPassLogin\Interfaces\DPoPServiceInterface;
-use Accredifysg\SingPassLogin\Interfaces\GetSingPassJwksServiceInterface;
-use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\JwksServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\JwtServiceInterface;
 use Accredifysg\SingPassLogin\Services\GetUserInfoService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Exception;
@@ -22,9 +22,9 @@ use Mockery\MockInterface;
 
 class GetUserInfoServiceTest extends TestCase
 {
-    private SingPassJwtServiceInterface&MockInterface $singPassJwtServiceMock;
+    private JwtServiceInterface&MockInterface $singPassJwtServiceMock;
 
-    private GetSingPassJwksServiceInterface&MockInterface $getSingPassJwksServiceMock;
+    private JwksServiceInterface&MockInterface $getSingPassJwksServiceMock;
 
     private DPoPServiceInterface&MockInterface $dpopServiceMock;
 
@@ -36,12 +36,12 @@ class GetUserInfoServiceTest extends TestCase
     {
         parent::setUp();
 
-        /** @var SingPassJwtServiceInterface&MockInterface $singPassJwtServiceMock */
-        $singPassJwtServiceMock = Mockery::mock(SingPassJwtServiceInterface::class);
+        /** @var JwtServiceInterface&MockInterface $singPassJwtServiceMock */
+        $singPassJwtServiceMock = Mockery::mock(JwtServiceInterface::class);
         $this->singPassJwtServiceMock = $singPassJwtServiceMock;
 
-        /** @var GetSingPassJwksServiceInterface&MockInterface $getSingPassJwksServiceMock */
-        $getSingPassJwksServiceMock = Mockery::mock(GetSingPassJwksServiceInterface::class);
+        /** @var JwksServiceInterface&MockInterface $getSingPassJwksServiceMock */
+        $getSingPassJwksServiceMock = Mockery::mock(JwksServiceInterface::class);
         $this->getSingPassJwksServiceMock = $getSingPassJwksServiceMock;
 
         /** @var DPoPServiceInterface&MockInterface $dpopServiceMock */
@@ -80,7 +80,8 @@ class GetUserInfoServiceTest extends TestCase
     {
         $accessToken = $this->createAccessTokenWithScopes(['openid']);
 
-        $result = $this->service->shouldCallUserInfo($accessToken);
+        $loginScopes = ['openid', 'user.identity', 'name', 'email', 'mobileno'];
+        $result = $this->service->shouldCallUserInfo($accessToken, $loginScopes);
 
         $this->assertFalse($result);
     }
@@ -89,7 +90,8 @@ class GetUserInfoServiceTest extends TestCase
     {
         $accessToken = $this->createAccessTokenWithScopes(['openid', 'user.identity', 'name', 'email', 'mobileno']);
 
-        $result = $this->service->shouldCallUserInfo($accessToken);
+        $loginScopes = ['openid', 'user.identity', 'name', 'email', 'mobileno'];
+        $result = $this->service->shouldCallUserInfo($accessToken, $loginScopes);
 
         $this->assertFalse($result);
     }
@@ -98,7 +100,8 @@ class GetUserInfoServiceTest extends TestCase
     {
         $accessToken = $this->createAccessTokenWithScopes(['openid', 'user.identity']);
 
-        $result = $this->service->shouldCallUserInfo($accessToken);
+        $loginScopes = ['openid', 'user.identity', 'name', 'email', 'mobileno'];
+        $result = $this->service->shouldCallUserInfo($accessToken, $loginScopes);
 
         $this->assertFalse($result);
     }
@@ -107,7 +110,8 @@ class GetUserInfoServiceTest extends TestCase
     {
         $accessToken = $this->createAccessTokenWithScopes(['openid', 'uinfin', 'regadd']);
 
-        $result = $this->service->shouldCallUserInfo($accessToken);
+        $loginScopes = ['openid', 'user.identity', 'name', 'email', 'mobileno'];
+        $result = $this->service->shouldCallUserInfo($accessToken, $loginScopes);
 
         $this->assertTrue($result);
     }
@@ -116,7 +120,8 @@ class GetUserInfoServiceTest extends TestCase
     {
         $accessToken = $this->createAccessTokenWithScopes(['openid', 'name', 'uinfin']);
 
-        $result = $this->service->shouldCallUserInfo($accessToken);
+        $loginScopes = ['openid', 'user.identity', 'name', 'email', 'mobileno'];
+        $result = $this->service->shouldCallUserInfo($accessToken, $loginScopes);
 
         $this->assertTrue($result);
     }
@@ -125,7 +130,8 @@ class GetUserInfoServiceTest extends TestCase
     {
         $accessToken = $this->createAccessTokenWithScopes(['uinfin']);
 
-        $result = $this->service->shouldCallUserInfo($accessToken);
+        $loginScopes = ['openid', 'user.identity', 'name', 'email', 'mobileno'];
+        $result = $this->service->shouldCallUserInfo($accessToken, $loginScopes);
 
         $this->assertTrue($result);
     }
@@ -134,7 +140,8 @@ class GetUserInfoServiceTest extends TestCase
     {
         $accessToken = 'invalid.token';
 
-        $result = $this->service->shouldCallUserInfo($accessToken);
+        $loginScopes = ['openid', 'user.identity', 'name', 'email', 'mobileno'];
+        $result = $this->service->shouldCallUserInfo($accessToken, $loginScopes);
 
         $this->assertFalse($result);
     }
@@ -143,21 +150,13 @@ class GetUserInfoServiceTest extends TestCase
     {
         $accessToken = $this->createAccessTokenWithoutScopes();
 
-        $result = $this->service->shouldCallUserInfo($accessToken);
+        $loginScopes = ['openid', 'user.identity', 'name', 'email', 'mobileno'];
+        $result = $this->service->shouldCallUserInfo($accessToken, $loginScopes);
 
         $this->assertFalse($result);
     }
 
     // ========== getUserInfo() Tests ==========
-
-    public function test_get_user_info_returns_null_when_should_not_call(): void
-    {
-        $accessToken = $this->createAccessTokenWithScopes(['openid']);
-
-        $result = $this->service->getUserInfo($accessToken, $this->dpopKey);
-
-        $this->assertNull($result);
-    }
 
     public function test_get_user_info_throws_exception_on_http_failure(): void
     {
@@ -170,7 +169,7 @@ class GetUserInfoServiceTest extends TestCase
         $this->expectException(UserInfoRequestException::class);
         $this->expectExceptionMessage('UserInfo endpoint request failed with status 500');
 
-        $this->service->getUserInfo($accessToken, $this->dpopKey);
+        $this->service->getUserInfo($accessToken, $this->dpopKey, 'openId');
     }
 
     public function test_get_user_info_throws_exception_on_decryption_failure(): void
@@ -190,7 +189,7 @@ class GetUserInfoServiceTest extends TestCase
         $this->expectException(UserInfoDecryptionException::class);
         $this->expectExceptionMessage('Failed to decrypt UserInfo JWE token: Decryption failed');
 
-        $this->service->getUserInfo($accessToken, $this->dpopKey);
+        $this->service->getUserInfo($accessToken, $this->dpopKey, 'openId');
     }
 
     public function test_get_user_info_throws_exception_on_verification_failure(): void
@@ -209,7 +208,7 @@ class GetUserInfoServiceTest extends TestCase
             'keys' => [['kty' => 'RSA', 'kid' => 'test-key', 'use' => 'sig', 'n' => 'xGOr-H7A', 'e' => 'AQAB']],
         ]);
         $this->getSingPassJwksServiceMock
-            ->shouldReceive('getSingPassJwks')
+            ->shouldReceive('getJwks')
             ->once()
             ->andReturn($mockJwks);
 
@@ -224,7 +223,7 @@ class GetUserInfoServiceTest extends TestCase
         $this->expectException(UserInfoVerificationException::class);
         $this->expectExceptionMessage('Failed to verify UserInfo JWT token: Verification failed');
 
-        $this->service->getUserInfo($accessToken, $this->dpopKey);
+        $this->service->getUserInfo($accessToken, $this->dpopKey, 'openId');
     }
 
     public function test_get_user_info_extracts_person_info(): void
@@ -243,7 +242,7 @@ class GetUserInfoServiceTest extends TestCase
             'keys' => [['kty' => 'RSA', 'kid' => 'test-key', 'use' => 'sig', 'n' => 'xGOr-H7A', 'e' => 'AQAB']],
         ]);
         $this->getSingPassJwksServiceMock
-            ->shouldReceive('getSingPassJwks')
+            ->shouldReceive('getJwks')
             ->once()
             ->andReturn($mockJwks);
 
@@ -267,9 +266,8 @@ class GetUserInfoServiceTest extends TestCase
 
         $accessToken = $this->createAccessTokenWithScopes(['openid', 'uinfin', 'name']);
 
-        $result = $this->service->getUserInfo($accessToken, $this->dpopKey);
+        $result = $this->service->getUserInfo($accessToken, $this->dpopKey, 'openId');
 
-        $this->assertIsArray($result);
         $this->assertEquals($personInfo, $result);
         $this->assertEquals('S9000001B', $result['uinfin']['value']);
         $this->assertEquals('SOH HAO FENG', $result['name']['value']);
@@ -290,7 +288,7 @@ class GetUserInfoServiceTest extends TestCase
             'keys' => [['kty' => 'RSA', 'kid' => 'test-key', 'use' => 'sig', 'n' => 'xGOr-H7A', 'e' => 'AQAB']],
         ]);
         $this->getSingPassJwksServiceMock
-            ->shouldReceive('getSingPassJwks')
+            ->shouldReceive('getJwks')
             ->once()
             ->andReturn($mockJwks);
 
@@ -306,9 +304,8 @@ class GetUserInfoServiceTest extends TestCase
 
         $accessToken = $this->createAccessTokenWithScopes(['openid', 'uinfin', 'regadd']);
 
-        $result = $this->service->getUserInfo($accessToken, $this->dpopKey);
+        $result = $this->service->getUserInfo($accessToken, $this->dpopKey, 'openId');
 
-        $this->assertIsArray($result);
         $this->assertEquals($expectedPayload, $result);
     }
 

@@ -19,7 +19,7 @@ class PushedAuthorizationRequestServiceTest extends TestCase
 
         $this->service = new PushedAuthorizationRequestService;
 
-        Cache::put('openId', new OpenIdConfigurationDto(
+        Cache::put('openId:test', new OpenIdConfigurationDto(
             issuer: 'https://example.com',
             authorizationEndpoint: 'https://example.com/auth',
             tokenEndpoint: 'https://example.com/token',
@@ -47,7 +47,7 @@ class PushedAuthorizationRequestServiceTest extends TestCase
             'nonce' => 'test-nonce',
         ];
 
-        $requestUri = $this->service->sendRequest($params, 'mock-dpop-proof-jwt');
+        $requestUri = $this->service->sendRequest($params, 'mock-dpop-proof-jwt', 'openId:test');
 
         $this->assertEquals('urn:ietf:params:oauth:request_uri:test-uri', $requestUri);
     }
@@ -69,7 +69,7 @@ class PushedAuthorizationRequestServiceTest extends TestCase
 
         $this->expectException(PushedAuthorizationRequestException::class);
 
-        $this->service->sendRequest($params, 'mock-dpop-proof-jwt');
+        $this->service->sendRequest($params, 'mock-dpop-proof-jwt', 'openId:test');
     }
 
     public function test_send_request_invalid_dpop(): void
@@ -83,7 +83,7 @@ class PushedAuthorizationRequestServiceTest extends TestCase
 
         $this->expectException(PushedAuthorizationRequestException::class);
 
-        $this->service->sendRequest([], 'invalid-dpop-proof');
+        $this->service->sendRequest([], 'invalid-dpop-proof', 'openId:test');
     }
 
     public function test_send_request_missing_request_uri(): void
@@ -97,7 +97,7 @@ class PushedAuthorizationRequestServiceTest extends TestCase
         $this->expectException(PushedAuthorizationRequestException::class);
         $this->expectExceptionMessage('PAR response missing request_uri');
 
-        $this->service->sendRequest([], 'mock-dpop-proof-jwt');
+        $this->service->sendRequest([], 'mock-dpop-proof-jwt', 'openId:test');
     }
 
     public function test_send_request_unparseable_response(): void
@@ -109,6 +109,6 @@ class PushedAuthorizationRequestServiceTest extends TestCase
         $this->expectException(PushedAuthorizationRequestException::class);
         $this->expectExceptionMessage('Failed to parse PAR response');
 
-        $this->service->sendRequest([], 'mock-dpop-proof-jwt');
+        $this->service->sendRequest([], 'mock-dpop-proof-jwt', 'openId:test');
     }
 }

@@ -12,14 +12,14 @@ use Illuminate\Support\Facades\Http;
 final class OpenIdDiscoveryService implements OpenIdDiscoveryServiceInterface
 {
     /**
-     * Calls the SingPass Discovery Endpoint and stores the results in the cache for 1 hour
+     * Calls the provider's Discovery Endpoint and stores the results in the cache for 1 hour.
      *
      * @throws OpenIdDiscoveryException
      */
-    public function cacheOpenIdDiscovery(): void
+    public function cacheOpenIdDiscovery(string $discoveryEndpoint, string $cacheKey): void
     {
-        Cache::remember('openId', now()->addHour(), static function () {
-            $response = Http::get(config('singpass-login.discovery_endpoint'));
+        Cache::remember($cacheKey, now()->addHour(), static function () use ($discoveryEndpoint) {
+            $response = Http::get($discoveryEndpoint);
 
             if ($response->failed()) {
                 throw new OpenIdDiscoveryException($response->status());

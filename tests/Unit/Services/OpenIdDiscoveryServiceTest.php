@@ -7,17 +7,10 @@ use Accredifysg\SingPassLogin\Exceptions\OpenIdDiscoveryException;
 use Accredifysg\SingPassLogin\Services\OpenIdDiscoveryService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 
 class OpenIdDiscoveryServiceTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
-        Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
-    }
-
     public function test_cache_open_id_discovery_success(): void
     {
         $mockResponse = (string) json_encode([
@@ -33,9 +26,9 @@ class OpenIdDiscoveryServiceTest extends TestCase
             'https://example.com/discovery' => Http::response($mockResponse, 200),
         ]);
 
-        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery();
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery('https://example.com/discovery', 'openId:singpass');
 
-        $cached = Cache::get('openId');
+        $cached = Cache::get('openId:singpass');
 
         $this->assertInstanceOf(OpenIdConfigurationDto::class, $cached);
         $this->assertEquals('https://example.com', $cached->issuer);
@@ -60,7 +53,7 @@ class OpenIdDiscoveryServiceTest extends TestCase
         $this->expectException(OpenIdDiscoveryException::class);
         $this->expectExceptionMessage('OpenID discovery response missing required fields: token_endpoint, userinfo_endpoint, jwks_uri, pushed_authorization_request_endpoint');
 
-        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery();
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery('https://example.com/discovery', 'openId:singpass');
     }
 
     public function test_cache_open_id_discovery_json_exception(): void
@@ -72,7 +65,7 @@ class OpenIdDiscoveryServiceTest extends TestCase
         $this->expectException(OpenIdDiscoveryException::class);
         $this->expectExceptionMessage('Open ID Discovery response parse failure.');
 
-        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery();
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery('https://example.com/discovery', 'openId:singpass');
     }
 
     public function test_cache_open_id_discovery_exception(): void
@@ -84,6 +77,6 @@ class OpenIdDiscoveryServiceTest extends TestCase
         $this->expectException(OpenIdDiscoveryException::class);
         $this->expectExceptionMessage('Open ID Discovery call failed');
 
-        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery();
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery('https://example.com/discovery', 'openId:singpass');
     }
 }

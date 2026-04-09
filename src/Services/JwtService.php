@@ -2,14 +2,12 @@
 
 namespace Accredifysg\SingPassLogin\Services;
 
-use Accredifysg\SingPassLogin\DTOs\OpenIdConfigurationDto;
 use Accredifysg\SingPassLogin\Exceptions\JweDecryptionFailedException;
 use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
 use Accredifysg\SingPassLogin\Exceptions\JwtDecodeFailedException;
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
-use Accredifysg\SingPassLogin\Interfaces\SingPassJwtServiceInterface;
+use Accredifysg\SingPassLogin\Interfaces\JwtServiceInterface;
 use Exception;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Jose\Component\Checker\AlgorithmChecker;
@@ -44,7 +42,7 @@ use Jose\Component\Signature\Serializer\JWSSerializerManager;
 use JsonException;
 use Symfony\Component\Clock\NativeClock;
 
-final class SingPassJwtService implements SingPassJwtServiceInterface
+final class JwtService implements JwtServiceInterface
 {
     /**
      * Gets the key to sign the Assertion with based on what is set in the ENV
@@ -73,9 +71,9 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
     }
 
     /**
-     * Generate the client assertion needed to authenticate with the SingPass API
+     * Generate the client assertion needed to authenticate with the provider API.
      */
-    public static function generateClientAssertion(JWK $jwk, string $clientId): string
+    public static function generateClientAssertion(JWK $jwk, string $clientId, string $audience): string
     {
         $algorithmManager = new AlgorithmManager([
             new ES512,
@@ -83,12 +81,9 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
 
         $jwsBuilder = new JWSBuilder($algorithmManager);
 
-        /** @var OpenIdConfigurationDto $openIdConfig */
-        $openIdConfig = Cache::get('openId');
-
         $payload = json_encode([
             'sub' => $clientId,
-            'aud' => $openIdConfig->issuer,
+            'aud' => $audience,
             'iss' => $clientId,
             'iat' => time(),
             'exp' => time() + 119,
@@ -224,20 +219,20 @@ final class SingPassJwtService implements SingPassJwtServiceInterface
     }
 
     /**
-     * Verifies they payload to ensure it is valid
+     * Verifies the payload to ensure it is valid.
      *
      * @param  array<string, mixed>  $payload
      */
-    public function verifyPayload(array $payload): void
+    public function verifyPayload(array $payload, string $clientId, string $issuerDomain): void
     {
         $clock = new NativeClock;
 
         $claimCheckerManager = new ClaimCheckerManager(
             [
-                new AudienceChecker(config('singpass-login.client_id')),
+                new AudienceChecker($clientId),
                 new IssuedAtChecker($clock, 5),
                 new ExpirationTimeChecker($clock, 5),
-                new IssuerChecker([config('singpass-login.domain')]),
+                new IssuerChecker([$issuerDomain]),
             ]
         );
 

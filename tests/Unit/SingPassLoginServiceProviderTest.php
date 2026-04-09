@@ -34,8 +34,11 @@ class SingPassLoginServiceProviderTest extends TestCase
     {
         $routeCollection = app('router')->getRoutes();
 
+        $this->assertTrue($routeCollection->hasNamedRoute('singpass.login'));
         $this->assertTrue($routeCollection->hasNamedRoute('singpass.callback'));
         $this->assertTrue($routeCollection->hasNamedRoute('singpass.jwks'));
+        $this->assertTrue($routeCollection->hasNamedRoute('myinfo.login'));
+        $this->assertTrue($routeCollection->hasNamedRoute('myinfo.callback'));
     }
 
     public function test_event_listener_is_registered(): void
@@ -72,6 +75,10 @@ class SingPassLoginServiceProviderTest extends TestCase
         $this->assertArrayHasKey('authentication_context_type', config('singpass-login'));
         $this->assertArrayHasKey('authentication_context_message', config('singpass-login'));
         $this->assertArrayHasKey('login_scopes', config('singpass-login'));
+        $this->assertArrayHasKey('get_myinfo_authentication_endpoint_url', config('singpass-login'));
+        $this->assertArrayHasKey('get_myinfo_authentication_endpoint_controller', config('singpass-login'));
+        $this->assertArrayHasKey('post_myinfo_callback_url', config('singpass-login'));
+        $this->assertArrayHasKey('post_myinfo_callback_controller', config('singpass-login'));
     }
 
     protected function setUp(): void

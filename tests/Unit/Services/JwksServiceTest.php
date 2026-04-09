@@ -3,14 +3,14 @@
 namespace Accredifysg\SingPassLogin\Tests\Unit\Services;
 
 use Accredifysg\SingPassLogin\DTOs\OpenIdConfigurationDto;
-use Accredifysg\SingPassLogin\Exceptions\SingPassJwksException;
-use Accredifysg\SingPassLogin\Services\GetSingPassJwksService;
+use Accredifysg\SingPassLogin\Exceptions\JwksException;
+use Accredifysg\SingPassLogin\Services\JwksService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Jose\Component\Core\JWKSet;
 
-class GetSingPassJwksServiceTest extends TestCase
+class JwksServiceTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -26,7 +26,7 @@ class GetSingPassJwksServiceTest extends TestCase
         ));
     }
 
-    public function test_get_sing_pass_jwks_success(): void
+    public function test_get_jwks_success(): void
     {
         // Mock the HTTP response
         $mockJwks = json_encode([
@@ -46,7 +46,7 @@ class GetSingPassJwksServiceTest extends TestCase
         ]);
 
         // Call the method
-        $jwks = (new GetSingPassJwksService)->getSingPassJwks();
+        $jwks = (new JwksService)->getJwks('openId');
 
         // Assert the method returns a JWKSet object
         $this->assertInstanceOf(JWKSet::class, $jwks);
@@ -55,17 +55,17 @@ class GetSingPassJwksServiceTest extends TestCase
         $this->assertEquals($mockJwks, json_encode($jwks->jsonSerialize()));
     }
 
-    public function test_get_sing_pass_jwks_exception(): void
+    public function test_get_jwks_exception(): void
     {
         // Mock the HTTP response to return an error status
         Http::fake([
             'https://example.com/jwks' => Http::response(null, 500),
         ]);
 
-        // Expect the SingPassJwksException to be thrown
-        $this->expectException(SingPassJwksException::class);
+        // Expect the JwksException to be thrown
+        $this->expectException(JwksException::class);
 
         // Call the method
-        (new GetSingPassJwksService)->getSingPassJwks();
+        (new JwksService)->getJwks('openId');
     }
 }

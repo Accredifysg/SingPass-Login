@@ -4,7 +4,7 @@ namespace Accredifysg\SingPassLogin\Interfaces;
 
 use Jose\Component\Core\JWKSet;
 
-interface SingPassJwtServiceInterface
+interface JwtServiceInterface
 {
     public function jweDecrypt(string $jweToken): string;
 
@@ -16,5 +16,5 @@ interface SingPassJwtServiceInterface
     /**
      * @param  array<string, mixed>  $payload
      */
-    public function verifyPayload(array $payload): void;
+    public function verifyPayload(array $payload, string $clientId, string $issuerDomain): void;
 }

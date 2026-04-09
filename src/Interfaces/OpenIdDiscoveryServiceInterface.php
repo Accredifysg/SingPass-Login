@@ -4,5 +4,5 @@ namespace Accredifysg\SingPassLogin\Interfaces;
 
 interface OpenIdDiscoveryServiceInterface
 {
-    public function cacheOpenIdDiscovery(): void;
+    public function cacheOpenIdDiscovery(string $discoveryEndpoint, string $cacheKey): void;
 }

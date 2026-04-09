@@ -4,7 +4,7 @@ namespace Accredifysg\SingPassLogin\Interfaces;
 
 use Jose\Component\Core\JWKSet;
 
-interface GetSingPassJwksServiceInterface
+interface JwksServiceInterface
 {
-    public function getSingPassJwks(): JWKSet;
+    public function getJwks(string $cacheKey): JWKSet;
 }

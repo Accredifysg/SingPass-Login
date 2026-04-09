@@ -4,7 +4,7 @@ namespace Accredifysg\SingPassLogin\Tests\Unit\Services\SingPassJwtService;
 
 use Accredifysg\SingPassLogin\Exceptions\JweDecryptionFailedException;
 use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
-use Accredifysg\SingPassLogin\Services\SingPassJwtService;
+use Accredifysg\SingPassLogin\Services\JwtService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Support\Facades\Config;
 use Jose\Component\Core\AlgorithmManager;
@@ -32,7 +32,7 @@ class JweDecryptTest extends TestCase
         $jwe = $this->createMockJWE($key, $payload);
 
         // Call the method
-        $decryptedPayload = (new SingPassJwtService)->jweDecrypt($jwe);
+        $decryptedPayload = (new JwtService)->jweDecrypt($jwe);
 
         // Assert the decrypted payload is correct
         $this->assertEquals($payload, $decryptedPayload);
@@ -56,7 +56,7 @@ class JweDecryptTest extends TestCase
         $this->expectExceptionMessage('KID specified not found in JWKS.');
 
         // Call the method
-        (new SingPassJwtService)->jweDecrypt($jwe);
+        (new JwtService)->jweDecrypt($jwe);
     }
 
     public function test_jwe_decrypt_failure_invalid_jwe(): void
@@ -69,7 +69,7 @@ class JweDecryptTest extends TestCase
         $this->expectExceptionMessage('JWE invalid.');
 
         // Call the method
-        (new SingPassJwtService)->jweDecrypt($invalidJwe);
+        (new JwtService)->jweDecrypt($invalidJwe);
     }
 
     public function test_jwe_decrypt_failure_invalid_private_jwks(): void
@@ -90,7 +90,7 @@ class JweDecryptTest extends TestCase
         $this->expectExceptionMessage('JWKS is an invalid JSON string.');
 
         // Call the method
-        (new SingPassJwtService)->jweDecrypt($jwe);
+        (new JwtService)->jweDecrypt($jwe);
     }
 
     public function test_jwe_decrypt_failure_invalid_kid_key(): void
@@ -112,7 +112,7 @@ class JweDecryptTest extends TestCase
         $this->expectExceptionMessage('JWE cannot be decrypted with KID specified.');
 
         // Call the method
-        (new SingPassJwtService)->jweDecrypt($jwe);
+        (new JwtService)->jweDecrypt($jwe);
     }
 
     private function createMockJWE(JWK $key, string $payload): string

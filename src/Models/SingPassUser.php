@@ -2,6 +2,8 @@
 
 namespace Accredifysg\SingPassLogin\Models;
 
+use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
+
 class SingPassUser
 {
     protected string $uuid;
@@ -34,6 +36,33 @@ class SingPassUser
         $this->name = $name;
         $this->email = $email;
         $this->mobileNo = $mobileNo;
+    }
+
+    /**
+     * Create a SingPassUser from a decoded ID token payload.
+     *
+     * @param  array<string, mixed>  $payload
+     *
+     * @throws JwtPayloadException
+     */
+    public static function fromPayload(array $payload): self
+    {
+        $sub = $payload['sub'] ?? '';
+        if ($sub === '') {
+            throw new JwtPayloadException(400, 'Sub is empty');
+        }
+
+        $subAttributes = $payload['sub_attributes'] ?? [];
+
+        return new self(
+            uuid: $sub,
+            nric: $subAttributes['identity_number'] ?? null,
+            accountType: $subAttributes['account_type'] ?? null,
+            identityCoi: $subAttributes['identity_coi'] ?? null,
+            name: $subAttributes['name'] ?? null,
+            email: $subAttributes['email'] ?? null,
+            mobileNo: $subAttributes['mobileno'] ?? null,
+        );
     }
 
     public function getUuid(): string

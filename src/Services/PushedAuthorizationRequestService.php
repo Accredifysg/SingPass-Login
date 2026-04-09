@@ -18,10 +18,17 @@ final class PushedAuthorizationRequestService implements PushedAuthorizationRequ
      * @throws ConnectionException
      * @throws PushedAuthorizationRequestException
      */
-    public function sendRequest(array $params, string $dpopProofJwt): string
+    public function sendRequest(array $params, string $dpopProofJwt, string $cacheKey): string
     {
-        /** @var OpenIdConfigurationDto $openIdConfig */
-        $openIdConfig = Cache::get('openId');
+        $openIdConfig = Cache::get($cacheKey);
+
+        if (! $openIdConfig instanceof OpenIdConfigurationDto) {
+            throw new PushedAuthorizationRequestException(
+                statusCode: 500,
+                message: 'OpenID configuration not found in cache',
+            );
+        }
+
         $parEndpoint = $openIdConfig->pushedAuthorizationRequestEndpoint;
 
         $response = Http::bodyFormat('form_params')
