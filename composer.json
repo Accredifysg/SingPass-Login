@@ -45,10 +45,7 @@
         "laravel": {
             "providers": [
                 "Accredifysg\\SingPassLogin\\SingPassLoginServiceProvider"
-            ],
-            "aliases": {
-                "SingPassLogin": "Accredifysg\\SingPassLogin\\Facades\\SingPassLoginFacade"
-            }
+            ]
         }
     },
     "scripts": {
