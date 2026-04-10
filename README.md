@@ -62,6 +62,9 @@ Add the following to your `.env`:
 SINGPASS_CLIENT_ID=
 SINGPASS_REDIRECT_URI=
 SINGPASS_DOMAIN=
+# Must be the FAPI discovery URL (includes pushed_authorization_request_endpoint), e.g.
+# Staging: https://stg-id.singpass.gov.sg/fapi/.well-known/openid-configuration
+# Production: https://id.singpass.gov.sg/fapi/.well-known/openid-configuration
 SINGPASS_DISCOVERY_ENDPOINT=
 SINGPASS_SIGNING_KID=
 SINGPASS_JWKS=

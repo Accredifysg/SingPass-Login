@@ -6,6 +6,7 @@ use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
 use Accredifysg\SingPassLogin\Services\JwtService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Jose\Component\Core\JWK;
+use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerializer;
 
 class GenerateClientAssertionTest extends TestCase
@@ -48,6 +49,23 @@ class GenerateClientAssertionTest extends TestCase
         $this->assertArrayHasKey('jti', $payload);
         $this->assertNotEmpty($payload['jti']);
         $this->assertArrayNotHasKey('code', $payload);
+
+        $this->assertEquals('ES512', $jws->getSignature(0)->getProtectedHeaderParameter('alg'));
+    }
+
+    public function test_it_uses_es256_for_p256_signing_key(): void
+    {
+        $jwk = JWKFactory::createECKey('P-256', [
+            'kid' => 'test-signing-kid',
+            'use' => 'sig',
+        ]);
+
+        $clientAssertion = JwtService::generateClientAssertion($jwk, 'test-client-id', 'https://example.com');
+
+        $serializer = new JwsCompactSerializer;
+        $jws = $serializer->unserialize($clientAssertion);
+
+        $this->assertEquals('ES256', $jws->getSignature(0)->getProtectedHeaderParameter('alg'));
     }
 
     public function test_generate_client_assertion_with_myinfo_client_id(): void

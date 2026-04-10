@@ -32,6 +32,7 @@ use Jose\Component\Encryption\Serializer\CompactSerializer;
 use Jose\Component\Encryption\Serializer\JWESerializerManager;
 use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\ES256;
+use Jose\Component\Signature\Algorithm\ES384;
 use Jose\Component\Signature\Algorithm\ES512;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\JWSLoader;
@@ -72,12 +73,21 @@ final class JwtService implements JwtServiceInterface
 
     /**
      * Generate the client assertion needed to authenticate with the provider API.
+     *
+     * The JWS algorithm matches the signing key curve (ES256 for P-256, ES384 for P-384,
+     * ES512 for P-521). SingPass accepts ES256/ES384/ES512; using the wrong algorithm for
+     * your key causes PAR/token requests to fail (often as a generic bad_request).
      */
     public static function generateClientAssertion(JWK $jwk, string $clientId, string $audience): string
     {
-        $algorithmManager = new AlgorithmManager([
-            new ES512,
-        ]);
+        $algName = self::clientAssertionAlgorithmForEcJwk($jwk);
+        $signer = match ($algName) {
+            'ES256' => new ES256,
+            'ES384' => new ES384,
+            'ES512' => new ES512,
+        };
+
+        $algorithmManager = new AlgorithmManager([$signer]);
 
         $jwsBuilder = new JWSBuilder($algorithmManager);
 
@@ -99,7 +109,7 @@ final class JwtService implements JwtServiceInterface
                 ->withPayload($payload)
                 ->addSignature($jwk, [
                     'typ' => 'JWT',
-                    'alg' => 'ES512',
+                    'alg' => $algName,
                     'kid' => config('singpass-login.signing_kid'),
                 ])->build();
         } catch (Exception) {
@@ -109,6 +119,29 @@ final class JwtService implements JwtServiceInterface
         $serializer = new JwsCompactSerializer;
 
         return $serializer->serialize($jws, 0);
+    }
+
+    /**
+     * Map EC curve to OIDC private_key_jwt signing algorithm (SingPass-supported set).
+     *
+     * @param JWK $jwk
+     *
+     * @return 'ES256'|'ES384'|'ES512'
+     */
+    private static function clientAssertionAlgorithmForEcJwk(JWK $jwk): string
+    {
+        $crv = $jwk->get('crv');
+
+        if (! is_string($crv)) {
+            throw new JwksInvalidException(500, 'Signing key must be an EC key with a crv (curve) parameter.');
+        }
+
+        return match ($crv) {
+            'P-256' => 'ES256',
+            'P-384' => 'ES384',
+            'P-521' => 'ES512',
+            default => throw new JwksInvalidException(500, 'Unsupported EC curve for client assertion: '.$crv),
+        };
     }
 
     /**
