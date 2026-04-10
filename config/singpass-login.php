@@ -19,6 +19,9 @@ return [
     // FAPI 2.0 / DPoP
     'dpop_signing_algorithm' => env('SINGPASS_DPOP_SIGNING_ALGORITHM', 'ES256'),
 
+    // Diagnostic logging (logs PAR, token, UserInfo, JWKS and callback requests)
+    'enable_logging' => env('SINGPASS_LOGS_ENABLED', false),
+
     // Authentication context (Login apps only)
     'authentication_context_type' => env('SINGPASS_AUTH_CONTEXT_TYPE', 'APP_AUTHENTICATION_DEFAULT'), // Possible values: https://docs.developer.singpass.gov.sg/docs/technical-specifications/integration-guide/1.-authorization-request#possible-authentication_context_type-values
     'authentication_context_message' => env('SINGPASS_AUTH_CONTEXT_MESSAGE'),

@@ -10,6 +10,7 @@ use Accredifysg\SingPassLogin\Interfaces\DPoPServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\GetUserInfoServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\JwksServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\JwtServiceInterface;
+use Accredifysg\SingPassLogin\Support\SingPassLog;
 use Exception;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
@@ -84,6 +85,8 @@ final readonly class GetUserInfoService implements GetUserInfoServiceInterface
 
         $userinfoEndpoint = $openIdConfig->userinfoEndpoint;
 
+        SingPassLog::info('UserInfo request', ['endpoint' => $userinfoEndpoint]);
+
         $ath = $this->dpopService->computeAccessTokenHash($accessToken);
         $dpopProofJwt = $this->dpopService->generateProofJwt($dpopKey, 'GET', $userinfoEndpoint, $ath);
 
@@ -93,15 +96,29 @@ final readonly class GetUserInfoService implements GetUserInfoServiceInterface
         ])->get($userinfoEndpoint);
 
         if ($response->failed()) {
+            SingPassLog::error('UserInfo request failed', [
+                'endpoint' => $userinfoEndpoint,
+                'http_status' => $response->status(),
+            ]);
+
             throw new UserInfoRequestException(
                 $response->status(),
                 "UserInfo endpoint request failed with status {$response->status()}: {$userinfoEndpoint}"
             );
         }
 
+        SingPassLog::info('UserInfo response received, decrypting JWE', [
+            'endpoint' => $userinfoEndpoint,
+        ]);
+
         try {
             $jwtToken = $this->jwtService->jweDecrypt($response->body());
         } catch (Exception $e) {
+            SingPassLog::error('UserInfo JWE decryption failed', [
+                'endpoint' => $userinfoEndpoint,
+                'error' => $e->getMessage(),
+            ]);
+
             throw new UserInfoDecryptionException(
                 500,
                 "Failed to decrypt UserInfo JWE token: {$e->getMessage()}",
@@ -113,12 +130,19 @@ final readonly class GetUserInfoService implements GetUserInfoServiceInterface
             $jwksKeyset = $this->jwksService->getJwks($cacheKey);
             $payload = $this->jwtService->jwtDecode($jwtToken, $jwksKeyset);
         } catch (Exception $e) {
+            SingPassLog::error('UserInfo JWT verification failed', [
+                'endpoint' => $userinfoEndpoint,
+                'error' => $e->getMessage(),
+            ]);
+
             throw new UserInfoVerificationException(
                 500,
                 "Failed to verify UserInfo JWT token: {$e->getMessage()}",
                 $e
             );
         }
+
+        SingPassLog::info('UserInfo data retrieved successfully');
 
         return $payload['person_info'] ?? $payload;
     }

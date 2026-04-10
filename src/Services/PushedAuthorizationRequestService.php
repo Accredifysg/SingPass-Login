@@ -5,6 +5,7 @@ namespace Accredifysg\SingPassLogin\Services;
 use Accredifysg\SingPassLogin\DTOs\OpenIdConfigurationDto;
 use Accredifysg\SingPassLogin\Exceptions\PushedAuthorizationRequestException;
 use Accredifysg\SingPassLogin\Interfaces\PushedAuthorizationRequestServiceInterface;
+use Accredifysg\SingPassLogin\Support\SingPassLog;
 use Exception;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
@@ -31,6 +32,11 @@ final class PushedAuthorizationRequestService implements PushedAuthorizationRequ
 
         $parEndpoint = $openIdConfig->pushedAuthorizationRequestEndpoint;
 
+        SingPassLog::info('PAR request', [
+            'endpoint' => $parEndpoint,
+            'params' => SingPassLog::redact($params),
+        ]);
+
         $response = Http::bodyFormat('form_params')
             ->contentType('application/x-www-form-urlencoded; charset=ISO-8859-1')
             ->withHeaders(['DPoP' => $dpopProofJwt])
@@ -39,6 +45,12 @@ final class PushedAuthorizationRequestService implements PushedAuthorizationRequ
         try {
             $responseData = json_decode($response->body(), false, 512, JSON_THROW_ON_ERROR);
         } catch (Exception) {
+            SingPassLog::error('PAR response parse failure', [
+                'endpoint' => $parEndpoint,
+                'http_status' => $response->status(),
+                'response_body' => $response->body(),
+            ]);
+
             throw new PushedAuthorizationRequestException(
                 statusCode: $response->status(),
                 message: 'Failed to parse PAR response',
@@ -46,6 +58,13 @@ final class PushedAuthorizationRequestService implements PushedAuthorizationRequ
         }
 
         if ($response->failed() || isset($responseData->error)) {
+            SingPassLog::error('PAR request failed', [
+                'endpoint' => $parEndpoint,
+                'http_status' => $response->status(),
+                'response_body' => $response->body(),
+                'params_sent' => SingPassLog::redact($params),
+            ]);
+
             throw new PushedAuthorizationRequestException(
                 statusCode: $response->status(),
                 message: 'Pushed Authorization Request failed',
@@ -55,11 +74,20 @@ final class PushedAuthorizationRequestService implements PushedAuthorizationRequ
         }
 
         if (! isset($responseData->request_uri)) {
+            SingPassLog::error('PAR response missing request_uri', [
+                'endpoint' => $parEndpoint,
+                'response_body' => $response->body(),
+            ]);
+
             throw new PushedAuthorizationRequestException(
                 statusCode: 500,
                 message: 'PAR response missing request_uri',
             );
         }
+
+        SingPassLog::info('PAR request successful', [
+            'request_uri' => $responseData->request_uri,
+        ]);
 
         return $responseData->request_uri;
     }

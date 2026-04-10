@@ -8,6 +8,7 @@ use Accredifysg\SingPassLogin\Exceptions\AuthFlowException;
 use Accredifysg\SingPassLogin\Interfaces\DPoPServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\OpenIdDiscoveryServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\PushedAuthorizationRequestServiceInterface;
+use Accredifysg\SingPassLogin\Support\SingPassLog;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -33,10 +34,18 @@ class FapiAuthenticationService
         string|array $requestedScopes,
         array $extraParParams = [],
     ): array {
+        SingPassLog::info('Initiating auth flow', [
+            'client_id' => $config->clientId,
+            'redirect_uri' => $config->redirectUri,
+            'discovery_endpoint' => $config->discoveryEndpoint,
+        ]);
+
         $this->discoveryService->cacheOpenIdDiscovery($config->discoveryEndpoint, $config->cacheKey);
 
         $validatedScopes = $this->scopeService->parseAndValidate($requestedScopes, $config->availableScopes);
         $scope = $this->scopeService->formatForOAuth($validatedScopes);
+
+        SingPassLog::info('Scopes validated', ['scope' => $scope]);
 
         $state = Str::uuid()->toString();
         $nonce = Str::uuid()->toString();
@@ -81,6 +90,12 @@ class FapiAuthenticationService
         $redirectUrl = $openIdConfig->authorizationEndpoint.'?'.http_build_query([
             'client_id' => $config->clientId,
             'request_uri' => $requestUri,
+        ]);
+
+        SingPassLog::info('Auth flow initiated', [
+            'state' => $state,
+            'redirect_url' => $redirectUrl,
+            'session_id' => session()->getId(),
         ]);
 
         return ['redirect_url' => $redirectUrl];
