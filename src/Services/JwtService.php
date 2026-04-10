@@ -7,6 +7,7 @@ use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
 use Accredifysg\SingPassLogin\Exceptions\JwtDecodeFailedException;
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Accredifysg\SingPassLogin\Interfaces\JwtServiceInterface;
+use Accredifysg\SingPassLogin\Support\SingPassLog;
 use Exception;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -151,6 +152,7 @@ final class JwtService implements JwtServiceInterface
      */
     public function jweDecrypt(string $jweToken): string
     {
+        SingPassLog::info('Decrypting JWE token');
         $algorithmManager = new AlgorithmManager([
             new A256KW,
             new ECDHESA256KW,
@@ -181,6 +183,7 @@ final class JwtService implements JwtServiceInterface
         }
 
         if ($jweDecrypter->decryptUsingKey($jwe, $key, 0)) {
+            SingPassLog::info('JWE decryption successful');
             $headerCheckerManager = new HeaderCheckerManager([
                 new AlgorithmChecker(['ECDH-ES+A256KW']),
             ], [
@@ -211,6 +214,7 @@ final class JwtService implements JwtServiceInterface
      */
     public function jwtDecode(string $jwtToken, JWKSet $jwksKeyset): array
     {
+        SingPassLog::info('Decoding and verifying JWT signature');
         $algorithmManager = new AlgorithmManager([
             new ES256,
         ]);
@@ -248,6 +252,8 @@ final class JwtService implements JwtServiceInterface
             throw new JwtDecodeFailedException(500, 'JWT payload is empty.');
         }
 
+        SingPassLog::info('JWT signature verified successfully');
+
         return json_decode($payload, true);
     }
 
@@ -258,6 +264,13 @@ final class JwtService implements JwtServiceInterface
      */
     public function verifyPayload(array $payload, string $clientId, string $issuerDomain): void
     {
+        SingPassLog::info('Verifying ID token claims', [
+            'expected_audience' => $clientId,
+            'expected_issuer' => $issuerDomain,
+            'token_issuer' => $payload['iss'] ?? null,
+            'token_audience' => $payload['aud'] ?? null,
+        ]);
+
         $clock = new NativeClock;
 
         $claimCheckerManager = new ClaimCheckerManager(
@@ -272,7 +285,17 @@ final class JwtService implements JwtServiceInterface
         try {
             $claimCheckerManager->check($payload);
         } catch (InvalidClaimException $exception) {
+            SingPassLog::error('ID token claim verification failed', [
+                'error' => $exception->getMessage(),
+                'expected_audience' => $clientId,
+                'expected_issuer' => $issuerDomain,
+                'token_issuer' => $payload['iss'] ?? null,
+                'token_audience' => $payload['aud'] ?? null,
+            ]);
+
             throw new JwtPayloadException(400, $exception->getMessage());
         }
+
+        SingPassLog::info('ID token claims verified');
     }
 }
