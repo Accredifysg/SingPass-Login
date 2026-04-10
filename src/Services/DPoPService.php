@@ -26,7 +26,7 @@ final class DPoPService implements DPoPServiceInterface
         $jwsBuilder = new JWSBuilder($algorithmManager);
 
         $payload = [
-            'jti' => Str::uuid(),
+            'jti' => Str::uuid()->toString(),
             'htm' => $htm,
             'htu' => $htu,
             'iat' => time(),

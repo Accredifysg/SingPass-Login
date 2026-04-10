@@ -38,8 +38,8 @@ class FapiAuthenticationService
         $validatedScopes = $this->scopeService->parseAndValidate($requestedScopes, $config->availableScopes);
         $scope = $this->scopeService->formatForOAuth($validatedScopes);
 
-        $state = Str::uuid();
-        $nonce = Str::uuid();
+        $state = Str::uuid()->toString();
+        $nonce = Str::uuid()->toString();
 
         $codeVerifier = $this->codeChallengeService->generateCodeVerifier();
         $codeChallenge = $this->codeChallengeService->generateCodeChallenge($codeVerifier);

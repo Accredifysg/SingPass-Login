@@ -97,7 +97,7 @@ final class JwtService implements JwtServiceInterface
             'iss' => $clientId,
             'iat' => time(),
             'exp' => time() + 119,
-            'jti' => Str::uuid(),
+            'jti' => Str::uuid()->toString(),
         ]);
 
         if ($payload === false) {
