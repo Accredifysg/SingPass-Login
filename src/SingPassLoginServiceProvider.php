@@ -34,6 +34,7 @@ class SingPassLoginServiceProvider extends ServiceProvider
 
         $this->publishes([
             __DIR__.'/Listeners/SingPassSuccessfulLoginListener.php' => app_path('Listeners/SingPassSuccessfulLoginListener.php'),
+            __DIR__.'/Listeners/CorpPassSuccessfulLoginListener.php' => app_path('Listeners/CorpPassSuccessfulLoginListener.php'),
         ], 'listener');
 
         $this->registerEventListeners();

@@ -14,7 +14,7 @@ class SingPassSuccessfulLoginEventTest extends TestCase
         $user = new SingPassUser('test-uuid', 'test-nric');
 
         // Instantiate the event with the mock user
-        $event = new SingPassSuccessfulLoginEvent($user, 'LOGIN-');
+        $event = new SingPassSuccessfulLoginEvent($user, '9d8c5c0e-4f3a-4b2d-9e1f-0a1b2c3d4e5f');
 
         // Assert that the event's user is the same as the mock user
         $this->assertSame($user, $event->getSingPassUser());
@@ -26,7 +26,7 @@ class SingPassSuccessfulLoginEventTest extends TestCase
         $user = new SingPassUser('test-uuid', 'test-nric');
 
         // Instantiate the event with the mock user
-        $event = new SingPassSuccessfulLoginEvent($user, 'LOGIN-');
+        $event = new SingPassSuccessfulLoginEvent($user, '9d8c5c0e-4f3a-4b2d-9e1f-0a1b2c3d4e5f');
 
         // Call the getSingPassUser method and assert the returned user is the same as the mock user
         $this->assertSame($user, $event->getSingPassUser());

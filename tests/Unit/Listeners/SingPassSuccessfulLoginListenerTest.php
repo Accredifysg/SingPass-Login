@@ -42,7 +42,7 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
         $singPassUser->method('getNric')->willReturn('123456');
 
         // Create the event
-        $event = new SingPassSuccessfulLoginEvent($singPassUser, 'LOGIN-');
+        $event = new SingPassSuccessfulLoginEvent($singPassUser, '9d8c5c0e-4f3a-4b2d-9e1f-0a1b2c3d4e5f');
 
         // Create the listener
         $listener = new SingPassSuccessfulLoginListener;
@@ -65,7 +65,7 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
         $singPassUser->method('getNric')->willReturn('nonexistent');
 
         // Create the event
-        $event = new SingPassSuccessfulLoginEvent($singPassUser, 'LOGIN-');
+        $event = new SingPassSuccessfulLoginEvent($singPassUser, '9d8c5c0e-4f3a-4b2d-9e1f-0a1b2c3d4e5f');
 
         // Create the listener
         $listener = new SingPassSuccessfulLoginListener;
@@ -77,34 +77,10 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
         $listener->handle($event);
     }
 
-    public function test_handle_with_update_to_existent_user(): void
-    {
-        // Create a user
-        /** @var User $user */
-        $user = User::factory()->create(['nric' => '123456']);
-
-        // Mock SingPassUser
-        $singPassUser = $this->createMock(SingPassUser::class);
-        $singPassUser->method('getNric')->willReturn('123456');
-
-        // Create the event
-        $event = new SingPassSuccessfulLoginEvent($singPassUser, 'ENABLE-');
-
-        // Create the listener
-        $listener = new SingPassSuccessfulLoginListener;
-
-        // Call the handle method
-        $listener->handle($event);
-
-        // Assert that the user is logged in
-        $this->assertTrue(Auth::check());
-        $this->assertEquals($user->getKey(), Auth::id());
-    }
-
     public function test_handle_throws_exception(): void
     {
         $singpassUser = new SingPassUser('1111-1111-1111-1111', 'S0000000A');
-        $event = new SingPassSuccessfulLoginEvent($singpassUser, 'LOGIN-');
+        $event = new SingPassSuccessfulLoginEvent($singpassUser, '9d8c5c0e-4f3a-4b2d-9e1f-0a1b2c3d4e5f');
 
         $listener = new SingPassSuccessfulLoginListener;
 

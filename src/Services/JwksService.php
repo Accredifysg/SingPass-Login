@@ -24,7 +24,10 @@ final class JwksService implements JwksServiceInterface
         }
 
         try {
-            $response = Http::get($openIdConfig->jwksUri)->throwUnlessStatus(200)->body();
+            $response = Http::createPendingRequest()
+                ->get($openIdConfig->jwksUri)
+                ->throwUnlessStatus(200)
+                ->body();
 
             return JWKSet::createFromJson($response);
         } catch (Exception) {

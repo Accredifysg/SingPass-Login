@@ -300,14 +300,13 @@ class CorpPassLoginListener
         $entityName = $corpPassUser->getEntityName();
 
         // Actor (individual user)
-        $actorId = $corpPassUser->getActorId();          // User UUID
         $nric = $corpPassUser->getIdentityNumber();      // NRIC/FIN (requires user.identity scope)
         $name = $corpPassUser->getName();                // Requires user.name scope
 
         // Look up or create the user in your system
         $user = User::firstOrCreate(
-            ['corppass_entity_id' => $entityId, 'corppass_actor_id' => $actorId],
-            ['name' => $name, 'nric' => $nric, 'entity_name' => $entityName],
+            ['corppass_entity_id' => $entityId, 'nric' => $nric],
+            ['name' => $name, 'entity_name' => $entityName],
         );
 
         Auth::login($user);

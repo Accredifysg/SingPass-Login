@@ -19,7 +19,7 @@ final class OpenIdDiscoveryService implements OpenIdDiscoveryServiceInterface
     public function cacheOpenIdDiscovery(string $discoveryEndpoint, string $cacheKey): void
     {
         Cache::remember($cacheKey, now()->addHour(), static function () use ($discoveryEndpoint) {
-            $response = Http::get($discoveryEndpoint);
+            $response = Http::createPendingRequest()->get($discoveryEndpoint);
 
             if ($response->failed()) {
                 throw new OpenIdDiscoveryException($response->status());

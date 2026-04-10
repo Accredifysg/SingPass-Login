@@ -2,6 +2,7 @@
 
 use Accredifysg\SingPassLogin\Http\Controllers\CorpPass\LoginCallbackController;
 use Accredifysg\SingPassLogin\Http\Controllers\CorpPass\LoginController;
+use Accredifysg\SingPassLogin\Listeners\CorpPassSuccessfulLoginListener;
 
 return [
     'client_id' => env('CORPPASS_CLIENT_ID'),
@@ -19,8 +20,8 @@ return [
     'post_corppass_callback_controller' => LoginCallbackController::class,
 
     // Listener
-    'use_default_listener' => env('CORPPASS_USE_DEFAULT_LISTENER', false),
-    'listener_class' => null,
+    'use_default_listener' => env('CORPPASS_USE_DEFAULT_LISTENER', true),
+    'listener_class' => CorpPassSuccessfulLoginListener::class,
 
     /*
     |--------------------------------------------------------------------------
