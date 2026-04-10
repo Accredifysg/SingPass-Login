@@ -12,6 +12,7 @@ The package now implements the full **FAPI 2.0** security profile as required by
 - **Private-key JWT client assertions**: Client authentication uses signed JWTs with `jti` claims instead of client secrets.
 - **JWE-encrypted ID tokens**: ID tokens are decrypted (JWE) and verified (JWS) before payload extraction.
 - **OpenID Connect Discovery validation**: Discovery responses are validated and cached via a typed `OpenIdConfigurationDto` that enforces the presence of required endpoints.
+- **Diagnostic logging**: All service calls (OpenID Discovery, PAR, token exchange, JWKS, UserInfo, JWE/JWS verification, ID token claim checks) are now logged with `[SingPass]` prefix. Logging is gated behind `SINGPASS_LOGS_ENABLED=true` (defaults to `false`). Sensitive values (`client_assertion`, `code_verifier`, `id_token`, `access_token`) are automatically redacted. Session IDs are logged on both login initiation and callback to help diagnose session-loss issues.
 
 ### CorpPass Support
 

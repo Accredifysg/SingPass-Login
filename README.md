@@ -61,6 +61,9 @@ Add the following to your `.env`:
 # SingPass credentials
 SINGPASS_CLIENT_ID=
 SINGPASS_REDIRECT_URI=
+# Must match the `issuer` from the FAPI discovery endpoint, e.g.
+# Staging: https://stg-id.singpass.gov.sg/fapi
+# Production: https://id.singpass.gov.sg/fapi
 SINGPASS_DOMAIN=
 # Must be the FAPI discovery URL (includes pushed_authorization_request_endpoint), e.g.
 # Staging: https://stg-id.singpass.gov.sg/fapi/.well-known/openid-configuration
@@ -76,6 +79,9 @@ SINGPASS_DPOP_SIGNING_ALGORITHM=ES256
 # Login app authentication context (see SingPass integration guide)
 SINGPASS_AUTH_CONTEXT_TYPE=APP_AUTHENTICATION_DEFAULT
 # SINGPASS_AUTH_CONTEXT_MESSAGE=
+
+# Diagnostic logging (disabled by default)
+SINGPASS_LOGS_ENABLED=false
 
 # Default Listener
 SINGPASS_USE_DEFAULT_LISTENER=true
@@ -362,6 +368,26 @@ protected $listen = [
 | SingPass Login | `/ndi/sp/login` | `/ndi/sp/callback` | `SingPassSuccessfulLoginEvent` |
 | MyInfo | `/ndi/mi/initiate` | `/ndi/mi/callback` | `MyInfoDataRetrievedEvent` |
 | CorpPass | `/ndi/cp/login` | `/ndi/cp/callback` | `CorpPassSuccessfulLoginEvent`, `CorpPassDataRetrievedEvent` |
+
+## Diagnostic Logging
+
+Set `SINGPASS_LOGS_ENABLED=true` in your `.env` to enable detailed logging of every step in the authentication flow. All log entries are prefixed with `[SingPass]` and sensitive values (`client_assertion`, `code_verifier`, `id_token`, `access_token`) are automatically redacted.
+
+Logged steps include:
+
+| Step | Info logged |
+|---|---|
+| OpenID Discovery | Endpoint, cached issuer, PAR endpoint |
+| PAR Request | Endpoint, request params (redacted), `request_uri` on success |
+| Auth Initiation | Client ID, redirect URI, scopes, state, session ID |
+| Callback Validation | Session ID match, state lookup, missing session data details |
+| Token Exchange | Endpoint, status, error details on failure |
+| JWE / JWS | Decryption and signature verification steps |
+| ID Token Claims | Expected vs actual `aud` and `iss` on verification failure |
+| JWKS | Fetch endpoint, success/failure |
+| UserInfo | Endpoint, JWE decryption, JWT verification |
+
+This is particularly useful for diagnosing session issues (mismatched session IDs between login and callback), issuer/audience mismatches, and PAR rejections.
 
 ## Upgrading from pre–FAPI 2.0 versions
 
