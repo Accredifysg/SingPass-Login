@@ -16,9 +16,18 @@ class LoginController extends Controller
     ): JsonResponse {
         $config = ProviderConfig::corpPass();
 
+        $extraParams = [];
+
+        $authContextType = $request->query('authentication_context_type')
+            ?? config('corppass-login.authentication_context_type');
+
+        if ($authContextType !== null) {
+            $extraParams['authentication_context_type'] = $authContextType;
+        }
+
         $requestedScopes = $request->query('scopes', 'openid') ?? 'openid';
 
-        $result = $fapiAuth->initiateAuth($config, $requestedScopes);
+        $result = $fapiAuth->initiateAuth($config, $requestedScopes, $extraParams);
 
         return response()->json($result);
     }

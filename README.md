@@ -102,6 +102,9 @@ CORPPASS_DISCOVERY_ENDPOINT=
 
 # Default Listener (disabled by default)
 CORPPASS_USE_DEFAULT_LISTENER=false
+
+# Login app authentication context
+CORPPASS_AUTH_CONTEXT_TYPE=APP_AUTHENTICATION_DEFAULT
 ```
 
 ### Enabling / Disabling Modules

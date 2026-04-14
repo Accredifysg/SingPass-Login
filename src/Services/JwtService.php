@@ -125,7 +125,6 @@ final class JwtService implements JwtServiceInterface
     /**
      * Map EC curve to OIDC private_key_jwt signing algorithm (SingPass-supported set).
      *
-     * @param JWK $jwk
      *
      * @return 'ES256'|'ES384'|'ES512'
      */

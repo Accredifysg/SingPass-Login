@@ -23,6 +23,9 @@ return [
     'use_default_listener' => env('CORPPASS_USE_DEFAULT_LISTENER', true),
     'listener_class' => CorpPassSuccessfulLoginListener::class,
 
+    // Authentication context
+    'authentication_context_type' => env('CORPPASS_AUTH_CONTEXT_TYPE', 'APP_AUTHENTICATION_DEFAULT'), // Possible values: https://docs.corppass.gov.sg/technical-specifications/corppass-authorization-api-fapi-2.0/integration-guide/1.-pushed-authorization-request-par-endpoint/authentication-context-parameters#supported-authentication_context_type-values
+
     /*
     |--------------------------------------------------------------------------
     | Login Scopes
