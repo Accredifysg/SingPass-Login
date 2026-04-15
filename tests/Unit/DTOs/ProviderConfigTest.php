@@ -3,6 +3,7 @@
 namespace Accredifysg\SingPassLogin\Tests\Unit\DTOs;
 
 use Accredifysg\SingPassLogin\DTOs\ProviderConfig;
+use Accredifysg\SingPassLogin\Exceptions\MissingConfigException;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Support\Facades\Config;
 
@@ -14,7 +15,6 @@ class ProviderConfigTest extends TestCase
         Config::set('singpass-login.client_id', 'test-client-id');
         Config::set('singpass-login.redirect_uri', 'https://example.com/callback');
         Config::set('singpass-login.domain', 'https://example.com');
-        Config::set('singpass-login.available_scopes', ['openid', 'name', 'uinfin']);
         Config::set('singpass-login.login_scopes', ['openid', 'user.identity']);
 
         $config = ProviderConfig::singPassLogin();
@@ -30,12 +30,12 @@ class ProviderConfigTest extends TestCase
 
     public function test_singpass_myinfo_factory(): void
     {
-        Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
-        Config::set('singpass-login.myinfo_client_id', 'myinfo-client-id');
-        Config::set('singpass-login.myinfo_redirect_uri', 'https://example.com/myinfo-callback');
-        Config::set('singpass-login.domain', 'https://example.com');
-        Config::set('singpass-login.available_scopes', ['openid', 'uinfin']);
-        Config::set('singpass-login.login_scopes', ['openid']);
+        Config::set('myinfo.discovery_endpoint', 'https://example.com/discovery');
+        Config::set('myinfo.client_id', 'myinfo-client-id');
+        Config::set('myinfo.redirect_uri', 'https://example.com/myinfo-callback');
+        Config::set('myinfo.domain', 'https://example.com');
+        Config::set('myinfo.available_scopes', ['openid', 'uinfin']);
+        Config::set('myinfo.login_scopes', ['openid']);
 
         $config = ProviderConfig::singPassMyInfo();
 
@@ -82,5 +82,44 @@ class ProviderConfigTest extends TestCase
 
         $this->assertEquals('custom-id', $config->clientId);
         $this->assertEquals('openId:custom', $config->cacheKey);
+    }
+
+    public function test_singpass_factory_throws_on_missing_client_id(): void
+    {
+        Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
+        Config::set('singpass-login.client_id', null);
+        Config::set('singpass-login.redirect_uri', 'https://example.com/callback');
+        Config::set('singpass-login.domain', 'https://example.com');
+
+        $this->expectException(MissingConfigException::class);
+        $this->expectExceptionMessage('singpass-login.client_id');
+
+        ProviderConfig::singPassLogin();
+    }
+
+    public function test_corppass_factory_throws_on_missing_domain(): void
+    {
+        Config::set('corppass-login.discovery_endpoint', 'https://corppass.example.com/discovery');
+        Config::set('corppass-login.client_id', 'cp-client-id');
+        Config::set('corppass-login.redirect_uri', 'https://example.com/cp-callback');
+        Config::set('corppass-login.domain', null);
+
+        $this->expectException(MissingConfigException::class);
+        $this->expectExceptionMessage('corppass-login.domain');
+
+        ProviderConfig::corpPass();
+    }
+
+    public function test_myinfo_factory_throws_on_missing_redirect_uri(): void
+    {
+        Config::set('myinfo.discovery_endpoint', 'https://example.com/discovery');
+        Config::set('myinfo.client_id', 'myinfo-client-id');
+        Config::set('myinfo.redirect_uri', null);
+        Config::set('myinfo.domain', 'https://example.com');
+
+        $this->expectException(MissingConfigException::class);
+        $this->expectExceptionMessage('myinfo.redirect_uri');
+
+        ProviderConfig::singPassMyInfo();
     }
 }

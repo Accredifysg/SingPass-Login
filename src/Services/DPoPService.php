@@ -92,7 +92,7 @@ final class DPoPService implements DPoPServiceInterface
      */
     private function resolveSigningAlgorithm(): string
     {
-        $algorithm = config('singpass-login.dpop_signing_algorithm');
+        $algorithm = config('ndi.dpop_signing_algorithm');
 
         return match ($algorithm) {
             'ES256', 'ES384', 'ES512' => $algorithm,

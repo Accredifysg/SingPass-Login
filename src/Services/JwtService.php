@@ -51,7 +51,7 @@ final class JwtService implements JwtServiceInterface
      */
     public static function getSigningJwk(): JWK
     {
-        $jwks = config('singpass-login.private_jwks');
+        $jwks = config('ndi.private_jwks');
 
         if ($jwks === null) {
             throw new JwksInvalidException(500, 'Private JWKS not set.');
@@ -64,7 +64,7 @@ final class JwtService implements JwtServiceInterface
         }
 
         try {
-            $signingKey = $jwkSets->get(config('singpass-login.signing_kid'));
+            $signingKey = $jwkSets->get(config('ndi.signing_kid'));
         } catch (Exception) {
             throw new JwksInvalidException(500, 'Signing key not found.');
         }
@@ -111,7 +111,7 @@ final class JwtService implements JwtServiceInterface
                 ->addSignature($jwk, [
                     'typ' => 'JWT',
                     'alg' => $algName,
-                    'kid' => config('singpass-login.signing_kid'),
+                    'kid' => config('ndi.signing_kid'),
                 ])->build();
         } catch (Exception) {
             throw new JwksInvalidException(500, 'JWKS JSON Invalid.');
@@ -173,7 +173,7 @@ final class JwtService implements JwtServiceInterface
 
         try {
             $kid = $jwe->getSharedProtectedHeaderParameter('kid');
-            $keySet = JWKFactory::createFromJsonObject(config('singpass-login.private_jwks'));
+            $keySet = JWKFactory::createFromJsonObject(config('ndi.private_jwks'));
             $key = $keySet->get($kid);
         } catch (InvalidArgumentException) {
             throw new JweDecryptionFailedException(500, 'KID specified not found in JWKS.');

@@ -26,10 +26,10 @@ class MyInfoCallbackControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Config::set('singpass-login.myinfo_client_id', 'myinfo-client-id');
-        Config::set('singpass-login.myinfo_redirect_uri', 'https://example.com/myinfo-callback');
-        Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
-        Config::set('singpass-login.domain', 'https://example.com');
+        Config::set('myinfo.client_id', 'myinfo-client-id');
+        Config::set('myinfo.redirect_uri', 'https://example.com/myinfo-callback');
+        Config::set('myinfo.discovery_endpoint', 'https://example.com/discovery');
+        Config::set('myinfo.domain', 'https://example.com');
     }
 
     protected function tearDown(): void

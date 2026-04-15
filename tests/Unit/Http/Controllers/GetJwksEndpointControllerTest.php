@@ -29,7 +29,7 @@ class GetJwksEndpointControllerTest extends TestCase
             ],
         ];
 
-        Config::set('singpass-login.jwks', json_encode($this->mockJwksContent));
+        Config::set('ndi.jwks', json_encode($this->mockJwksContent));
     }
 
     protected function tearDown(): void
@@ -50,7 +50,7 @@ class GetJwksEndpointControllerTest extends TestCase
     public function test_invoke_throws_exception_when_jwks_file_is_invalid(): void
     {
         // Replace the JWKS env var with invalid JSON
-        Config::set('singpass-login.jwks', 'invalid json');
+        Config::set('ndi.jwks', 'invalid json');
 
         $this->expectException(JwksInvalidException::class);
         $this->expectExceptionMessage('JWKS is an invalid JSON string.');
@@ -62,7 +62,7 @@ class GetJwksEndpointControllerTest extends TestCase
     public function test_invoke_throws_exception_when_jwks_file_is_missing(): void
     {
         // Delete the JWKS env var
-        Config::set('singpass-login.jwks');
+        Config::set('ndi.jwks');
 
         $this->expectException(JwksInvalidException::class);
         $this->expectExceptionMessage('JWKS environment variable not set.');

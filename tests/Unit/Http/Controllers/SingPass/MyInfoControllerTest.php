@@ -23,12 +23,12 @@ class MyInfoControllerTest extends TestCase
 
     public function test_it_returns_redirect_url(): void
     {
-        Config::set('singpass-login.myinfo_client_id', 'myinfo-client-id');
-        Config::set('singpass-login.myinfo_redirect_uri', 'https://example.com/myinfo-callback');
-        Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
-        Config::set('singpass-login.domain', 'https://example.com');
-        Config::set('singpass-login.available_scopes', ['openid', 'uinfin']);
-        Config::set('singpass-login.login_scopes', ['openid']);
+        Config::set('myinfo.client_id', 'myinfo-client-id');
+        Config::set('myinfo.redirect_uri', 'https://example.com/myinfo-callback');
+        Config::set('myinfo.discovery_endpoint', 'https://example.com/discovery');
+        Config::set('myinfo.domain', 'https://example.com');
+        Config::set('myinfo.available_scopes', ['openid', 'uinfin']);
+        Config::set('myinfo.login_scopes', ['openid']);
 
         $fapiAuthMock = Mockery::mock(FapiAuthenticationService::class);
         $fapiAuthMock->shouldReceive('initiateAuth')

@@ -5,8 +5,8 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('web')->group(function () {
     // JWKS (shared across all providers — always registered)
     Route::get(
-        config('singpass-login.get_jwks_endpoint_url'),
-        config('singpass-login.get_jwks_endpoint_controller')
+        config('ndi.get_jwks_endpoint_url'),
+        config('ndi.get_jwks_endpoint_controller')
     )->name('singpass.jwks');
 
     if (config('singpass-login.enable_default_singpass_routes')) {
@@ -22,16 +22,16 @@ Route::middleware('web')->group(function () {
         )->name('singpass.callback');
     }
 
-    if (config('singpass-login.enable_default_myinfo_routes')) {
+    if (config('myinfo.enable_default_myinfo_routes')) {
         // MyInfo
         Route::get(
-            config('singpass-login.get_myinfo_authentication_endpoint_url'),
-            config('singpass-login.get_myinfo_authentication_endpoint_controller')
+            config('myinfo.get_myinfo_authentication_endpoint_url'),
+            config('myinfo.get_myinfo_authentication_endpoint_controller')
         )->name('myinfo.login');
 
         Route::get(
-            config('singpass-login.post_myinfo_callback_url'),
-            config('singpass-login.post_myinfo_callback_controller')
+            config('myinfo.post_myinfo_callback_url'),
+            config('myinfo.post_myinfo_callback_controller')
         )->name('myinfo.callback');
     }
 

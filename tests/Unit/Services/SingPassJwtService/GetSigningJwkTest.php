@@ -24,8 +24,8 @@ class GetSigningJwkTest extends TestCase
         ];
 
         // Set up default configuration values
-        Config::set('singpass-login.private_jwks', json_encode($keySet));
-        Config::set('singpass-login.signing_kid', 'test-kid-id');
+        Config::set('ndi.private_jwks', json_encode($keySet));
+        Config::set('ndi.signing_kid', 'test-kid-id');
 
         // Call the method
         $jwk = JwtService::getSigningJwk();
@@ -50,7 +50,7 @@ class GetSigningJwkTest extends TestCase
     public function test_get_signing_jwk_invalid_json_exception(): void
     {
         // Set up default configuration values
-        Config::set('singpass-login.private_jwks', '{{}');
+        Config::set('ndi.private_jwks', '{{}');
 
         // Expect the JwksInvalidException to be thrown
         $this->expectException(JwksInvalidException::class);
@@ -73,8 +73,8 @@ class GetSigningJwkTest extends TestCase
         ];
 
         // Set up default configuration values
-        Config::set('singpass-login.private_jwks', json_encode($keySet));
-        Config::set('singpass-login.signing_kid', 'test-kid-id');
+        Config::set('ndi.private_jwks', json_encode($keySet));
+        Config::set('ndi.signing_kid', 'test-kid-id');
 
         // Expect the JwksInvalidException to be thrown
         $this->expectException(JwksInvalidException::class);

@@ -27,7 +27,6 @@ class LoginControllerTest extends TestCase
         Config::set('singpass-login.redirect_uri', 'https://example.com/callback');
         Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
         Config::set('singpass-login.domain', 'https://example.com');
-        Config::set('singpass-login.available_scopes', ['openid', 'name']);
         Config::set('singpass-login.login_scopes', ['openid']);
 
         $fapiAuthMock = Mockery::mock(FapiAuthenticationService::class);
@@ -49,7 +48,6 @@ class LoginControllerTest extends TestCase
         Config::set('singpass-login.redirect_uri', 'https://example.com/callback');
         Config::set('singpass-login.discovery_endpoint', 'https://example.com/discovery');
         Config::set('singpass-login.domain', 'https://example.com');
-        Config::set('singpass-login.available_scopes', ['openid']);
         Config::set('singpass-login.login_scopes', ['openid']);
         Config::set('singpass-login.authentication_context_type', 'APP_AUTHENTICATION_DEFAULT');
         Config::set('singpass-login.authentication_context_message', null);

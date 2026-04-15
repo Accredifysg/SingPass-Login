@@ -28,7 +28,9 @@ class SingPassLoginServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->publishes([
+            __DIR__.'/../config/ndi.php' => config_path('ndi.php'),
             __DIR__.'/../config/singpass-login.php' => config_path('singpass-login.php'),
+            __DIR__.'/../config/myinfo.php' => config_path('myinfo.php'),
             __DIR__.'/../config/corppass-login.php' => config_path('corppass-login.php'),
         ], 'config');
 
@@ -71,14 +73,9 @@ class SingPassLoginServiceProvider extends ServiceProvider
         $this->app->singleton(FapiAuthenticationService::class);
         $this->app->singleton(FapiCallbackService::class);
 
-        $this->mergeConfigFrom(
-            __DIR__.'/../config/singpass-login.php',
-            'singpass-login'
-        );
-
-        $this->mergeConfigFrom(
-            __DIR__.'/../config/corppass-login.php',
-            'corppass-login'
-        );
+        $this->mergeConfigFrom(__DIR__.'/../config/ndi.php', 'ndi');
+        $this->mergeConfigFrom(__DIR__.'/../config/singpass-login.php', 'singpass-login');
+        $this->mergeConfigFrom(__DIR__.'/../config/myinfo.php', 'myinfo');
+        $this->mergeConfigFrom(__DIR__.'/../config/corppass-login.php', 'corppass-login');
     }
 }

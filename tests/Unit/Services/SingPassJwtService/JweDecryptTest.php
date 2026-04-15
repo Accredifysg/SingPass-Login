@@ -25,7 +25,7 @@ class JweDecryptTest extends TestCase
         $jwks = json_encode(['keys' => [$key->jsonSerialize()]]);
 
         // Mock configuration values
-        Config::set('singpass-login.private_jwks', $jwks);
+        Config::set('ndi.private_jwks', $jwks);
 
         // Create a mock JWE token
         $payload = 'test-payload';
@@ -45,7 +45,7 @@ class JweDecryptTest extends TestCase
         $jwks = json_encode(['keys' => [$key->jsonSerialize()]]);
 
         // Mock configuration values
-        Config::set('singpass-login.private_jwks', $jwks);
+        Config::set('ndi.private_jwks', $jwks);
 
         // Create a mock JWE token
         $payload = 'test-payload';
@@ -79,7 +79,7 @@ class JweDecryptTest extends TestCase
         $jwks = json_encode(['keys' => [$key->jsonSerialize()]]);
 
         // Mock configuration values
-        Config::set('singpass-login.private_jwks', $jwks. 1);
+        Config::set('ndi.private_jwks', $jwks. 1);
 
         // Create a mock JWE token
         $payload = 'test-payload';
@@ -101,7 +101,7 @@ class JweDecryptTest extends TestCase
         $jwks = json_encode(['keys' => [$wrongKey->jsonSerialize()]]);
 
         // Mock configuration values
-        Config::set('singpass-login.private_jwks', $jwks);
+        Config::set('ndi.private_jwks', $jwks);
 
         // Create a mock JWE token
         $payload = 'test-payload';

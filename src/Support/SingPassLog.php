@@ -15,7 +15,7 @@ final class SingPassLog
 
     public static function enabled(): bool
     {
-        return (bool) config('singpass-login.enable_logging', false);
+        return (bool) config('ndi.enable_logging', false);
     }
 
     /**

@@ -15,7 +15,7 @@ class DPoPServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config()->set('singpass-login.dpop_signing_algorithm', 'ES256');
+        config()->set('ndi.dpop_signing_algorithm', 'ES256');
         $this->service = new DPoPService;
     }
 
@@ -34,7 +34,7 @@ class DPoPServiceTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Unsupported DPoP signing algorithm');
 
-        config()->set('singpass-login.dpop_signing_algorithm', 'RS256');
+        config()->set('ndi.dpop_signing_algorithm', 'RS256');
         $this->service->generateKeyPair();
     }
 
@@ -42,13 +42,13 @@ class DPoPServiceTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        config()->set('singpass-login.dpop_signing_algorithm', 'es256');
+        config()->set('ndi.dpop_signing_algorithm', 'es256');
         $this->service->generateKeyPair();
     }
 
     public function test_es384_key_and_proof_use_configured_algorithm(): void
     {
-        config()->set('singpass-login.dpop_signing_algorithm', 'ES384');
+        config()->set('ndi.dpop_signing_algorithm', 'ES384');
         $service = new DPoPService;
         $key = $service->generateKeyPair();
 

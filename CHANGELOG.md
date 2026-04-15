@@ -2,6 +2,35 @@
 
 ## v3.0.0
 
+### Config Split & Validation
+
+The monolithic `singpass-login.php` has been split into focused config files with properly namespaced environment variables:
+
+| Config file | Purpose | Env prefix |
+|---|---|---|
+| `config/ndi.php` | Shared NDI infrastructure (JWKS, signing, DPoP, logging, JWKS endpoint) | `NDI_` |
+| `config/singpass-login.php` | SingPass Login (credentials, routes, listener, login scopes) | `SINGPASS_` |
+| `config/myinfo.php` | MyInfo (credentials, routes, available scopes, login scopes) | `MYINFO_` |
+| `config/corppass-login.php` | CorpPass (unchanged) | `CORPPASS_` |
+
+**Renamed environment variables:**
+
+| Old | New |
+|---|---|
+| `SINGPASS_SIGNING_KID` | `NDI_SIGNING_KID` |
+| `SINGPASS_JWKS` | `NDI_JWKS` |
+| `SINGPASS_PRIVATE_JWKS` | `NDI_PRIVATE_JWKS` |
+| `SINGPASS_DPOP_SIGNING_ALGORITHM` | `NDI_DPOP_SIGNING_ALGORITHM` |
+| `SINGPASS_LOGS_ENABLED` | `NDI_LOGS_ENABLED` |
+| `SINGPASS_JWKS_URL` | `NDI_JWKS_URL` |
+| `SINGPASS_MYINFO_CLIENT_ID` | `MYINFO_CLIENT_ID` |
+| `SINGPASS_MYINFO_REDIRECT_URI` | `MYINFO_REDIRECT_URI` |
+| `SINGPASS_USE_DEFAULT_MYINFO_ROUTES` | `MYINFO_USE_DEFAULT_ROUTES` |
+| `SINGPASS_MYINFO_AUTHENTICATION_URL` | `MYINFO_AUTHENTICATION_URL` |
+| `SINGPASS_MYINFO_CALLBACK_URL` | `MYINFO_CALLBACK_URL` |
+
+**Config validation:** `ProviderConfig` factory methods now validate required config values (`discovery_endpoint`, `client_id`, `redirect_uri`, `domain`) before construction and throw `MissingConfigException` with a clear message identifying the missing key, instead of allowing PHP `TypeError` on `null` values.
+
 ### FAPI 2.0 Compliance
 
 The package now implements the full **FAPI 2.0** security profile as required by SingPass, MyInfo, and CorpPass:
@@ -12,7 +41,7 @@ The package now implements the full **FAPI 2.0** security profile as required by
 - **Private-key JWT client assertions**: Client authentication uses signed JWTs with `jti` claims instead of client secrets.
 - **JWE-encrypted ID tokens**: ID tokens are decrypted (JWE) and verified (JWS) before payload extraction.
 - **OpenID Connect Discovery validation**: Discovery responses are validated and cached via a typed `OpenIdConfigurationDto` that enforces the presence of required endpoints.
-- **Diagnostic logging**: All service calls (OpenID Discovery, PAR, token exchange, JWKS, UserInfo, JWE/JWS verification, ID token claim checks) are now logged with `[SingPass]` prefix. Logging is gated behind `SINGPASS_LOGS_ENABLED=true` (defaults to `false`). Sensitive values (`client_assertion`, `code_verifier`, `id_token`, `access_token`) are automatically redacted. Session IDs are logged on both login initiation and callback to help diagnose session-loss issues.
+- **Diagnostic logging**: All service calls (OpenID Discovery, PAR, token exchange, JWKS, UserInfo, JWE/JWS verification, ID token claim checks) are now logged with `[SingPass]` prefix. Logging is gated behind `NDI_LOGS_ENABLED=true` (defaults to `false`). Sensitive values (`client_assertion`, `code_verifier`, `id_token`, `access_token`) are automatically redacted. Session IDs are logged on both login initiation and callback to help diagnose session-loss issues.
 
 ### CorpPass Support
 
@@ -31,7 +60,7 @@ CorpPass FAPI 2.0 integration is now supported alongside SingPass and MyInfo:
 MyInfo has been separated into its own distinct flow with dedicated routes and controllers:
 
 - **Dedicated routes**: `GET /ndi/mi/initiate` and `GET /ndi/mi/callback` replace the previous shared login route.
-- **Separate client credentials**: `SINGPASS_MYINFO_CLIENT_ID` and `SINGPASS_MYINFO_REDIRECT_URI` with an independent OpenID discovery cache.
+- **Separate client credentials**: `MYINFO_CLIENT_ID` and `MYINFO_REDIRECT_URI` (in `config/myinfo.php`) with an independent OpenID discovery cache.
 - **Thin controllers**: `SingPass\MyInfoController` and `SingPass\MyInfoCallbackController`.
 - **`MyInfoDataRetrievedEvent`**: Fired when UserInfo data is retrieved (including empty responses).
 
@@ -65,7 +94,7 @@ Each flow can now be independently enabled or disabled:
 | Environment Variable | Default | Controls |
 |---|---|---|
 | `SINGPASS_USE_DEFAULT_ROUTES` | `true` | SingPass Login routes |
-| `SINGPASS_USE_DEFAULT_MYINFO_ROUTES` | `true` | MyInfo routes |
+| `MYINFO_USE_DEFAULT_ROUTES` | `true` | MyInfo routes |
 | `CORPPASS_USE_DEFAULT_ROUTES` | `true` | CorpPass routes |
 
 The JWKS endpoint (`/ndi/jwks`) is always registered as it is shared across all providers.
@@ -84,6 +113,7 @@ The JWKS endpoint (`/ndi/jwks`) is always registered as it is shared across all 
 
 | Exception | Purpose |
 |---|---|
+| `MissingConfigException` | Required config value is `null` — thrown by `ProviderConfig` factories with a message identifying the missing key |
 | `AuthenticationErrorException` | OAuth error returned to callback (`error` / `error_description` query params) |
 | `PushedAuthorizationRequestException` | PAR endpoint errors (includes OAuth error codes) |
 
@@ -121,19 +151,19 @@ The JWKS endpoint (`/ndi/jwks`) is always registered as it is shared across all 
 - **Login route returns JSON**: The authentication endpoint now returns `{ "redirect_url": "..." }` JSON instead of performing a server-side redirect. Clients must `fetch` the endpoint (with same-origin credentials) and navigate to the returned URL.
 - **Session-backed routes required**: All routes must be behind session middleware (`web` group) for DPoP key storage, PKCE verifiers, and CSRF state verification.
 - **`SingPassUser` model changes**: The `sub` claim is now a UUID (not a composite NRIC/UUID string). NRIC is available via `getNric()` only when the `user.identity` scope is requested; it returns `?string` instead of `string`.
-- **MyInfo uses dedicated routes**: MyInfo flows use `/ndi/mi/initiate` and `/ndi/mi/callback` instead of sharing the SingPass login route. Separate client credentials (`SINGPASS_MYINFO_CLIENT_ID` / `SINGPASS_MYINFO_REDIRECT_URI`) are required.
+- **MyInfo uses dedicated routes and config**: MyInfo flows use `/ndi/mi/initiate` and `/ndi/mi/callback` instead of sharing the SingPass login route. MyInfo has its own config file (`config/myinfo.php`) with separate client credentials (`MYINFO_CLIENT_ID` / `MYINFO_REDIRECT_URI`).
 - **Discovery must include PAR endpoint**: The OpenID discovery response must contain `pushed_authorization_request_endpoint`. Incomplete discovery responses throw `OpenIdDiscoveryException`.
-- **Config additions required**: New configuration keys in `singpass-login.php`: `login_scopes`, `available_scopes`, `enable_default_myinfo_routes`, `dpop_signing_algorithm`, `authentication_context_type`, `authentication_context_message`, MyInfo route/controller keys. Re-publish config after upgrading.
+- **Config split**: Configuration has been split from a single `singpass-login.php` into four files (`ndi.php`, `singpass-login.php`, `myinfo.php`, `corppass-login.php`). Several environment variables have been renamed — see the "Config Split & Validation" section above. Re-publish config after upgrading.
 
 ### Migration Guide
 
 1. **Re-publish configuration**: `php artisan vendor:publish --provider="Accredifysg\SingPassLogin\SingPassLoginServiceProvider" --tag="config" --force`
-2. **Update `.env`**: Add new required variables (`SINGPASS_MYINFO_CLIENT_ID`, `SINGPASS_MYINFO_REDIRECT_URI`). See README for the full list.
+2. **Rename environment variables**: Rename env vars per the table in "Config Split & Validation" above (e.g. `SINGPASS_SIGNING_KID` → `NDI_SIGNING_KID`, `SINGPASS_MYINFO_CLIENT_ID` → `MYINFO_CLIENT_ID`). See README for the full list.
 3. **Update client-side code**: Replace any server-side redirects to the login endpoint with `fetch` + `window.location.assign(redirect_url)`.
 4. **Update exception references**: Rename any caught exceptions per the table above.
 5. **Update service references**: If you injected `SingPassLogin`, `SingPassLoginInterface`, or the facade, switch to `FapiAuthenticationService` / `FapiCallbackService` via dependency injection.
 6. **Update listener**: If your listener accesses `getNric()`, add a null check — NRIC requires the `user.identity` scope and returns `?string`.
-7. **Review scopes**: Configure `login_scopes` and `available_scopes` in `singpass-login.php` to match your application's needs.
+7. **Review scopes**: Configure `login_scopes` in `singpass-login.php` and `available_scopes` in `myinfo.php` to match your application's needs.
 
 ---
 

@@ -43,7 +43,14 @@ Publish the config files:
 php artisan vendor:publish --provider="Accredifysg\SingPassLogin\SingPassLoginServiceProvider" --tag="config"
 ```
 
-This publishes both `config/singpass-login.php` and `config/corppass-login.php`.
+This publishes four config files:
+
+| File | Purpose |
+|---|---|
+| `config/ndi.php` | Shared NDI infrastructure (JWKS, signing, DPoP, logging) |
+| `config/singpass-login.php` | SingPass Login credentials, routes, listener |
+| `config/myinfo.php` | MyInfo credentials, routes, scopes |
+| `config/corppass-login.php` | CorpPass credentials, routes, listener, scopes |
 
 Optionally, publish the default listener that logs in a user on `SingPassSuccessfulLoginEvent`:
 
@@ -53,12 +60,25 @@ php artisan vendor:publish --provider="Accredifysg\SingPassLogin\SingPassLoginSe
 
 ## Configuration
 
-### SingPass / MyInfo
+### Shared NDI (`config/ndi.php`)
 
-Add the following to your `.env`:
+JWKS, signing keys, DPoP algorithm, and logging — shared across all providers.
 
 ```.dotenv
-# SingPass credentials
+NDI_SIGNING_KID=
+NDI_JWKS=
+NDI_PRIVATE_JWKS=
+
+# FAPI 2.0 / DPoP (optional; default algorithm is ES256)
+NDI_DPOP_SIGNING_ALGORITHM=ES256
+
+# Diagnostic logging (disabled by default)
+NDI_LOGS_ENABLED=false
+```
+
+### SingPass Login (`config/singpass-login.php`)
+
+```.dotenv
 SINGPASS_CLIENT_ID=
 SINGPASS_REDIRECT_URI=
 # Must match the `issuer` from the FAPI discovery endpoint, e.g.
@@ -69,32 +89,27 @@ SINGPASS_DOMAIN=
 # Staging: https://stg-id.singpass.gov.sg/fapi/.well-known/openid-configuration
 # Production: https://id.singpass.gov.sg/fapi/.well-known/openid-configuration
 SINGPASS_DISCOVERY_ENDPOINT=
-SINGPASS_SIGNING_KID=
-SINGPASS_JWKS=
-SINGPASS_PRIVATE_JWKS=
-
-# FAPI 2.0 / DPoP (optional; default algorithm is ES256)
-SINGPASS_DPOP_SIGNING_ALGORITHM=ES256
 
 # Login app authentication context (see SingPass integration guide)
 SINGPASS_AUTH_CONTEXT_TYPE=APP_AUTHENTICATION_DEFAULT
 # SINGPASS_AUTH_CONTEXT_MESSAGE=
 
-# Diagnostic logging (disabled by default)
-SINGPASS_LOGS_ENABLED=false
-
 # Default Listener
 SINGPASS_USE_DEFAULT_LISTENER=true
-
-# MyInfo credentials (required if you use MyInfo scopes)
-SINGPASS_MYINFO_CLIENT_ID=
-SINGPASS_MYINFO_REDIRECT_URI=
 ```
 
-### CorpPass
+### MyInfo (`config/myinfo.php`)
 
 ```.dotenv
-# CorpPass credentials
+MYINFO_CLIENT_ID=
+MYINFO_REDIRECT_URI=
+MYINFO_DISCOVERY_ENDPOINT=
+MYINFO_DOMAIN=
+```
+
+### CorpPass (`config/corppass-login.php`)
+
+```.dotenv
 CORPPASS_CLIENT_ID=
 CORPPASS_REDIRECT_URI=
 CORPPASS_DOMAIN=
@@ -111,11 +126,11 @@ CORPPASS_AUTH_CONTEXT_TYPE=APP_AUTHENTICATION_DEFAULT
 
 Each flow can be independently toggled via environment variables. All are enabled by default.
 
-| Variable | Default | Controls |
-|---|---|---|
-| `SINGPASS_USE_DEFAULT_ROUTES` | `true` | SingPass Login routes + JWKS endpoint |
-| `SINGPASS_USE_DEFAULT_MYINFO_ROUTES` | `true` | MyInfo routes |
-| `CORPPASS_USE_DEFAULT_ROUTES` | `true` | CorpPass routes |
+| Variable | Config file | Default | Controls |
+|---|---|---|---|
+| `SINGPASS_USE_DEFAULT_ROUTES` | `singpass-login.php` | `true` | SingPass Login routes |
+| `MYINFO_USE_DEFAULT_ROUTES` | `myinfo.php` | `true` | MyInfo routes |
+| `CORPPASS_USE_DEFAULT_ROUTES` | `corppass-login.php` | `true` | CorpPass routes |
 
 The JWKS endpoint (`/ndi/jwks`) is always registered regardless of these flags, as it is shared across all providers.
 
@@ -124,9 +139,9 @@ Route URLs are also configurable:
 ```.dotenv
 SINGPASS_AUTHENTICATION_URL=/ndi/sp/login
 SINGPASS_CALLBACK_URL=/ndi/sp/callback
-SINGPASS_MYINFO_AUTHENTICATION_URL=/ndi/mi/initiate
-SINGPASS_MYINFO_CALLBACK_URL=/ndi/mi/callback
-SINGPASS_JWKS_URL=/ndi/jwks
+MYINFO_AUTHENTICATION_URL=/ndi/mi/initiate
+MYINFO_CALLBACK_URL=/ndi/mi/callback
+NDI_JWKS_URL=/ndi/jwks
 CORPPASS_AUTHENTICATION_URL=/ndi/cp/login
 CORPPASS_CALLBACK_URL=/ndi/cp/callback
 ```
@@ -202,7 +217,7 @@ If you prefer a custom listener, set `SINGPASS_USE_DEFAULT_LISTENER=false` and r
 
 ## MyInfo Integration
 
-MyInfo has its own dedicated routes (`/ndi/mi/initiate` and `/ndi/mi/callback`) and uses separate client credentials (`SINGPASS_MYINFO_CLIENT_ID` / `SINGPASS_MYINFO_REDIRECT_URI`).
+MyInfo has its own dedicated routes (`/ndi/mi/initiate` and `/ndi/mi/callback`), config file (`config/myinfo.php`), and separate client credentials (`MYINFO_CLIENT_ID` / `MYINFO_REDIRECT_URI`).
 
 ### Starting a MyInfo Flow
 
@@ -250,7 +265,7 @@ class MyInfoDataRetrievedListener
 
 ### Available MyInfo Scopes
 
-For the complete list, see the [MyInfo Data Catalog](https://docs.developer.singpass.gov.sg/docs/data-catalog-myinfo/catalog). The package validates requested scopes against the `available_scopes` configuration.
+For the complete list, see the [MyInfo Data Catalog](https://docs.developer.singpass.gov.sg/docs/data-catalog-myinfo/catalog). The package validates requested scopes against the `available_scopes` in `config/myinfo.php`.
 
 ## CorpPass Integration
 
@@ -374,7 +389,7 @@ protected $listen = [
 
 ## Diagnostic Logging
 
-Set `SINGPASS_LOGS_ENABLED=true` in your `.env` to enable detailed logging of every step in the authentication flow. All log entries are prefixed with `[SingPass]` and sensitive values (`client_assertion`, `code_verifier`, `id_token`, `access_token`) are automatically redacted.
+Set `NDI_LOGS_ENABLED=true` in your `.env` to enable detailed logging of every step in the authentication flow. All log entries are prefixed with `[SingPass]` and sensitive values (`client_assertion`, `code_verifier`, `id_token`, `access_token`) are automatically redacted.
 
 Logged steps include:
 
@@ -397,8 +412,9 @@ This is particularly useful for diagnosing session issues (mismatched session ID
 - The login route returns **JSON** with `redirect_url`; update clients to `fetch` (with credentials) then navigate.
 - Ensure your app uses **session**-backed routes (default `web` middleware).
 - Discovery metadata must include **`pushed_authorization_request_endpoint`**.
-- Review `login_scopes` and `available_scopes` in `singpass-login.php`.
-- MyInfo now has **dedicated routes** (`/ndi/mi/initiate` and `/ndi/mi/callback`) instead of sharing the login route.
+- Review `login_scopes` in `singpass-login.php` and `available_scopes` in `myinfo.php`.
+- MyInfo now has **dedicated routes** (`/ndi/mi/initiate` and `/ndi/mi/callback`) and its own config file (`config/myinfo.php`) instead of sharing the login route and config.
+- Configuration has been split into four files: `ndi.php` (shared), `singpass-login.php`, `myinfo.php`, and `corppass-login.php`. Several environment variables have been renamed (see Configuration section).
 - The old `SingPassLoginFacade` and `SingPassLoginInterface` have been removed. If you were calling `SingPassLogin::handleCallback()` directly, the logic is now internal to the callback controllers.
 - Exceptions have been renamed: `SingPassGetEndpointException` → `AuthFlowException`, `SingPassAuthenticationErrorException` → `AuthenticationErrorException`, `SingPassTokenException` → `TokenExchangeException`, `SingPassJwksException` → `JwksException`.
 - Services have been renamed: `SingPassJwtService` → `JwtService`, `GetSingPassTokenService` → `TokenExchangeService`, `GetSingPassJwksService` → `JwksService`.
@@ -417,10 +433,15 @@ use Accredifysg\SingPassLogin\Exceptions\OpenIdDiscoveryException;
 use Accredifysg\SingPassLogin\Exceptions\PushedAuthorizationRequestException;
 use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
 use Accredifysg\SingPassLogin\Exceptions\TokenExchangeException;
+use Accredifysg\SingPassLogin\Exceptions\MissingConfigException;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoRequestException;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoDecryptionException;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoVerificationException;
 ```
+
+### Configuration Exceptions
+
+- **`MissingConfigException`**: A required config value (e.g. `singpass-login.client_id`) is `null`. Thrown by `ProviderConfig` factory methods with a message identifying the missing key.
 
 ### FAPI / PAR Exceptions
 
