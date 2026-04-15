@@ -24,6 +24,7 @@ final class TokenExchangeService implements TokenExchangeServiceInterface
      * Handles the POST Request to the provider's token endpoint.
      *
      * @throws ConnectionException
+     * @throws TokenExchangeException
      */
     public function getToken(string $code, string $codeVerifier, JWK $dpopKey, string $clientId, string $redirectUri, string $cacheKey): TokenResponseDto
     {
@@ -67,8 +68,10 @@ final class TokenExchangeService implements TokenExchangeServiceInterface
                 'http_status' => $response->status(),
             ]);
 
+            $statusCode = $response->status() < 400 ? 502 : $response->status();
+
             throw new TokenExchangeException(
-                $response->status(),
+                $statusCode,
                 'Failed to parse token endpoint response',
             );
         }

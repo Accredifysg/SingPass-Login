@@ -50,8 +50,10 @@ final class PushedAuthorizationRequestService implements PushedAuthorizationRequ
                 'response_body' => $response->body(),
             ]);
 
+            $statusCode = $response->status() < 400 ? 502 : $response->status();
+
             throw new PushedAuthorizationRequestException(
-                statusCode: $response->status(),
+                statusCode: $statusCode,
                 message: 'Failed to parse PAR response',
             );
         }

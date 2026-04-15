@@ -106,9 +106,27 @@ class PushedAuthorizationRequestServiceTest extends TestCase
             'https://example.com/fapi/par' => Http::response('not-json', 200),
         ]);
 
-        $this->expectException(PushedAuthorizationRequestException::class);
-        $this->expectExceptionMessage('Failed to parse PAR response');
+        try {
+            $this->service->sendRequest([], 'mock-dpop-proof-jwt', 'openId:test');
+            $this->fail('Expected PushedAuthorizationRequestException');
+        } catch (PushedAuthorizationRequestException $e) {
+            $this->assertSame(502, $e->getStatusCode());
+            $this->assertSame('Failed to parse PAR response', $e->getMessage());
+        }
+    }
 
-        $this->service->sendRequest([], 'mock-dpop-proof-jwt', 'openId:test');
+    public function test_send_request_unparseable_response_preserves_upstream_error_status(): void
+    {
+        Http::fake([
+            'https://example.com/fapi/par' => Http::response('<html>error</html>', 400),
+        ]);
+
+        try {
+            $this->service->sendRequest([], 'mock-dpop-proof-jwt', 'openId:test');
+            $this->fail('Expected PushedAuthorizationRequestException');
+        } catch (PushedAuthorizationRequestException $e) {
+            $this->assertSame(400, $e->getStatusCode());
+            $this->assertSame('Failed to parse PAR response', $e->getMessage());
+        }
     }
 }

@@ -152,11 +152,40 @@ class TokenExchangeServiceTest extends TestCase
             'https://example.com/token' => Http::response('not-json', 200),
         ]);
 
-        $this->expectException(TokenExchangeException::class);
-        $this->expectExceptionMessage('Failed to parse token endpoint response');
+        $service = new TokenExchangeService($this->dpopServiceMock);
+
+        try {
+            $service->getToken('mock-code', 'test-code-verifier', $this->dpopKey, 'test-client-id', 'https://example.com/callback', 'openId');
+            $this->fail('Expected TokenExchangeException');
+        } catch (TokenExchangeException $e) {
+            $this->assertSame(502, $e->getStatusCode());
+            $this->assertSame('Failed to parse token endpoint response', $e->getMessage());
+        }
+    }
+
+    public function test_get_token_unparseable_response_preserves_upstream_error_status(): void
+    {
+        $mockJwk = (object) ['kty' => 'RSA', 'kid' => 'test-key-id'];
+
+        $singPassJwtServiceMock = Mockery::mock('alias:'.JwtService::class);
+        $singPassJwtServiceMock->allows([
+            'getSigningJwk' => $mockJwk,
+            'generateClientAssertion' => 'mock-assertion',
+        ]);
+
+        Http::fake([
+            'https://example.com/token' => Http::response('<html>error</html>', 400),
+        ]);
 
         $service = new TokenExchangeService($this->dpopServiceMock);
-        $service->getToken('mock-code', 'test-code-verifier', $this->dpopKey, 'test-client-id', 'https://example.com/callback', 'openId');
+
+        try {
+            $service->getToken('mock-code', 'test-code-verifier', $this->dpopKey, 'test-client-id', 'https://example.com/callback', 'openId');
+            $this->fail('Expected TokenExchangeException');
+        } catch (TokenExchangeException $e) {
+            $this->assertSame(400, $e->getStatusCode());
+            $this->assertSame('Failed to parse token endpoint response', $e->getMessage());
+        }
     }
 
     public function test_get_token_oauth_error_response(): void
