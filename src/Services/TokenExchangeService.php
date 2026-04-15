@@ -47,8 +47,7 @@ final class TokenExchangeService implements TokenExchangeServiceInterface
             'redirect_uri' => $redirectUri,
         ]);
 
-        $response = Http::bodyFormat('form_params')
-            ->contentType('application/x-www-form-urlencoded; charset=ISO-8859-1')
+        $response = Http::asForm()
             ->withHeaders(['DPoP' => $dpopProofJwt])
             ->post($tokenEndpoint, [
                 'client_assertion_type' => 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',

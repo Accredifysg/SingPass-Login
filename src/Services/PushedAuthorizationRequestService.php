@@ -37,8 +37,7 @@ final class PushedAuthorizationRequestService implements PushedAuthorizationRequ
             'params' => SingPassLog::redact($params),
         ]);
 
-        $response = Http::bodyFormat('form_params')
-            ->contentType('application/x-www-form-urlencoded; charset=ISO-8859-1')
+        $response = Http::asForm()
             ->withHeaders(['DPoP' => $dpopProofJwt])
             ->post($parEndpoint, $params);
 
