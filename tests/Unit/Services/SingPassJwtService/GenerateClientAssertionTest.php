@@ -3,31 +3,22 @@
 namespace Accredifysg\SingPassLogin\Tests\Unit\Services\SingPassJwtService;
 
 use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
-use Accredifysg\SingPassLogin\Services\SingPassJwtService;
+use Accredifysg\SingPassLogin\Services\JwtService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
-use Illuminate\Support\Facades\Cache;
 use Jose\Component\Core\JWK;
+use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerializer;
 
 class GenerateClientAssertionTest extends TestCase
 {
     protected function defineEnvironment($app): void
     {
-        // Set up default configuration values
         $app['config']->set('singpass-login.client_id', 'test-client-id');
-        $app['config']->set('singpass-login.signing_kid', 'test-signing-kid');
+        $app['config']->set('ndi.signing_kid', 'test-signing-kid');
     }
 
     public function test_generate_client_assertion_success(): void
     {
-        // Mock Cache to return expected 'openId' values
-        Cache::shouldReceive('get')
-            ->with('openId')
-            ->andReturn((object) [
-                'issuer' => 'https://example.com',
-            ]);
-
-        // Create a mock JWK object
         $jwk = new JWK([
             'kty' => 'EC',
             'd' => 'AMLSmZWRqxafLBkg88gNp-jf3KD9WqYo66RsBIjUBM76OwVOqgHmUR5LhtReXBTiziXaVrWo1bPAZgfn7u_vpK11',
@@ -39,13 +30,10 @@ class GenerateClientAssertionTest extends TestCase
             'alg' => 'ES512',
         ]);
 
-        // Call the method with explicit client ID
-        $clientAssertion = SingPassJwtService::generateClientAssertion($jwk, 'mock-code', 'test-client-id');
+        $clientAssertion = JwtService::generateClientAssertion($jwk, 'test-client-id', 'https://example.com');
 
-        // Assert the client assertion is a non-empty string
         $this->assertNotEmpty($clientAssertion);
 
-        // Further validate the JWS structure
         $serializer = new JwsCompactSerializer;
         $jws = $serializer->unserialize($clientAssertion);
 
@@ -58,19 +46,30 @@ class GenerateClientAssertionTest extends TestCase
         $this->assertEquals('test-client-id', $payload['iss']);
         $this->assertArrayHasKey('iat', $payload);
         $this->assertArrayHasKey('exp', $payload);
-        $this->assertEquals('mock-code', $payload['code']);
+        $this->assertArrayHasKey('jti', $payload);
+        $this->assertNotEmpty($payload['jti']);
+        $this->assertArrayNotHasKey('code', $payload);
+
+        $this->assertEquals('ES512', $jws->getSignature(0)->getProtectedHeaderParameter('alg'));
+    }
+
+    public function test_it_uses_es256_for_p256_signing_key(): void
+    {
+        $jwk = JWKFactory::createECKey('P-256', [
+            'kid' => 'test-signing-kid',
+            'use' => 'sig',
+        ]);
+
+        $clientAssertion = JwtService::generateClientAssertion($jwk, 'test-client-id', 'https://example.com');
+
+        $serializer = new JwsCompactSerializer;
+        $jws = $serializer->unserialize($clientAssertion);
+
+        $this->assertEquals('ES256', $jws->getSignature(0)->getProtectedHeaderParameter('alg'));
     }
 
     public function test_generate_client_assertion_with_myinfo_client_id(): void
     {
-        // Mock Cache to return expected 'openId' values
-        Cache::shouldReceive('get')
-            ->with('openId')
-            ->andReturn((object) [
-                'issuer' => 'https://example.com',
-            ]);
-
-        // Create a mock JWK object
         $jwk = new JWK([
             'kty' => 'EC',
             'd' => 'AMLSmZWRqxafLBkg88gNp-jf3KD9WqYo66RsBIjUBM76OwVOqgHmUR5LhtReXBTiziXaVrWo1bPAZgfn7u_vpK11',
@@ -82,13 +81,10 @@ class GenerateClientAssertionTest extends TestCase
             'alg' => 'ES512',
         ]);
 
-        // Call the method with MyInfo client ID
-        $clientAssertion = SingPassJwtService::generateClientAssertion($jwk, 'mock-code', 'myinfo-client-id');
+        $clientAssertion = JwtService::generateClientAssertion($jwk, 'myinfo-client-id', 'https://example.com');
 
-        // Assert the client assertion is a non-empty string
         $this->assertNotEmpty($clientAssertion);
 
-        // Further validate the JWS structure
         $serializer = new JwsCompactSerializer;
         $jws = $serializer->unserialize($clientAssertion);
 
@@ -96,25 +92,17 @@ class GenerateClientAssertionTest extends TestCase
 
         $payload = json_decode($jws->getPayload() ?: '{}', true);
 
-        // Verify MyInfo client ID is used in sub and iss claims
         $this->assertEquals('myinfo-client-id', $payload['sub']);
         $this->assertEquals('https://example.com', $payload['aud']);
         $this->assertEquals('myinfo-client-id', $payload['iss']);
         $this->assertArrayHasKey('iat', $payload);
         $this->assertArrayHasKey('exp', $payload);
-        $this->assertEquals('mock-code', $payload['code']);
+        $this->assertArrayHasKey('jti', $payload);
+        $this->assertArrayNotHasKey('code', $payload);
     }
 
     public function test_generate_client_assertion_jwk_failure(): void
     {
-        // Mock Cache to return expected 'openId' values
-        Cache::shouldReceive('get')
-            ->with('openId')
-            ->andReturn((object) [
-                'issuer' => 'https://example.com',
-            ]);
-
-        // Create a mock JWK object
         $jwk = new JWK([
             'kty' => '',
             'd' => '',
@@ -126,28 +114,13 @@ class GenerateClientAssertionTest extends TestCase
             'alg' => '',
         ]);
 
-        // Expect the SingPassTokenException to be thrown
         $this->expectException(JwksInvalidException::class);
 
-        // Call the method
-        SingPassJwtService::generateClientAssertion($jwk, 'mock-code', 'test-client-id');
+        JwtService::generateClientAssertion($jwk, 'test-client-id', 'https://example.com');
     }
 
     public function test_generate_client_assertion_json_encode_failure(): void
     {
-        // This test covers line 93 by attempting to trigger json_encode failure
-        // While it's difficult to make json_encode return false in normal circumstances,
-        // we can test with malformed UTF-8 or set json_encode to encounter recursion depth
-
-        // Mock Cache to return a value that will cause json_encode issues
-        // Using INF (infinity) which can cause json_encode to return false
-        Cache::shouldReceive('get')
-            ->with('openId')
-            ->andReturn((object) [
-                'issuer' => INF, // This can cause json_encode to fail
-            ]);
-
-        // Create a valid JWK object
         $jwk = new JWK([
             'kty' => 'EC',
             'd' => 'AMLSmZWRqxafLBkg88gNp-jf3KD9WqYo66RsBIjUBM76OwVOqgHmUR5LhtReXBTiziXaVrWo1bPAZgfn7u_vpK11',
@@ -159,11 +132,9 @@ class GenerateClientAssertionTest extends TestCase
             'alg' => 'ES512',
         ]);
 
-        // Expect the JwksInvalidException with message about JSON encoding
         $this->expectException(JwksInvalidException::class);
         $this->expectExceptionMessage('Failed to encode JWT payload.');
 
-        // Call the method
-        SingPassJwtService::generateClientAssertion($jwk, 'mock-code', 'test-client-id');
+        JwtService::generateClientAssertion($jwk, "\xB1\x31", 'https://example.com');
     }
 }

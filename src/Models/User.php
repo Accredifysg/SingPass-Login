@@ -3,17 +3,17 @@
 namespace Accredifysg\SingPassLogin\Models;
 
 use Accredifysg\SingPassLogin\Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 /**
- * @method static \Illuminate\Database\Eloquent\Builder<User> where(string $column, string $operator = null, mixed $value = null)
- * @method static \Illuminate\Database\Eloquent\Builder<User> first()
- * @method static \Illuminate\Database\Eloquent\Builder<User> find($id)
- * @method static \Illuminate\Database\Eloquent\Builder<User> create(array<string, mixed> $attributes = [])
- * @method static \Illuminate\Database\Eloquent\Builder<User> update(array<string, mixed> $attributes = [])
+ * @method static Builder<User> where(string $column, string $operator = null, mixed $value = null)
+ * @method static Builder<User> first()
+ * @method static Builder<User> find($id)
+ * @method static Builder<User> create(array<string, mixed> $attributes = [])
+ * @method static Builder<User> update(array<string, mixed> $attributes = [])
  */
 class User extends Authenticatable
 {
@@ -29,6 +29,7 @@ class User extends Authenticatable
         'name',
         'email',
         'nric',
+        'corppass_entity_id',
     ];
 
     /**

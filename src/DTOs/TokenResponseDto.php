@@ -9,6 +9,7 @@ readonly class TokenResponseDto
         public ?string $accessToken = null
     ) {}
 
+    /** @phpstan-assert-if-true string $this->accessToken */
     public function hasAccessToken(): bool
     {
         return $this->accessToken !== null;

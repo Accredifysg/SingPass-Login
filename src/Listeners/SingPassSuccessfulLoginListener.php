@@ -21,10 +21,6 @@ class SingPassSuccessfulLoginListener
             throw new SingPassLoginException;
         }
 
-        if (str_starts_with($event->getState(), 'ENABLE')) {
-            $user->update(['nric' => $nric]);
-        }
-
         /** @var Authenticatable $user */
         Auth::login($user);
     }
