@@ -4,6 +4,7 @@ namespace Accredifysg\SingPassLogin\Tests\Unit\Services;
 
 use Accredifysg\SingPassLogin\Services\DPoPService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
+use InvalidArgumentException;
 use Jose\Component\Core\JWK;
 use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerializer;
 
@@ -14,6 +15,7 @@ class DPoPServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        config()->set('singpass-login.dpop_signing_algorithm', 'ES256');
         $this->service = new DPoPService;
     }
 
@@ -25,6 +27,38 @@ class DPoPServiceTest extends TestCase
         $this->assertEquals('EC', $key->get('kty'));
         $this->assertEquals('P-256', $key->get('crv'));
         $this->assertTrue($key->has('d'));
+    }
+
+    public function test_rejects_unsupported_signing_algorithm(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unsupported DPoP signing algorithm');
+
+        config()->set('singpass-login.dpop_signing_algorithm', 'RS256');
+        $this->service->generateKeyPair();
+    }
+
+    public function test_rejects_non_canonical_algorithm_casing(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        config()->set('singpass-login.dpop_signing_algorithm', 'es256');
+        $this->service->generateKeyPair();
+    }
+
+    public function test_es384_key_and_proof_use_configured_algorithm(): void
+    {
+        config()->set('singpass-login.dpop_signing_algorithm', 'ES384');
+        $service = new DPoPService;
+        $key = $service->generateKeyPair();
+
+        $this->assertEquals('P-384', $key->get('crv'));
+
+        $proofJwt = $service->generateProofJwt($key, 'POST', 'https://example.com/token');
+        $serializer = new JwsCompactSerializer;
+        $header = $serializer->unserialize($proofJwt)->getSignature(0)->getProtectedHeader();
+
+        $this->assertEquals('ES384', $header['alg']);
     }
 
     public function test_generate_key_pair_creates_unique_keys(): void
