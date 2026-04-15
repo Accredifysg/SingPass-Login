@@ -7,8 +7,8 @@ use Accredifysg\SingPassLogin\DTOs\FapiSessionContext;
 use Accredifysg\SingPassLogin\Events\CorpPassDataRetrievedEvent;
 use Accredifysg\SingPassLogin\Events\CorpPassSuccessfulLoginEvent;
 use Accredifysg\SingPassLogin\Exceptions\AuthFlowException;
+use Accredifysg\SingPassLogin\Exceptions\CorpPassLoginException;
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
-use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
 use Accredifysg\SingPassLogin\Http\Controllers\CorpPass\LoginCallbackController;
 use Accredifysg\SingPassLogin\Services\FapiCallbackService;
 use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
@@ -150,7 +150,7 @@ class LoginCallbackControllerTest extends TestCase
         $this->assertEquals(route('login'), $response->getTargetUrl());
     }
 
-    public function test_singpass_login_exception_renders_redirect(): void
+    public function test_corppass_login_exception_renders_redirect(): void
     {
         Route::get('/login')->name('login');
 
@@ -169,7 +169,7 @@ class LoginCallbackControllerTest extends TestCase
         $fapiCallbackMock->shouldReceive('validateAndRetrieveSession')->once()->andReturn($session);
         $fapiCallbackMock->shouldReceive('processCallback')
             ->once()
-            ->andThrow(new SingPassLoginException);
+            ->andThrow(new CorpPassLoginException);
         $fapiCallbackMock->shouldReceive('cleanupSession')->once()->with('test-state');
 
         $controller = new LoginCallbackController;

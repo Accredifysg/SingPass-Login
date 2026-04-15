@@ -7,8 +7,8 @@ use Accredifysg\SingPassLogin\Events\CorpPassDataRetrievedEvent;
 use Accredifysg\SingPassLogin\Events\CorpPassSuccessfulLoginEvent;
 use Accredifysg\SingPassLogin\Exceptions\AuthenticationErrorException;
 use Accredifysg\SingPassLogin\Exceptions\AuthFlowException;
+use Accredifysg\SingPassLogin\Exceptions\CorpPassLoginException;
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
-use Accredifysg\SingPassLogin\Exceptions\SingPassLoginException;
 use Accredifysg\SingPassLogin\Models\CorpPassUser;
 use Accredifysg\SingPassLogin\Services\FapiCallbackService;
 use Illuminate\Http\RedirectResponse;
@@ -38,7 +38,7 @@ class LoginCallbackController extends Controller
             }
         } catch (JwtPayloadException) {
             return (new AuthFlowException(400, 'Invalid identity token payload'))->render();
-        } catch (SingPassLoginException|AuthFlowException|AuthenticationErrorException $e) {
+        } catch (CorpPassLoginException|AuthFlowException|AuthenticationErrorException $e) {
             return $e->render();
         } finally {
             if ($session) {
