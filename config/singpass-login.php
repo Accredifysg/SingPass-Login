@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Accredifysg\SingPassLogin\Http\Controllers\SingPass\LoginCallbackController;
 use Accredifysg\SingPassLogin\Http\Controllers\SingPass\LoginController;
 use Accredifysg\SingPassLogin\Listeners\SingPassSuccessfulLoginListener;
