@@ -70,4 +70,14 @@ class JwksServiceTest extends TestCase
         // Call the method
         (new JwksService)->getJwks('openId');
     }
+
+    public function test_get_jwks_throws_when_openid_config_missing_from_cache(): void
+    {
+        Cache::forget('openId');
+
+        $this->expectException(JwksException::class);
+        $this->expectExceptionMessage('OpenID configuration not found in cache');
+
+        (new JwksService)->getJwks('openId');
+    }
 }

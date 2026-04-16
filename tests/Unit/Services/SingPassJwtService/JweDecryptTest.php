@@ -14,12 +14,23 @@ use Jose\Component\Core\JWK;
 use Jose\Component\Encryption\Algorithm\ContentEncryption\A256CBCHS512;
 use Jose\Component\Encryption\Algorithm\KeyEncryption\A256KW;
 use Jose\Component\Encryption\Algorithm\KeyEncryption\ECDHESA256KW;
+use Jose\Component\Encryption\JWE;
 use Jose\Component\Encryption\JWEBuilder;
+use Jose\Component\Encryption\JWELoader;
 use Jose\Component\Encryption\Serializer\CompactSerializer;
 use Jose\Component\KeyManagement\JWKFactory;
+use Mockery;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 
 class JweDecryptTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
     public function test_jwe_decrypt_success(): void
     {
         // Create new key
@@ -109,15 +120,63 @@ class JweDecryptTest extends TestCase
         $payload = 'test-payload';
         $jwe = $this->createMockJWE($key, $payload);
 
-        // Expect the JwksInvalidException to be thrown
         $this->expectException(JweDecryptionFailedException::class);
         $this->expectExceptionMessage('JWE cannot be decrypted with KID specified.');
 
-        // Call the method
         (new JwtService)->jweDecrypt($jwe);
     }
 
-    private function createMockJWE(JWK $key, string $payload): string
+    public function test_jwe_decrypt_throws_when_kid_header_is_not_string(): void
+    {
+        $key = JWKFactory::createECKey('P-521', ['kid' => 'test-kid']);
+        $jwks = json_encode(['keys' => [$key->jsonSerialize()]]);
+        Config::set('ndi.private_jwks', $jwks);
+
+        $jwe = $this->createMockJWE($key, 'test-payload', 123);
+
+        $this->expectException(JweDecryptionFailedException::class);
+        $this->expectExceptionMessage('JWE KID header is missing or invalid.');
+
+        (new JwtService)->jweDecrypt($jwe);
+    }
+
+    public function test_jwe_decrypt_throws_when_private_jwks_is_not_string(): void
+    {
+        $key = JWKFactory::createECKey('P-521', ['kid' => 'test-kid']);
+        Config::set('ndi.private_jwks', null);
+
+        $jwe = $this->createMockJWE($key, 'test-payload');
+
+        $this->expectException(JwksInvalidException::class);
+        $this->expectExceptionMessage('Private JWKS not set or invalid.');
+
+        (new JwtService)->jweDecrypt($jwe);
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function test_jwe_decrypt_throws_when_decrypted_payload_is_null(): void
+    {
+        $key = JWKFactory::createECKey('P-521', ['kid' => 'test-kid']);
+        $jwks = json_encode(['keys' => [$key->jsonSerialize()]]);
+        Config::set('ndi.private_jwks', $jwks);
+        $jwe = $this->createMockJWE($key, 'test-payload');
+
+        $jweWithNullPayload = Mockery::mock(JWE::class);
+        $jweWithNullPayload->shouldReceive('getPayload')->andReturn(null);
+
+        Mockery::mock('overload:'.JWELoader::class)
+            ->shouldReceive('loadAndDecryptWithKey')
+            ->once()
+            ->andReturn($jweWithNullPayload);
+
+        $this->expectException(JweDecryptionFailedException::class);
+        $this->expectExceptionMessage('JWE payload is empty.');
+
+        (new JwtService)->jweDecrypt($jwe);
+    }
+
+    private function createMockJWE(JWK $key, string $payload, string|int $kid = 'test-kid'): string
     {
         $algorithmManager = new AlgorithmManager([
             new ECDHESA256KW,
@@ -135,7 +194,7 @@ class JweDecryptTest extends TestCase
             ->withSharedProtectedHeader([
                 'alg' => 'ECDH-ES+A256KW',
                 'enc' => 'A256CBC-HS512',
-                'kid' => 'test-kid',
+                'kid' => $kid,
             ])
             ->addRecipient($key)
             ->build();

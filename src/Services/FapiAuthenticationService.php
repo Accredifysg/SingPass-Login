@@ -28,7 +28,7 @@ class FapiAuthenticationService
     /**
      * Initiate the FAPI 2.0 authentication flow.
      *
-     * @param  array<string, mixed>  $extraParParams  Additional PAR parameters (e.g. authentication_context_type); non-string values are rejected.
+     * @param  array<mixed>  $extraParParams  Additional PAR parameters (e.g. authentication_context_type); validated by normalizeExtraParParams().
      * @return array{redirect_url: string}
      *
      * @throws RandomException

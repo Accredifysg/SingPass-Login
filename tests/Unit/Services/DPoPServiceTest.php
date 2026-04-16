@@ -63,6 +63,21 @@ class DPoPServiceTest extends TestCase
         $this->assertEquals('ES384', $header['alg']);
     }
 
+    public function test_es512_key_and_proof_use_configured_algorithm(): void
+    {
+        config()->set('ndi.dpop_signing_algorithm', 'ES512');
+        $service = new DPoPService;
+        $key = $service->generateKeyPair();
+
+        $this->assertEquals('P-521', $key->get('crv'));
+
+        $proofJwt = $service->generateProofJwt($key, 'POST', 'https://example.com/token');
+        $serializer = new JwsCompactSerializer;
+        $header = $serializer->unserialize($proofJwt)->getSignature(0)->getProtectedHeader();
+
+        $this->assertEquals('ES512', $header['alg']);
+    }
+
     public function test_generate_key_pair_creates_unique_keys(): void
     {
         $key1 = $this->service->generateKeyPair();
@@ -163,6 +178,22 @@ class DPoPServiceTest extends TestCase
         $result = $this->service->retrieveKeyForState('nonexistent-state');
 
         $this->assertNull($result);
+    }
+
+    public function test_retrieve_key_returns_null_when_session_value_is_not_string(): void
+    {
+        $state = 'test-state-'.uniqid();
+        session()->put("dpop_key_{$state}", ['kty' => 'EC']);
+
+        $this->assertNull($this->service->retrieveKeyForState($state));
+    }
+
+    public function test_retrieve_key_returns_null_when_json_does_not_decode_to_array(): void
+    {
+        $state = 'test-state-'.uniqid();
+        session()->put("dpop_key_{$state}", '123');
+
+        $this->assertNull($this->service->retrieveKeyForState($state));
     }
 
     public function test_clear_key_for_state(): void

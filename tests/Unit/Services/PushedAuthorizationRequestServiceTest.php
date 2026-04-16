@@ -131,4 +131,40 @@ class PushedAuthorizationRequestServiceTest extends TestCase
             $this->assertSame('Failed to parse PAR response', $e->getMessage());
         }
     }
+
+    public function test_send_request_throws_when_openid_config_missing_from_cache(): void
+    {
+        Cache::forget('openId:test');
+
+        $this->expectException(PushedAuthorizationRequestException::class);
+        $this->expectExceptionMessage('OpenID configuration not found in cache');
+
+        $this->service->sendRequest([], 'mock-dpop-proof-jwt', 'openId:test');
+    }
+
+    public function test_send_request_rejects_json_array_body(): void
+    {
+        Http::fake([
+            'https://example.com/fapi/par' => Http::response('[]', 200),
+        ]);
+
+        $this->expectException(PushedAuthorizationRequestException::class);
+        $this->expectExceptionMessage('PAR response JSON must be an object');
+
+        $this->service->sendRequest([], 'mock-dpop-proof-jwt', 'openId:test');
+    }
+
+    public function test_send_request_rejects_non_string_request_uri(): void
+    {
+        Http::fake([
+            'https://example.com/fapi/par' => Http::response([
+                'request_uri' => ['not' => 'a string'],
+            ], 200),
+        ]);
+
+        $this->expectException(PushedAuthorizationRequestException::class);
+        $this->expectExceptionMessage('PAR response request_uri must be a string');
+
+        $this->service->sendRequest([], 'mock-dpop-proof-jwt', 'openId:test');
+    }
 }

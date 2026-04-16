@@ -7,6 +7,8 @@ namespace Accredifysg\SingPassLogin\Tests\Unit\Http\Controllers\SingPass;
 use Accredifysg\SingPassLogin\DTOs\FapiCallbackResult;
 use Accredifysg\SingPassLogin\DTOs\FapiSessionContext;
 use Accredifysg\SingPassLogin\Events\MyInfoDataRetrievedEvent;
+use Accredifysg\SingPassLogin\Exceptions\AuthFlowException;
+use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Accredifysg\SingPassLogin\Http\Controllers\SingPass\MyInfoCallbackController;
 use Accredifysg\SingPassLogin\Services\FapiCallbackService;
 use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
@@ -15,6 +17,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
 use Jose\Component\KeyManagement\JWKFactory;
 use Mockery;
 
@@ -143,5 +146,53 @@ class MyInfoCallbackControllerTest extends TestCase
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
         Event::assertDispatched(MyInfoDataRetrievedEvent::class);
+    }
+
+    public function test_jwt_payload_exception_from_process_callback_renders_login_redirect_and_cleans_up(): void
+    {
+        Route::get('/login')->name('login');
+
+        $dpopKey = JWKFactory::createECKey('P-256');
+        $session = new FapiSessionContext(
+            code: 'test-code',
+            state: 'test-state',
+            codeVerifier: 'test-verifier',
+            dpopKey: $dpopKey,
+            clientId: 'myinfo-client-id',
+            redirectUri: 'https://example.com/myinfo-callback',
+        );
+
+        $fapiCallbackMock = Mockery::mock(FapiCallbackService::class);
+        $fapiCallbackMock->shouldReceive('validateAndRetrieveSession')->once()->andReturn($session);
+        $fapiCallbackMock->shouldReceive('processCallback')->once()->andThrow(new JwtPayloadException(400, 'Invalid payload'));
+        $fapiCallbackMock->shouldReceive('cleanupSession')->once()->with('test-state');
+
+        $controller = new MyInfoCallbackController;
+        $request = new Request(['code' => 'test-code', 'state' => 'test-state']);
+
+        $response = $controller->__invoke($request, $fapiCallbackMock);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertSame(route('login'), $response->getTargetUrl());
+    }
+
+    public function test_auth_flow_exception_from_validate_does_not_call_cleanup(): void
+    {
+        Route::get('/login')->name('login');
+
+        $fapiCallbackMock = Mockery::mock(FapiCallbackService::class);
+        $fapiCallbackMock->shouldReceive('validateAndRetrieveSession')
+            ->once()
+            ->andThrow(new AuthFlowException(400, 'Missing code'));
+        $fapiCallbackMock->shouldNotReceive('processCallback');
+        $fapiCallbackMock->shouldNotReceive('cleanupSession');
+
+        $controller = new MyInfoCallbackController;
+        $request = new Request(['state' => 'test-state']);
+
+        $response = $controller->__invoke($request, $fapiCallbackMock);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertSame(route('login'), $response->getTargetUrl());
     }
 }

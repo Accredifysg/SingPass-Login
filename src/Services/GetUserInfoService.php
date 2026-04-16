@@ -46,40 +46,33 @@ final readonly class GetUserInfoService implements GetUserInfoServiceInterface
 
     /**
      * @return array<int, string>
+     *
+     * @throws UserInfoRequestException
      */
     private function extractScopesFromAccessToken(string $accessToken): array
     {
-        try {
-            // Decode the JWT without verification (we just need to read the payload)
-            // The access token is a JWT in the format: header.payload.signature
-            $parts = explode('.', $accessToken);
+        $parts = explode('.', $accessToken);
 
-            if (count($parts) !== 3) {
-                return ['openid'];
-            }
-
-            // Decode the payload (second part)
-            $payloadJson = base64_decode(strtr($parts[1], '-_', '+/'), true);
-            if ($payloadJson === false) {
-                return ['openid'];
-            }
-
-            $payload = json_decode($payloadJson, true);
-            if (! is_array($payload) || ! isset($payload['scope'])) {
-                return ['openid'];
-            }
-
-            $scope = $payload['scope'];
-            if (! is_string($scope)) {
-                return ['openid'];
-            }
-
-            // Scopes are space-separated in the JWT
-            return explode(' ', $scope);
-        } catch (Exception) {
-            // If we can't decode, default to openid only
-            return ['openid'];
+        if (count($parts) !== 3) {
+            throw new UserInfoRequestException(500, 'Access token is not a valid JWT (expected 3 parts).');
         }
+
+        $payloadJson = base64_decode(strtr($parts[1], '-_', '+/'), true);
+        if ($payloadJson === false) {
+            throw new UserInfoRequestException(500, 'Access token payload could not be base64-decoded.');
+        }
+
+        $payload = json_decode($payloadJson, true);
+        if (! is_array($payload) || ! isset($payload['scope'])) {
+            throw new UserInfoRequestException(500, 'Access token payload does not contain a scope claim.');
+        }
+
+        $scope = $payload['scope'];
+        if (! is_string($scope)) {
+            throw new UserInfoRequestException(500, 'Access token scope claim is not a string.');
+        }
+
+        return explode(' ', $scope);
     }
 
     /**

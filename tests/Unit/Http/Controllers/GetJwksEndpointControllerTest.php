@@ -73,6 +73,28 @@ class GetJwksEndpointControllerTest extends TestCase
         $controller->__invoke(request());
     }
 
+    public function test_invoke_throws_when_jwks_config_is_not_a_string(): void
+    {
+        Config::set('ndi.jwks', ['keys' => []]);
+
+        $this->expectException(JwksInvalidException::class);
+        $this->expectExceptionMessage('JWKS configuration must be a JSON string.');
+
+        $controller = new GetJwksEndpointController;
+        $controller->__invoke(request());
+    }
+
+    public function test_invoke_throws_when_jwks_json_decodes_to_non_array(): void
+    {
+        Config::set('ndi.jwks', '123');
+
+        $this->expectException(JwksInvalidException::class);
+        $this->expectExceptionMessage('JWKS JSON must decode to an array or object.');
+
+        $controller = new GetJwksEndpointController;
+        $controller->__invoke(request());
+    }
+
     protected function getPackageProviders($app): array
     {
         return [

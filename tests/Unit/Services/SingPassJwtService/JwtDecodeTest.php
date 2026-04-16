@@ -14,12 +14,23 @@ use Jose\Component\Core\JWK;
 use Jose\Component\Core\JWKSet;
 use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\ES256;
+use Jose\Component\Signature\JWS;
 use Jose\Component\Signature\JWSBuilder;
+use Jose\Component\Signature\JWSLoader;
 use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerializer;
+use Mockery;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use RuntimeException;
 
 class JwtDecodeTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
     protected function defineEnvironment($app): void
     {
         if (! $app instanceof Application) {
@@ -135,6 +146,81 @@ class JwtDecodeTest extends TestCase
 
         // Call the method
         (new JwtService)->jwtDecode($jwt, $wrongJwkSet);
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function test_jwt_decode_throws_when_payload_is_empty(): void
+    {
+        $newKey = JWKFactory::createECKey('P-256', ['kid' => 'test-kid'])->all();
+        $keySet = JWKFactory::createFromValues(['keys' => [$newKey]]);
+        $key = $keySet->get('test-kid');
+        $this->assertInstanceOf(JWK::class, $key);
+
+        $payload = json_encode(['sub' => '1234567890', 'iat' => Carbon::now()->timestamp]) ?: '{}';
+        $jwt = $this->createMockJWT($key, $payload);
+        $jwkSet = JWKSet::createFromKeyData(['keys' => [$key->all()]]);
+
+        $jwsWithNullPayload = Mockery::mock(JWS::class);
+        $jwsWithNullPayload->shouldReceive('getPayload')->andReturn(null);
+
+        Mockery::mock('overload:'.JWSLoader::class)
+            ->shouldReceive('loadAndVerifyWithKey')
+            ->once()
+            ->andReturn($jwsWithNullPayload);
+
+        $this->expectException(JwtDecodeFailedException::class);
+        $this->expectExceptionMessage('JWT payload is empty.');
+
+        (new JwtService)->jwtDecode($jwt, $jwkSet);
+    }
+
+    public function test_jwt_decode_throws_when_payload_is_not_a_json_object(): void
+    {
+        $newKey = JWKFactory::createECKey('P-256', ['kid' => 'test-kid'])->all();
+        $keySet = JWKFactory::createFromValues(['keys' => [$newKey]]);
+        $key = $keySet->get('test-kid');
+        $this->assertInstanceOf(JWK::class, $key);
+
+        $jwt = $this->createMockJWT($key, '"hello"');
+
+        $jwkSet = JWKSet::createFromKeyData(['keys' => [$key->all()]]);
+
+        $this->expectException(JwtDecodeFailedException::class);
+        $this->expectExceptionMessage('JWT payload is not a valid JSON object.');
+
+        (new JwtService)->jwtDecode($jwt, $jwkSet);
+    }
+
+    public function test_jwt_decode_throws_when_kid_header_is_not_string(): void
+    {
+        $newKey = JWKFactory::createECKey('P-256', ['kid' => 'test-kid'])->all();
+        $keySet = JWKFactory::createFromValues(['keys' => [$newKey]]);
+        $key = $keySet->get('test-kid');
+        $this->assertInstanceOf(JWK::class, $key);
+
+        $algorithmManager = new AlgorithmManager([
+            new ES256,
+        ]);
+        $jwsBuilder = new JWSBuilder($algorithmManager);
+        $payload = json_encode(['sub' => 'x']) ?: '{}';
+        $jws = $jwsBuilder
+            ->create()
+            ->withPayload($payload)
+            ->addSignature($key, [
+                'alg' => 'ES256',
+                'kid' => 999,
+            ])
+            ->build();
+        $serializer = new JwsCompactSerializer;
+        $jwt = $serializer->serialize($jws, 0);
+
+        $jwkSet = JWKSet::createFromKeyData(['keys' => [$key->all()]]);
+
+        $this->expectException(JwtDecodeFailedException::class);
+        $this->expectExceptionMessage('JWT KID header is missing or invalid.');
+
+        (new JwtService)->jwtDecode($jwt, $jwkSet);
     }
 
     private function createMockJWT(JWK $key, string $payload): string

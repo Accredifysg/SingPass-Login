@@ -70,6 +70,18 @@ class OpenIdDiscoveryServiceTest extends TestCase
         (new OpenIdDiscoveryService)->cacheOpenIdDiscovery('https://example.com/discovery', 'openId:singpass');
     }
 
+    public function test_cache_open_id_discovery_rejects_json_array(): void
+    {
+        Http::fake([
+            'https://example.com/discovery' => Http::response('[]', 200),
+        ]);
+
+        $this->expectException(OpenIdDiscoveryException::class);
+        $this->expectExceptionMessage('Open ID Discovery JSON must be an object.');
+
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery('https://example.com/discovery', 'openId:json-array-test');
+    }
+
     public function test_cache_open_id_discovery_exception(): void
     {
         Http::fake([
