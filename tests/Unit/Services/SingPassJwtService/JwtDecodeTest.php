@@ -8,6 +8,7 @@ use Accredifysg\SingPassLogin\Exceptions\JwtDecodeFailedException;
 use Accredifysg\SingPassLogin\Services\JwtService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Carbon\Carbon;
+use Illuminate\Foundation\Application;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;
 use Jose\Component\Core\JWKSet;
@@ -15,14 +16,17 @@ use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\ES256;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerializer;
+use RuntimeException;
 
 class JwtDecodeTest extends TestCase
 {
     protected function defineEnvironment($app): void
     {
-        // Set up default configuration values
-        $app['config']->set('singpass-login.client_id', 'test-client-id');
-        $app['config']->set('singpass-login.domain', 'test-domain');
+        if (! $app instanceof Application) {
+            throw new RuntimeException('Expected application instance.');
+        }
+        $this->appConfigSet($app, 'singpass-login.client_id', 'test-client-id');
+        $this->appConfigSet($app, 'singpass-login.domain', 'test-domain');
     }
 
     public function test_jwt_decode_success(): void
@@ -40,6 +44,7 @@ class JwtDecodeTest extends TestCase
         // Create a JWK object
         $keySet = JWKFactory::createFromValues($keySet);
         $key = $keySet->get('test-kid');
+        $this->assertInstanceOf(JWK::class, $key);
 
         $now = Carbon::now();
 
@@ -56,13 +61,14 @@ class JwtDecodeTest extends TestCase
         $jwt = $this->createMockJWT($key, $payload);
 
         // Create JWKSet from keySet
-        $jwkSet = JWKSet::createFromKeyData(['keys' => [$keySet->get('test-kid')->all()]]);
+        $jwkSet = JWKSet::createFromKeyData(['keys' => [$key->all()]]);
 
         // Call the method
         $decodedPayload = (new JwtService)->jwtDecode($jwt, $jwkSet);
 
-        // Assert the decoded payload is correct
-        $this->assertEquals(json_decode($payload, true), $decodedPayload);
+        $expected = json_decode($payload, true);
+        $this->assertIsArray($expected);
+        $this->assertEquals($expected, $decodedPayload);
     }
 
     public function test_jwt_decode_failure(): void
@@ -111,14 +117,17 @@ class JwtDecodeTest extends TestCase
         // Create a JWK object
         $keySet = JWKFactory::createFromValues($keySet);
         $key = $keySet->get('test-kid');
+        $this->assertInstanceOf(JWK::class, $key);
         $wrongKeySet = JWKFactory::createFromValues($wrongKeySet);
+        $wrongKidJwk = $wrongKeySet->get('test-kid-kid');
+        $this->assertInstanceOf(JWK::class, $wrongKidJwk);
 
         // Create a mock JWT token
         $payload = json_encode(['sub' => '1234567890', 'name' => 'John Doe', 'iat' => Carbon::now()->timestamp]) ?: '{}';
         $jwt = $this->createMockJWT($key, $payload);
 
         // Create JWKSet from wrongKeySet
-        $wrongJwkSet = JWKSet::createFromKeyData(['keys' => [$wrongKeySet->get('test-kid-kid')->all()]]);
+        $wrongJwkSet = JWKSet::createFromKeyData(['keys' => [$wrongKidJwk->all()]]);
 
         // Expect the JwtDecodeFailedException to be thrown
         $this->expectException(JwtDecodeFailedException::class);

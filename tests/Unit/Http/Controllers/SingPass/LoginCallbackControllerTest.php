@@ -77,7 +77,7 @@ class LoginCallbackControllerTest extends TestCase
         $response = $controller->__invoke($request, $fapiCallbackMock);
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
-        Event::assertDispatched(SingPassSuccessfulLoginEvent::class, function ($event) {
+        Event::assertDispatched(SingPassSuccessfulLoginEvent::class, function (SingPassSuccessfulLoginEvent $event): bool {
             return $event->getSingPassUser()->nric === 'S1234567A'
                 && $event->getState() === 'test-state';
         });

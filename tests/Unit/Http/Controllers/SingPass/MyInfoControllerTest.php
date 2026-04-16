@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Accredifysg\SingPassLogin\Tests\Unit\Http\Controllers\SingPass;
 
+use Accredifysg\SingPassLogin\DTOs\ProviderConfig;
 use Accredifysg\SingPassLogin\Services\FapiAuthenticationService;
 use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
 use Accredifysg\SingPassLogin\Tests\TestCase;
@@ -35,7 +36,7 @@ class MyInfoControllerTest extends TestCase
         $fapiAuthMock = Mockery::mock(FapiAuthenticationService::class);
         $fapiAuthMock->shouldReceive('initiateAuth')
             ->once()
-            ->withArgs(function ($config, $scopes) {
+            ->withArgs(function (ProviderConfig $config, mixed $scopes): bool {
                 return $config->clientId === 'myinfo-client-id';
             })
             ->andReturn(['redirect_url' => 'https://example.com/auth?client_id=myinfo&request_uri=urn:test']);

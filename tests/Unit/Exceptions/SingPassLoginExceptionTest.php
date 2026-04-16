@@ -9,6 +9,8 @@ use Accredifysg\SingPassLogin\Exceptions\TokenExchangeException;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\MessageBag;
+use Illuminate\Support\ViewErrorBag;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class SingPassLoginExceptionTest extends TestCase
@@ -43,6 +45,10 @@ class SingPassLoginExceptionTest extends TestCase
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
         $this->assertEquals(route('login'), $response->getTargetUrl());
+        $errors = session('errors');
+        $this->assertInstanceOf(ViewErrorBag::class, $errors);
+        $bag = $errors->getBag('default');
+        $this->assertInstanceOf(MessageBag::class, $bag);
         $this->assertEquals([
             'singpass' => [
                 [
@@ -50,6 +56,6 @@ class SingPassLoginExceptionTest extends TestCase
                     'description' => 'This SingPass account is not connected with any existing accounts in our system.',
                 ],
             ],
-        ], session('errors')->getBag('default')->messages());
+        ], $bag->messages());
     }
 }

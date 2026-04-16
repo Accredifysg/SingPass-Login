@@ -13,8 +13,10 @@ use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use AddCorppassEntityIdToUsers;
 use AddNricToUsers;
+use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
+use RuntimeException;
 
 class CorpPassSuccessfulLoginListenerTest extends TestCase
 {
@@ -86,8 +88,11 @@ class CorpPassSuccessfulLoginListenerTest extends TestCase
 
     protected function defineEnvironment($app): void
     {
-        $app['config']->set('database.default', 'testbench');
-        $app['config']->set('database.connections.testbench', [
+        if (! $app instanceof Application) {
+            throw new RuntimeException('Expected application instance.');
+        }
+        $this->appConfigSet($app, 'database.default', 'testbench');
+        $this->appConfigSet($app, 'database.connections.testbench', [
             'driver' => 'sqlite',
             'database' => ':memory:',
             'prefix' => '',

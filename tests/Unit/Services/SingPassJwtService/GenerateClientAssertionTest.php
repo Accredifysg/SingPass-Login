@@ -7,16 +7,21 @@ namespace Accredifysg\SingPassLogin\Tests\Unit\Services\SingPassJwtService;
 use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
 use Accredifysg\SingPassLogin\Services\JwtService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
+use Illuminate\Foundation\Application;
 use Jose\Component\Core\JWK;
 use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Serializer\CompactSerializer as JwsCompactSerializer;
+use RuntimeException;
 
 class GenerateClientAssertionTest extends TestCase
 {
     protected function defineEnvironment($app): void
     {
-        $app['config']->set('singpass-login.client_id', 'test-client-id');
-        $app['config']->set('ndi.signing_kid', 'test-signing-kid');
+        if (! $app instanceof Application) {
+            throw new RuntimeException('Expected application instance.');
+        }
+        $this->appConfigSet($app, 'singpass-login.client_id', 'test-client-id');
+        $this->appConfigSet($app, 'ndi.signing_kid', 'test-signing-kid');
     }
 
     public function test_generate_client_assertion_success(): void
@@ -42,6 +47,7 @@ class GenerateClientAssertionTest extends TestCase
         $this->assertEquals(1, $jws->countSignatures());
 
         $payload = json_decode($jws->getPayload() ?: '{}', true);
+        $this->assertIsArray($payload);
 
         $this->assertEquals('test-client-id', $payload['sub']);
         $this->assertEquals('https://example.com', $payload['aud']);
@@ -93,6 +99,7 @@ class GenerateClientAssertionTest extends TestCase
         $this->assertEquals(1, $jws->countSignatures());
 
         $payload = json_decode($jws->getPayload() ?: '{}', true);
+        $this->assertIsArray($payload);
 
         $this->assertEquals('myinfo-client-id', $payload['sub']);
         $this->assertEquals('https://example.com', $payload['aud']);

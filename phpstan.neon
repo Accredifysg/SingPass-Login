@@ -1,10 +1,14 @@
 includes:
     - vendor/phpstan/phpstan-mockery/extension.neon
+    - vendor/phpstan/phpstan-phpunit/extension.neon
 
 parameters:
-    level: 8
+    level: max
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        -
+            identifier: method.alreadyNarrowedType
     paths:
         - src
-        - tests
         - database
-
+        - tests

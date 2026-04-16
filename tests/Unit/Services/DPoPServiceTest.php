@@ -81,14 +81,18 @@ class DPoPServiceTest extends TestCase
 
         // Verify header
         $header = $jws->getSignature(0)->getProtectedHeader();
+        $this->assertIsArray($header);
         $this->assertEquals('ES256', $header['alg']);
         $this->assertEquals('dpop+jwt', $header['typ']);
         $this->assertArrayHasKey('jwk', $header);
-        $this->assertEquals('EC', $header['jwk']['kty']);
-        $this->assertArrayNotHasKey('d', $header['jwk']);
+        $jwkHeader = $header['jwk'];
+        $this->assertIsArray($jwkHeader);
+        $this->assertEquals('EC', $jwkHeader['kty']);
+        $this->assertArrayNotHasKey('d', $jwkHeader);
 
         // Verify payload
         $payload = json_decode($jws->getPayload() ?: '{}', true);
+        $this->assertIsArray($payload);
         $this->assertEquals('POST', $payload['htm']);
         $this->assertEquals('https://example.com/token', $payload['htu']);
         $this->assertArrayHasKey('jti', $payload);
@@ -96,6 +100,8 @@ class DPoPServiceTest extends TestCase
         $this->assertArrayHasKey('exp', $payload);
         $this->assertArrayNotHasKey('ath', $payload);
 
+        $this->assertIsInt($payload['exp']);
+        $this->assertIsInt($payload['iat']);
         $this->assertLessThanOrEqual(120, $payload['exp'] - $payload['iat']);
     }
 
@@ -108,6 +114,7 @@ class DPoPServiceTest extends TestCase
         $jws = $serializer->unserialize($proofJwt);
 
         $payload = json_decode($jws->getPayload() ?: '{}', true);
+        $this->assertIsArray($payload);
         $this->assertEquals('GET', $payload['htm']);
         $this->assertEquals('https://example.com/userinfo', $payload['htu']);
         $this->assertEquals('test-ath-value', $payload['ath']);
@@ -122,6 +129,8 @@ class DPoPServiceTest extends TestCase
         $serializer = new JwsCompactSerializer;
         $payload1 = json_decode($serializer->unserialize($proof1)->getPayload() ?: '{}', true);
         $payload2 = json_decode($serializer->unserialize($proof2)->getPayload() ?: '{}', true);
+        $this->assertIsArray($payload1);
+        $this->assertIsArray($payload2);
 
         $this->assertNotEquals($payload1['jti'], $payload2['jti']);
     }

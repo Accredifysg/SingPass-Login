@@ -83,7 +83,7 @@ class LoginCallbackControllerTest extends TestCase
         $response = $controller->__invoke($request, $fapiCallbackMock);
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
-        Event::assertDispatched(CorpPassSuccessfulLoginEvent::class, function ($event) {
+        Event::assertDispatched(CorpPassSuccessfulLoginEvent::class, function (CorpPassSuccessfulLoginEvent $event): bool {
             return $event->getCorpPassUser()->entityId === '200000001A'
                 && $event->getCorpPassUser()->identityNumber === 'S1234567A'
                 && $event->getState() === 'test-state';
@@ -127,7 +127,7 @@ class LoginCallbackControllerTest extends TestCase
         $response = $controller->__invoke($request, $fapiCallbackMock);
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
-        Event::assertDispatched(CorpPassDataRetrievedEvent::class, function ($event) use ($authData) {
+        Event::assertDispatched(CorpPassDataRetrievedEvent::class, function (CorpPassDataRetrievedEvent $event) use ($authData): bool {
             return $event->getCorpPassData() === $authData
                 && $event->getState() === 'test-state';
         });

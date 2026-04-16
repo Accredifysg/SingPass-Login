@@ -72,7 +72,7 @@ class MyInfoCallbackControllerTest extends TestCase
         $response = $controller->__invoke($request, $fapiCallbackMock);
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
-        Event::assertDispatched(MyInfoDataRetrievedEvent::class, function ($event) use ($myInfoData) {
+        Event::assertDispatched(MyInfoDataRetrievedEvent::class, function (MyInfoDataRetrievedEvent $event) use ($myInfoData): bool {
             return $event->getMyInfoData() === $myInfoData
                 && $event->getState() === 'test-state';
         });

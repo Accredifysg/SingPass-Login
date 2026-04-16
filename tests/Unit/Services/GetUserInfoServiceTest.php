@@ -271,8 +271,12 @@ class GetUserInfoServiceTest extends TestCase
         $result = $this->service->getUserInfo($accessToken, $this->dpopKey, 'openId');
 
         $this->assertEquals($personInfo, $result);
-        $this->assertEquals('S9000001B', $result['uinfin']['value']);
-        $this->assertEquals('SOH HAO FENG', $result['name']['value']);
+        $uinfin = $result['uinfin'] ?? null;
+        $name = $result['name'] ?? null;
+        $this->assertIsArray($uinfin);
+        $this->assertIsArray($name);
+        $this->assertEquals('S9000001B', $uinfin['value']);
+        $this->assertEquals('SOH HAO FENG', $name['value']);
     }
 
     public function test_get_user_info_falls_back_to_full_payload_without_person_info(): void
