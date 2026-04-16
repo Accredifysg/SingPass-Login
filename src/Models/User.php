@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Accredifysg\SingPassLogin\Models;
 
 use Accredifysg\SingPassLogin\Database\Factories\UserFactory;

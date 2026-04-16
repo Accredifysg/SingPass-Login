@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Accredifysg\SingPassLogin\Tests\Unit\Http\Controllers;
 
 use Accredifysg\SingPassLogin\Exceptions\JwksInvalidException;
