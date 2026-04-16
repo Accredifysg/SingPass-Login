@@ -15,7 +15,6 @@ use AddCorppassEntityIdToUsers;
 use AddNricToUsers;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
-use PHPUnit\Framework\MockObject\Exception;
 
 class CorpPassSuccessfulLoginListenerTest extends TestCase
 {
@@ -32,9 +31,6 @@ class CorpPassSuccessfulLoginListenerTest extends TestCase
         (new AddCorppassEntityIdToUsers)->up();
     }
 
-    /**
-     * @throws Exception
-     */
     public function test_handle_with_existing_user(): void
     {
         /** @var User $user */
@@ -43,9 +39,7 @@ class CorpPassSuccessfulLoginListenerTest extends TestCase
             'nric' => 'S1234567D',
         ]);
 
-        $corpPassUser = $this->createMock(CorpPassUser::class);
-        $corpPassUser->method('getEntityId')->willReturn('uen-123');
-        $corpPassUser->method('getIdentityNumber')->willReturn('S1234567D');
+        $corpPassUser = new CorpPassUser(entityId: 'uen-123', actorId: 'actor-1', identityNumber: 'S1234567D');
 
         $event = new CorpPassSuccessfulLoginEvent($corpPassUser, '9d8c5c0e-4f3a-4b2d-9e1f-0a1b2c3d4e5f');
 
@@ -58,9 +52,7 @@ class CorpPassSuccessfulLoginListenerTest extends TestCase
 
     public function test_handle_with_non_existent_user(): void
     {
-        $corpPassUser = $this->createMock(CorpPassUser::class);
-        $corpPassUser->method('getEntityId')->willReturn('unknown-entity');
-        $corpPassUser->method('getIdentityNumber')->willReturn('S9999999Z');
+        $corpPassUser = new CorpPassUser(entityId: 'unknown-entity', actorId: 'actor-1', identityNumber: 'S9999999Z');
 
         $event = new CorpPassSuccessfulLoginEvent($corpPassUser, '9d8c5c0e-4f3a-4b2d-9e1f-0a1b2c3d4e5f');
 

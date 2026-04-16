@@ -15,7 +15,7 @@ class SingPassSuccessfulLoginListener
     public function handle(SingPassSuccessfulLoginEvent $event): void
     {
         $singPassUser = $event->getSingPassUser();
-        $nric = $singPassUser->getNric();
+        $nric = $singPassUser->nric;
 
         $user = User::where('nric', '=', $nric)->first();
 

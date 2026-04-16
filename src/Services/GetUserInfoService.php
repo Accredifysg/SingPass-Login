@@ -13,6 +13,7 @@ use Accredifysg\SingPassLogin\Interfaces\GetUserInfoServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\JwksServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\JwtServiceInterface;
 use Accredifysg\SingPassLogin\Support\SingPassLog;
+use Accredifysg\SingPassLogin\Support\TypeNarrow;
 use Exception;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
@@ -58,14 +59,23 @@ final readonly class GetUserInfoService implements GetUserInfoServiceInterface
             }
 
             // Decode the payload (second part)
-            $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+            $payloadJson = base64_decode(strtr($parts[1], '-_', '+/'), true);
+            if ($payloadJson === false) {
+                return ['openid'];
+            }
 
-            if (! isset($payload['scope'])) {
+            $payload = json_decode($payloadJson, true);
+            if (! is_array($payload) || ! isset($payload['scope'])) {
+                return ['openid'];
+            }
+
+            $scope = $payload['scope'];
+            if (! is_string($scope)) {
                 return ['openid'];
             }
 
             // Scopes are space-separated in the JWT
-            return explode(' ', $payload['scope']);
+            return explode(' ', $scope);
         } catch (Exception) {
             // If we can't decode, default to openid only
             return ['openid'];
@@ -146,6 +156,12 @@ final readonly class GetUserInfoService implements GetUserInfoServiceInterface
 
         SingPassLog::info('UserInfo data retrieved successfully');
 
-        return $payload['person_info'] ?? $payload;
+        $result = $payload['person_info'] ?? $payload;
+        if (! is_array($result)) {
+            throw new UserInfoVerificationException(500, 'UserInfo payload must be a JSON object.');
+        }
+
+        return TypeNarrow::stringKeyedArray($result)
+            ?? throw new UserInfoVerificationException(500, 'UserInfo payload keys must be strings.');
     }
 }

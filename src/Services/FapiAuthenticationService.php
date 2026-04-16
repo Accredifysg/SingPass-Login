@@ -13,6 +13,7 @@ use Accredifysg\SingPassLogin\Interfaces\PushedAuthorizationRequestServiceInterf
 use Accredifysg\SingPassLogin\Support\SingPassLog;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Random\RandomException;
 
 class FapiAuthenticationService
 {
@@ -27,13 +28,14 @@ class FapiAuthenticationService
     /**
      * Initiate the FAPI 2.0 authentication flow.
      *
-     * @param  string|array<int, string>  $requestedScopes
-     * @param  array<string, string>  $extraParParams  Additional PAR parameters (e.g. authentication_context_type)
+     * @param  array<string, mixed>  $extraParParams  Additional PAR parameters (e.g. authentication_context_type); non-string values are rejected.
      * @return array{redirect_url: string}
+     *
+     * @throws RandomException
      */
     public function initiateAuth(
         ProviderConfig $config,
-        string|array $requestedScopes,
+        mixed $requestedScopes,
         array $extraParParams = [],
     ): array {
         SingPassLog::info('Initiating auth flow', [
@@ -44,7 +46,10 @@ class FapiAuthenticationService
 
         $this->discoveryService->cacheOpenIdDiscovery($config->discoveryEndpoint, $config->cacheKey);
 
-        $validatedScopes = $this->scopeService->parseAndValidate($requestedScopes, $config->availableScopes);
+        $normalizedScopes = self::normalizeRequestedScopes($requestedScopes);
+        $normalizedExtraParams = self::normalizeExtraParParams($extraParParams);
+
+        $validatedScopes = $this->scopeService->parseAndValidate($normalizedScopes, $config->availableScopes);
         $scope = $this->scopeService->formatForOAuth($validatedScopes);
 
         SingPassLog::info('Scopes validated', ['scope' => $scope]);
@@ -79,7 +84,7 @@ class FapiAuthenticationService
             'code_challenge_method' => 'S256',
             'client_assertion_type' => 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
             'client_assertion' => $clientAssertion,
-        ], $extraParParams);
+        ], $normalizedExtraParams);
 
         $requestUri = $this->parService->sendRequest($parParams, $dpopProofJwt, $config->cacheKey);
 
@@ -101,5 +106,54 @@ class FapiAuthenticationService
         ]);
 
         return ['redirect_url' => $redirectUrl];
+    }
+
+    /**
+     * @return string|array<int, string>
+     */
+    private static function normalizeRequestedScopes(mixed $requestedScopes): string|array
+    {
+        if (is_string($requestedScopes)) {
+            return $requestedScopes;
+        }
+
+        if (is_array($requestedScopes)) {
+            $scopes = [];
+            foreach ($requestedScopes as $item) {
+                if (! is_string($item)) {
+                    throw new AuthFlowException(400, 'Each requested scope must be a string.');
+                }
+                $scopes[] = $item;
+            }
+
+            return $scopes;
+        }
+
+        return 'openid';
+    }
+
+    /**
+     * @param  array<mixed>  $extraParParams
+     * @return array<string, string>
+     */
+    private static function normalizeExtraParParams(array $extraParParams): array
+    {
+        $out = [];
+        foreach ($extraParParams as $key => $value) {
+            if (! is_string($key)) {
+                throw new AuthFlowException(400, 'PAR parameter names must be strings.');
+            }
+            if (is_string($value)) {
+                $out[$key] = $value;
+            } elseif (is_int($value) || is_float($value)) {
+                $out[$key] = (string) $value;
+            } elseif (is_bool($value)) {
+                $out[$key] = $value ? 'true' : 'false';
+            } else {
+                throw new AuthFlowException(400, 'PAR parameters must be scalar string-compatible values.');
+            }
+        }
+
+        return $out;
     }
 }

@@ -10,6 +10,7 @@ use Accredifysg\SingPassLogin\Exceptions\JwtDecodeFailedException;
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
 use Accredifysg\SingPassLogin\Interfaces\JwtServiceInterface;
 use Accredifysg\SingPassLogin\Support\SingPassLog;
+use Accredifysg\SingPassLogin\Support\TypeNarrow;
 use Exception;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -55,7 +56,7 @@ final class JwtService implements JwtServiceInterface
     {
         $jwks = config('ndi.private_jwks');
 
-        if ($jwks === null) {
+        if (! is_string($jwks)) {
             throw new JwksInvalidException(500, 'Private JWKS not set.');
         }
 
@@ -65,8 +66,13 @@ final class JwtService implements JwtServiceInterface
             throw new JwksInvalidException(500, 'JWKS JSON Invalid.');
         }
 
+        $kid = config('ndi.signing_kid');
+        if (! is_string($kid)) {
+            throw new JwksInvalidException(500, 'Signing KID not set or invalid.');
+        }
+
         try {
-            $signingKey = $jwkSets->get(config('ndi.signing_kid'));
+            $signingKey = $jwkSets->get($kid);
         } catch (Exception) {
             throw new JwksInvalidException(500, 'Signing key not found.');
         }
@@ -107,13 +113,18 @@ final class JwtService implements JwtServiceInterface
             throw new JwksInvalidException(500, 'Failed to encode JWT payload.');
         }
 
+        $signingKid = config('ndi.signing_kid');
+        if (! is_string($signingKid)) {
+            throw new JwksInvalidException(500, 'Signing KID not set or invalid.');
+        }
+
         try {
             $jws = $jwsBuilder->create()
                 ->withPayload($payload)
                 ->addSignature($jwk, [
                     'typ' => 'JWT',
                     'alg' => $algName,
-                    'kid' => config('ndi.signing_kid'),
+                    'kid' => $signingKid,
                 ])->build();
         } catch (Exception) {
             throw new JwksInvalidException(500, 'JWKS JSON Invalid.');
@@ -175,8 +186,20 @@ final class JwtService implements JwtServiceInterface
 
         try {
             $kid = $jwe->getSharedProtectedHeaderParameter('kid');
-            $keySet = JWKFactory::createFromJsonObject(config('ndi.private_jwks'));
+            if (! is_string($kid)) {
+                throw new JweDecryptionFailedException(500, 'JWE KID header is missing or invalid.');
+            }
+
+            $privateJwks = config('ndi.private_jwks');
+            if (! is_string($privateJwks)) {
+                throw new JwksInvalidException(500, 'Private JWKS not set or invalid.');
+            }
+
+            $keySet = JWKFactory::createFromJsonObject($privateJwks);
             $key = $keySet->get($kid);
+            if (! $key instanceof JWK) {
+                throw new JweDecryptionFailedException(500, 'JWE decryption key is invalid.');
+            }
         } catch (InvalidArgumentException) {
             throw new JweDecryptionFailedException(500, 'KID specified not found in JWKS.');
         } catch (JsonException) {
@@ -193,6 +216,7 @@ final class JwtService implements JwtServiceInterface
 
             $jweLoader = new JWELoader($serializerManager, $jweDecrypter, $headerCheckerManager);
 
+            $recipient = 0;
             $jwe = $jweLoader->loadAndDecryptWithKey($jweToken, $key, $recipient);
 
             $payload = $jwe->getPayload();
@@ -228,6 +252,9 @@ final class JwtService implements JwtServiceInterface
 
         try {
             $kid = $serializerManager->unserialize($jwtToken)->getSignature(0)->getProtectedHeaderParameter('kid');
+            if (! is_string($kid)) {
+                throw new JwtDecodeFailedException(500, 'JWT KID header is missing or invalid.');
+            }
         } catch (InvalidArgumentException) {
             throw new JwtDecodeFailedException(500, 'JWT supplied is invalid.');
         }
@@ -246,6 +273,7 @@ final class JwtService implements JwtServiceInterface
 
         $jwsLoader = new JWSLoader($serializerManager, $jwsVerifier, $headerCheckerManager);
 
+        $signature = 0;
         $jws = $jwsLoader->loadAndVerifyWithKey($jwtToken, $key, $signature);
 
         $payload = $jws->getPayload();
@@ -255,7 +283,13 @@ final class JwtService implements JwtServiceInterface
 
         SingPassLog::info('JWT signature verified successfully');
 
-        return json_decode($payload, true);
+        $decoded = json_decode($payload, true);
+        if (! is_array($decoded)) {
+            throw new JwtDecodeFailedException(500, 'JWT payload is not a valid JSON object.');
+        }
+
+        return TypeNarrow::stringKeyedArray($decoded)
+            ?? throw new JwtDecodeFailedException(500, 'JWT payload keys must be strings.');
     }
 
     /**

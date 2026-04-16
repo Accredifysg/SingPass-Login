@@ -36,20 +36,20 @@ class CorpPassUserTest extends TestCase
 
         $user = CorpPassUser::fromPayload($payload);
 
-        $this->assertEquals('200000001A', $user->getEntityId());
-        $this->assertEquals('UEN', $user->getEntityType());
-        $this->assertEquals('200000001A', $user->getEntityRegNumber());
-        $this->assertEquals('SG', $user->getEntityCoi());
-        $this->assertEquals('Test Corp Pte Ltd', $user->getEntityName());
-        $this->assertEquals('Active', $user->getEntityUenStatus());
+        $this->assertEquals('200000001A', $user->entityId);
+        $this->assertEquals('UEN', $user->entityType);
+        $this->assertEquals('200000001A', $user->entityRegNumber);
+        $this->assertEquals('SG', $user->entityCoi);
+        $this->assertEquals('Test Corp Pte Ltd', $user->entityName);
+        $this->assertEquals('Active', $user->entityUenStatus);
 
-        $this->assertEquals('actor-uuid-123', $user->getActorId());
-        $this->assertEquals('User', $user->getAccountType());
-        $this->assertEquals('S1234567A', $user->getIdentityNumber());
-        $this->assertEquals('SG', $user->getIdentityCoi());
-        $this->assertEquals('John Doe', $user->getName());
-        $this->assertEquals('john@testcorp.com', $user->getCorppassEmail());
-        $this->assertTrue($user->getCorppassEmailVerified());
+        $this->assertEquals('actor-uuid-123', $user->actorId);
+        $this->assertEquals('User', $user->accountType);
+        $this->assertEquals('S1234567A', $user->identityNumber);
+        $this->assertEquals('SG', $user->identityCoi);
+        $this->assertEquals('John Doe', $user->name);
+        $this->assertEquals('john@testcorp.com', $user->corppassEmail);
+        $this->assertTrue($user->corppassEmailVerified);
     }
 
     public function test_from_payload_with_minimal_claims(): void
@@ -63,14 +63,14 @@ class CorpPassUserTest extends TestCase
 
         $user = CorpPassUser::fromPayload($payload);
 
-        $this->assertEquals('200000001A', $user->getEntityId());
-        $this->assertNull($user->getEntityType());
-        $this->assertNull($user->getEntityName());
+        $this->assertEquals('200000001A', $user->entityId);
+        $this->assertNull($user->entityType);
+        $this->assertNull($user->entityName);
 
-        $this->assertEquals('actor-uuid-123', $user->getActorId());
-        $this->assertNull($user->getIdentityNumber());
-        $this->assertNull($user->getCorppassEmail());
-        $this->assertNull($user->getCorppassEmailVerified());
+        $this->assertEquals('actor-uuid-123', $user->actorId);
+        $this->assertNull($user->identityNumber);
+        $this->assertNull($user->corppassEmail);
+        $this->assertNull($user->corppassEmailVerified);
     }
 
     public function test_from_payload_throws_when_sub_is_missing(): void
@@ -117,6 +117,6 @@ class CorpPassUserTest extends TestCase
         ];
 
         $user = CorpPassUser::fromPayload($payload);
-        $this->assertFalse($user->getCorppassEmailVerified());
+        $this->assertFalse($user->corppassEmailVerified);
     }
 }

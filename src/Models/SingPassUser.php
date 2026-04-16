@@ -5,40 +5,19 @@ declare(strict_types=1);
 namespace Accredifysg\SingPassLogin\Models;
 
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
+use Accredifysg\SingPassLogin\Support\TypeNarrow;
 
-class SingPassUser
+readonly class SingPassUser
 {
-    protected string $uuid;
-
-    protected ?string $nric;
-
-    protected ?string $accountType;
-
-    protected ?string $identityCoi;
-
-    protected ?string $name;
-
-    protected ?string $email;
-
-    protected ?string $mobileNo;
-
     public function __construct(
-        string $uuid,
-        ?string $nric = null,
-        ?string $accountType = null,
-        ?string $identityCoi = null,
-        ?string $name = null,
-        ?string $email = null,
-        ?string $mobileNo = null,
-    ) {
-        $this->uuid = $uuid;
-        $this->nric = $nric;
-        $this->accountType = $accountType;
-        $this->identityCoi = $identityCoi;
-        $this->name = $name;
-        $this->email = $email;
-        $this->mobileNo = $mobileNo;
-    }
+        public string $uuid,
+        public ?string $nric = null,
+        public ?string $accountType = null,
+        public ?string $identityCoi = null,
+        public ?string $name = null,
+        public ?string $email = null,
+        public ?string $mobileNo = null,
+    ) {}
 
     /**
      * Create a SingPassUser from a decoded ID token payload.
@@ -49,56 +28,22 @@ class SingPassUser
      */
     public static function fromPayload(array $payload): self
     {
-        $sub = $payload['sub'] ?? '';
-        if ($sub === '') {
-            throw new JwtPayloadException(400, 'Sub is empty');
-        }
+        $sub = TypeNarrow::nonEmptyString($payload, 'sub')
+            ?? throw new JwtPayloadException(400, 'Sub is empty or invalid');
 
         $subAttributes = $payload['sub_attributes'] ?? [];
+        if (! is_array($subAttributes)) {
+            throw new JwtPayloadException(400, 'sub_attributes must be an object');
+        }
 
         return new self(
             uuid: $sub,
-            nric: $subAttributes['identity_number'] ?? null,
-            accountType: $subAttributes['account_type'] ?? null,
-            identityCoi: $subAttributes['identity_coi'] ?? null,
-            name: $subAttributes['name'] ?? null,
-            email: $subAttributes['email'] ?? null,
-            mobileNo: $subAttributes['mobileno'] ?? null,
+            nric: TypeNarrow::optionalString($subAttributes['identity_number'] ?? null),
+            accountType: TypeNarrow::optionalString($subAttributes['account_type'] ?? null),
+            identityCoi: TypeNarrow::optionalString($subAttributes['identity_coi'] ?? null),
+            name: TypeNarrow::optionalString($subAttributes['name'] ?? null),
+            email: TypeNarrow::optionalString($subAttributes['email'] ?? null),
+            mobileNo: TypeNarrow::optionalString($subAttributes['mobileno'] ?? null),
         );
-    }
-
-    public function getUuid(): string
-    {
-        return $this->uuid;
-    }
-
-    public function getNric(): ?string
-    {
-        return $this->nric;
-    }
-
-    public function getAccountType(): ?string
-    {
-        return $this->accountType;
-    }
-
-    public function getIdentityCoi(): ?string
-    {
-        return $this->identityCoi;
-    }
-
-    public function getName(): ?string
-    {
-        return $this->name;
-    }
-
-    public function getEmail(): ?string
-    {
-        return $this->email;
-    }
-
-    public function getMobileNo(): ?string
-    {
-        return $this->mobileNo;
     }
 }

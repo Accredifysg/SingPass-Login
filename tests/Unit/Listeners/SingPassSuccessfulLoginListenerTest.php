@@ -14,7 +14,6 @@ use Accredifysg\SingPassLogin\Tests\TestCase;
 use AddNricToUsers;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
-use PHPUnit\Framework\MockObject\Exception;
 
 class SingPassSuccessfulLoginListenerTest extends TestCase
 {
@@ -25,57 +24,36 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
         parent::setUp();
         $this->loadLaravelMigrations();
         $this->artisan('migrate');
-        // Migrate
         include_once __DIR__.'/../../../database/migrations/add_nric_to_users_table.php';
         (new AddNricToUsers)->up();
     }
 
-    /**
-     * @throws Exception
-     */
     public function test_handle_with_existing_user(): void
     {
-        // Create a user
         /** @var User $user */
         $user = User::factory()->create(['nric' => '123456']);
 
-        // Mock SingPassUser
-        $singPassUser = $this->createMock(SingPassUser::class);
-        $singPassUser->method('getNric')->willReturn('123456');
+        $singPassUser = new SingPassUser(uuid: 'test-uuid', nric: '123456');
 
-        // Create the event
         $event = new SingPassSuccessfulLoginEvent($singPassUser, '9d8c5c0e-4f3a-4b2d-9e1f-0a1b2c3d4e5f');
 
-        // Create the listener
         $listener = new SingPassSuccessfulLoginListener;
-
-        // Call the handle method
         $listener->handle($event);
 
-        // Assert that the user is logged in
         $this->assertTrue(Auth::check());
         $this->assertEquals($user->getKey(), Auth::id());
     }
 
-    /**
-     * @throws Exception
-     */
     public function test_handle_with_non_existent_user(): void
     {
-        // Mock SingPassUser
-        $singPassUser = $this->createMock(SingPassUser::class);
-        $singPassUser->method('getNric')->willReturn('nonexistent');
+        $singPassUser = new SingPassUser(uuid: 'test-uuid', nric: 'nonexistent');
 
-        // Create the event
         $event = new SingPassSuccessfulLoginEvent($singPassUser, '9d8c5c0e-4f3a-4b2d-9e1f-0a1b2c3d4e5f');
 
-        // Create the listener
         $listener = new SingPassSuccessfulLoginListener;
 
-        // Expect an exception
         $this->expectException(SingPassLoginException::class);
 
-        // Call the handle method
         $listener->handle($event);
     }
 
@@ -101,7 +79,6 @@ class SingPassSuccessfulLoginListenerTest extends TestCase
 
     protected function defineEnvironment($app): void
     {
-        // Setup default database to use sqlite :memory:
         $app['config']->set('database.default', 'testbench');
         $app['config']->set('database.connections.testbench', [
             'driver' => 'sqlite',

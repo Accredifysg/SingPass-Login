@@ -79,7 +79,16 @@ final class DPoPService implements DPoPServiceInterface
             return null;
         }
 
-        return new JWK(json_decode($keyJson, true));
+        if (! is_string($keyJson)) {
+            return null;
+        }
+
+        $decoded = json_decode($keyJson, true);
+        if (! is_array($decoded)) {
+            return null;
+        }
+
+        return new JWK($decoded);
     }
 
     public function clearKeyForState(string $state): void
@@ -97,7 +106,9 @@ final class DPoPService implements DPoPServiceInterface
         $algorithm = config('ndi.dpop_signing_algorithm');
 
         return match ($algorithm) {
-            'ES256', 'ES384', 'ES512' => $algorithm,
+            'ES256' => 'ES256',
+            'ES384' => 'ES384',
+            'ES512' => 'ES512',
             default => throw new InvalidArgumentException(
                 sprintf(
                     'Unsupported DPoP signing algorithm %s. Supported values: ES256, ES384, ES512.',

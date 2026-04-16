@@ -49,17 +49,23 @@ class SingPassLoginServiceProvider extends ServiceProvider
     protected function registerEventListeners(): void
     {
         if (config('singpass-login.use_default_listener')) {
-            Event::listen(
-                SingPassSuccessfulLoginEvent::class,
-                config('singpass-login.listener_class')
-            );
+            $singPassListener = config('singpass-login.listener_class');
+            if (is_string($singPassListener) && $singPassListener !== '') {
+                Event::listen(
+                    SingPassSuccessfulLoginEvent::class,
+                    $singPassListener
+                );
+            }
         }
 
-        if (config('corppass-login.use_default_listener') && config('corppass-login.listener_class')) {
-            Event::listen(
-                CorpPassSuccessfulLoginEvent::class,
-                config('corppass-login.listener_class')
-            );
+        if (config('corppass-login.use_default_listener')) {
+            $corpPassListener = config('corppass-login.listener_class');
+            if (is_string($corpPassListener) && $corpPassListener !== '') {
+                Event::listen(
+                    CorpPassSuccessfulLoginEvent::class,
+                    $corpPassListener
+                );
+            }
         }
     }
 

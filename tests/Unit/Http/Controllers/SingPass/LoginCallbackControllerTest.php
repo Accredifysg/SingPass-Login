@@ -78,7 +78,7 @@ class LoginCallbackControllerTest extends TestCase
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
         Event::assertDispatched(SingPassSuccessfulLoginEvent::class, function ($event) {
-            return $event->getSingPassUser()->getNric() === 'S1234567A'
+            return $event->getSingPassUser()->nric === 'S1234567A'
                 && $event->getState() === 'test-state';
         });
     }

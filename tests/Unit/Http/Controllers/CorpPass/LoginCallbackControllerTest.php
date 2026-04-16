@@ -84,8 +84,8 @@ class LoginCallbackControllerTest extends TestCase
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
         Event::assertDispatched(CorpPassSuccessfulLoginEvent::class, function ($event) {
-            return $event->getCorpPassUser()->getEntityId() === '200000001A'
-                && $event->getCorpPassUser()->getIdentityNumber() === 'S1234567A'
+            return $event->getCorpPassUser()->entityId === '200000001A'
+                && $event->getCorpPassUser()->identityNumber === 'S1234567A'
                 && $event->getState() === 'test-state';
         });
         Event::assertNotDispatched(CorpPassDataRetrievedEvent::class);

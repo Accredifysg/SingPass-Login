@@ -27,13 +27,13 @@ class GetSingPassUserTest extends TestCase
         $singPassUser = SingPassUser::fromPayload($payload);
 
         $this->assertInstanceOf(SingPassUser::class, $singPassUser);
-        $this->assertEquals('1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9', $singPassUser->getUuid());
-        $this->assertEquals('S8829314B', $singPassUser->getNric());
-        $this->assertEquals('standard', $singPassUser->getAccountType());
-        $this->assertEquals('SG', $singPassUser->getIdentityCoi());
-        $this->assertEquals('John Doe', $singPassUser->getName());
-        $this->assertEquals('john@example.com', $singPassUser->getEmail());
-        $this->assertEquals('91234567', $singPassUser->getMobileNo());
+        $this->assertEquals('1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9', $singPassUser->uuid);
+        $this->assertEquals('S8829314B', $singPassUser->nric);
+        $this->assertEquals('standard', $singPassUser->accountType);
+        $this->assertEquals('SG', $singPassUser->identityCoi);
+        $this->assertEquals('John Doe', $singPassUser->name);
+        $this->assertEquals('john@example.com', $singPassUser->email);
+        $this->assertEquals('91234567', $singPassUser->mobileNo);
     }
 
     public function test_from_payload_uuid_only(): void
@@ -45,13 +45,13 @@ class GetSingPassUserTest extends TestCase
         $singPassUser = SingPassUser::fromPayload($payload);
 
         $this->assertInstanceOf(SingPassUser::class, $singPassUser);
-        $this->assertEquals('1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9', $singPassUser->getUuid());
-        $this->assertNull($singPassUser->getNric());
-        $this->assertNull($singPassUser->getAccountType());
-        $this->assertNull($singPassUser->getIdentityCoi());
-        $this->assertNull($singPassUser->getName());
-        $this->assertNull($singPassUser->getEmail());
-        $this->assertNull($singPassUser->getMobileNo());
+        $this->assertEquals('1c0cee38-3a8f-4f8a-83bc-7a0e4c59d6a9', $singPassUser->uuid);
+        $this->assertNull($singPassUser->nric);
+        $this->assertNull($singPassUser->accountType);
+        $this->assertNull($singPassUser->identityCoi);
+        $this->assertNull($singPassUser->name);
+        $this->assertNull($singPassUser->email);
+        $this->assertNull($singPassUser->mobileNo);
     }
 
     public function test_from_payload_foreign_account(): void
@@ -70,13 +70,13 @@ class GetSingPassUserTest extends TestCase
         $singPassUser = SingPassUser::fromPayload($payload);
 
         $this->assertInstanceOf(SingPassUser::class, $singPassUser);
-        $this->assertEquals('7c9c72ec-5be2-495a-a78e-61e809a2a236', $singPassUser->getUuid());
-        $this->assertEquals('K28394589', $singPassUser->getNric());
-        $this->assertEquals('foreign', $singPassUser->getAccountType());
-        $this->assertEquals('TK', $singPassUser->getIdentityCoi());
-        $this->assertEquals('Larry Doe', $singPassUser->getName());
-        $this->assertEquals('larrydoe@gmail.com', $singPassUser->getEmail());
-        $this->assertNull($singPassUser->getMobileNo());
+        $this->assertEquals('7c9c72ec-5be2-495a-a78e-61e809a2a236', $singPassUser->uuid);
+        $this->assertEquals('K28394589', $singPassUser->nric);
+        $this->assertEquals('foreign', $singPassUser->accountType);
+        $this->assertEquals('TK', $singPassUser->identityCoi);
+        $this->assertEquals('Larry Doe', $singPassUser->name);
+        $this->assertEquals('larrydoe@gmail.com', $singPassUser->email);
+        $this->assertNull($singPassUser->mobileNo);
     }
 
     public function test_from_payload_empty_sub(): void

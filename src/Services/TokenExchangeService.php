@@ -78,9 +78,15 @@ final class TokenExchangeService implements TokenExchangeServiceInterface
             );
         }
 
+        if (! is_object($responseData)) {
+            throw new TokenExchangeException(500, 'Token endpoint JSON must be an object');
+        }
+
         if ($response->failed() || isset($responseData->error)) {
-            $errorCode = $responseData->error ?? 'server_error';
-            $errorDescription = $responseData->error_description ?? 'Token exchange request failed';
+            $errorCodeRaw = $responseData->error ?? 'server_error';
+            $errorDescriptionRaw = $responseData->error_description ?? 'Token exchange request failed';
+            $errorCode = is_string($errorCodeRaw) ? $errorCodeRaw : 'server_error';
+            $errorDescription = is_string($errorDescriptionRaw) ? $errorDescriptionRaw : 'Token exchange request failed';
 
             SingPassLog::error('Token exchange failed', [
                 'endpoint' => $tokenEndpoint,
@@ -91,7 +97,7 @@ final class TokenExchangeService implements TokenExchangeServiceInterface
 
             throw new TokenExchangeException(
                 $response->status(),
-                "{$errorCode}: {$errorDescription}",
+                $errorCode.': '.$errorDescription,
             );
         }
 
@@ -103,14 +109,25 @@ final class TokenExchangeService implements TokenExchangeServiceInterface
             throw new TokenExchangeException(500, 'Token response missing id_token');
         }
 
+        $idToken = $responseData->id_token;
+        if (! is_string($idToken)) {
+            throw new TokenExchangeException(500, 'Token response id_token must be a string');
+        }
+
+        $accessToken = null;
+        if (isset($responseData->access_token)) {
+            $at = $responseData->access_token;
+            $accessToken = is_string($at) ? $at : null;
+        }
+
         SingPassLog::info('Token exchange successful', [
             'endpoint' => $tokenEndpoint,
-            'has_access_token' => isset($responseData->access_token),
+            'has_access_token' => $accessToken !== null,
         ]);
 
         return new TokenResponseDto(
-            idToken: $responseData->id_token,
-            accessToken: $responseData->access_token ?? null,
+            idToken: $idToken,
+            accessToken: $accessToken,
         );
     }
 }
