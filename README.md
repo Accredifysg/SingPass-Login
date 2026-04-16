@@ -1,6 +1,6 @@
 # SingPass-Login
 
-![badge.svg](coverage/badge.svg)
+![badge.svg](coverage/badge.svg) ![](https://img.shields.io/badge/PHPStan-level%20max-brightgreen.svg?style=flat)
 
 PHP Laravel Package for **SingPass Login**, **MyInfo**, and **CorpPass**. The authorization flow follows **FAPI 2.0–style** integration: **Pushed Authorization Requests (PAR)** with **DPoP** on the PAR, token, and UserInfo calls, **PKCE**, and private-key **JWT client assertions**. Your OpenID Provider metadata (discovery) must expose a `pushed_authorization_request_endpoint`; the package validates this when caching discovery.
 
