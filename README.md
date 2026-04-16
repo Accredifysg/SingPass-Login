@@ -155,8 +155,8 @@ The package registers the following routes under the `web` middleware group:
 | `GET /ndi/jwks` | `GetJwksEndpointController` | `singpass.jwks` | Expose your application's JWKS (always active) |
 | `GET /ndi/sp/login` | `SingPass\LoginController` | `singpass.login` | Initiate SingPass Login |
 | `GET /ndi/sp/callback` | `SingPass\LoginCallbackController` | `singpass.callback` | Handle SingPass Login callback |
-| `GET /ndi/mi/initiate` | `SingPass\MyInfoController` | `myinfo.login` | Initiate MyInfo flow |
-| `GET /ndi/mi/callback` | `SingPass\MyInfoCallbackController` | `myinfo.callback` | Handle MyInfo callback |
+| `GET /ndi/mi/initiate` | `MyInfo\MyInfoController` | `myinfo.login` | Initiate MyInfo flow |
+| `GET /ndi/mi/callback` | `MyInfo\MyInfoCallbackController` | `myinfo.callback` | Handle MyInfo callback |
 | `GET /ndi/cp/login` | `CorpPass\LoginController` | `corppass.login` | Initiate CorpPass Login |
 | `GET /ndi/cp/callback` | `CorpPass\LoginCallbackController` | `corppass.callback` | Handle CorpPass callback |
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Accredifysg\SingPassLogin\Http\Controllers\SingPass;
+namespace Accredifysg\SingPassLogin\Http\Controllers\MyInfo;
 
 use Accredifysg\SingPassLogin\DTOs\ProviderConfig;
 use Accredifysg\SingPassLogin\Events\MyInfoDataRetrievedEvent;

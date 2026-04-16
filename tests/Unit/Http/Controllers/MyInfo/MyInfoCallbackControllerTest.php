@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Accredifysg\SingPassLogin\Tests\Unit\Http\Controllers\SingPass;
+namespace Accredifysg\SingPassLogin\Tests\Unit\Http\Controllers\MyInfo;
 
 use Accredifysg\SingPassLogin\DTOs\FapiCallbackResult;
 use Accredifysg\SingPassLogin\DTOs\FapiSessionContext;
 use Accredifysg\SingPassLogin\Events\MyInfoDataRetrievedEvent;
 use Accredifysg\SingPassLogin\Exceptions\AuthFlowException;
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
-use Accredifysg\SingPassLogin\Http\Controllers\SingPass\MyInfoCallbackController;
+use Accredifysg\SingPassLogin\Http\Controllers\MyInfo\MyInfoCallbackController;
 use Accredifysg\SingPassLogin\Services\FapiCallbackService;
 use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
 use Accredifysg\SingPassLogin\Tests\TestCase;
