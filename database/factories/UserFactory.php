@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Accredifysg\SingPassLogin\Database\Factories;
 
 use Accredifysg\SingPassLogin\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 /**

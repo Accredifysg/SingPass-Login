@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Accredifysg\SingPassLogin;
 
 use Accredifysg\SingPassLogin\Events\CorpPassSuccessfulLoginEvent;

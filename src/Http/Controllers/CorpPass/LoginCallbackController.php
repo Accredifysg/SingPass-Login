@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Accredifysg\SingPassLogin\Http\Controllers\CorpPass;
 
 use Accredifysg\SingPassLogin\DTOs\ProviderConfig;
