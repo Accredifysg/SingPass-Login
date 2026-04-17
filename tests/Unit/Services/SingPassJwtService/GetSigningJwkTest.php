@@ -49,6 +49,18 @@ class GetSigningJwkTest extends TestCase
         JwtService::getSigningJwk();
     }
 
+    public function test_get_signing_jwk_throws_when_signing_kid_is_not_string(): void
+    {
+        $newKey = JWKFactory::createECKey('P-256', ['kid' => 'test-kid-id'])->all();
+        Config::set('ndi.private_jwks', json_encode(['keys' => [$newKey]]));
+        Config::set('ndi.signing_kid', null);
+
+        $this->expectException(JwksInvalidException::class);
+        $this->expectExceptionMessage('Signing KID not set or invalid.');
+
+        JwtService::getSigningJwk();
+    }
+
     public function test_get_signing_jwk_invalid_json_exception(): void
     {
         // Set up default configuration values

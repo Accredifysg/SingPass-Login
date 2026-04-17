@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Accredifysg\SingPassLogin\DTOs;
 
 use Accredifysg\SingPassLogin\Exceptions\OpenIdDiscoveryException;
+use Accredifysg\SingPassLogin\Support\TypeNarrow;
 
 readonly class OpenIdConfigurationDto
 {
@@ -42,7 +43,8 @@ readonly class OpenIdConfigurationDto
         $missing = [];
 
         foreach ($required as $field) {
-            if (! isset($data[$field]) || $data[$field] === '') {
+            $value = $data[$field] ?? null;
+            if (! is_string($value) || $value === '') {
                 $missing[] = $field;
             }
         }
@@ -55,12 +57,18 @@ readonly class OpenIdConfigurationDto
         }
 
         return new self(
-            issuer: $data['issuer'],
-            authorizationEndpoint: $data['authorization_endpoint'],
-            tokenEndpoint: $data['token_endpoint'],
-            userinfoEndpoint: $data['userinfo_endpoint'],
-            jwksUri: $data['jwks_uri'],
-            pushedAuthorizationRequestEndpoint: $data['pushed_authorization_request_endpoint'],
+            issuer: TypeNarrow::nonEmptyString($data, 'issuer')
+                ?? throw new OpenIdDiscoveryException(500, 'OpenID discovery response has invalid non-string field: issuer'),
+            authorizationEndpoint: TypeNarrow::nonEmptyString($data, 'authorization_endpoint')
+                ?? throw new OpenIdDiscoveryException(500, 'OpenID discovery response has invalid non-string field: authorization_endpoint'),
+            tokenEndpoint: TypeNarrow::nonEmptyString($data, 'token_endpoint')
+                ?? throw new OpenIdDiscoveryException(500, 'OpenID discovery response has invalid non-string field: token_endpoint'),
+            userinfoEndpoint: TypeNarrow::nonEmptyString($data, 'userinfo_endpoint')
+                ?? throw new OpenIdDiscoveryException(500, 'OpenID discovery response has invalid non-string field: userinfo_endpoint'),
+            jwksUri: TypeNarrow::nonEmptyString($data, 'jwks_uri')
+                ?? throw new OpenIdDiscoveryException(500, 'OpenID discovery response has invalid non-string field: jwks_uri'),
+            pushedAuthorizationRequestEndpoint: TypeNarrow::nonEmptyString($data, 'pushed_authorization_request_endpoint')
+                ?? throw new OpenIdDiscoveryException(500, 'OpenID discovery response has invalid non-string field: pushed_authorization_request_endpoint'),
         );
     }
 }

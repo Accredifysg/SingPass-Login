@@ -258,4 +258,91 @@ class TokenExchangeServiceTest extends TestCase
         $service = new TokenExchangeService($this->dpopServiceMock);
         $service->getToken('mock-code', 'test-code-verifier', $this->dpopKey, 'test-client-id', 'https://example.com/callback', 'openId');
     }
+
+    public function test_get_token_throws_when_openid_config_missing_from_cache(): void
+    {
+        Cache::forget('openId');
+
+        $mockJwk = (object) ['kty' => 'RSA', 'kid' => 'test-key-id'];
+
+        $singPassJwtServiceMock = Mockery::mock('alias:'.JwtService::class);
+        $singPassJwtServiceMock->allows([
+            'getSigningJwk' => $mockJwk,
+            'generateClientAssertion' => 'mock-assertion',
+        ]);
+
+        $this->expectException(TokenExchangeException::class);
+        $this->expectExceptionMessage('OpenID configuration not found in cache');
+
+        $service = new TokenExchangeService($this->dpopServiceMock);
+        $service->getToken('mock-code', 'test-code-verifier', $this->dpopKey, 'test-client-id', 'https://example.com/callback', 'openId');
+    }
+
+    public function test_get_token_rejects_json_array_body(): void
+    {
+        $mockJwk = (object) ['kty' => 'RSA', 'kid' => 'test-key-id'];
+
+        $singPassJwtServiceMock = Mockery::mock('alias:'.JwtService::class);
+        $singPassJwtServiceMock->allows([
+            'getSigningJwk' => $mockJwk,
+            'generateClientAssertion' => 'mock-assertion',
+        ]);
+
+        Http::fake([
+            'https://example.com/token' => Http::response('[]', 200),
+        ]);
+
+        $this->expectException(TokenExchangeException::class);
+        $this->expectExceptionMessage('Token endpoint JSON must be an object');
+
+        $service = new TokenExchangeService($this->dpopServiceMock);
+        $service->getToken('mock-code', 'test-code-verifier', $this->dpopKey, 'test-client-id', 'https://example.com/callback', 'openId');
+    }
+
+    public function test_get_token_rejects_non_string_id_token(): void
+    {
+        $mockJwk = (object) ['kty' => 'RSA', 'kid' => 'test-key-id'];
+
+        $singPassJwtServiceMock = Mockery::mock('alias:'.JwtService::class);
+        $singPassJwtServiceMock->allows([
+            'getSigningJwk' => $mockJwk,
+            'generateClientAssertion' => 'mock-assertion',
+        ]);
+
+        Http::fake([
+            'https://example.com/token' => Http::response([
+                'id_token' => ['not' => 'a string'],
+            ], 200),
+        ]);
+
+        $this->expectException(TokenExchangeException::class);
+        $this->expectExceptionMessage('Token response id_token must be a string');
+
+        $service = new TokenExchangeService($this->dpopServiceMock);
+        $service->getToken('mock-code', 'test-code-verifier', $this->dpopKey, 'test-client-id', 'https://example.com/callback', 'openId');
+    }
+
+    public function test_get_token_oauth_error_uses_defaults_when_error_fields_not_strings(): void
+    {
+        $mockJwk = (object) ['kty' => 'RSA', 'kid' => 'test-key-id'];
+
+        $singPassJwtServiceMock = Mockery::mock('alias:'.JwtService::class);
+        $singPassJwtServiceMock->allows([
+            'getSigningJwk' => $mockJwk,
+            'generateClientAssertion' => 'mock-assertion',
+        ]);
+
+        Http::fake([
+            'https://example.com/token' => Http::response([
+                'error' => 99,
+                'error_description' => ['nested' => 'x'],
+            ], 400),
+        ]);
+
+        $this->expectException(TokenExchangeException::class);
+        $this->expectExceptionMessage('server_error: Token exchange request failed');
+
+        $service = new TokenExchangeService($this->dpopServiceMock);
+        $service->getToken('mock-code', 'test-code-verifier', $this->dpopKey, 'test-client-id', 'https://example.com/callback', 'openId');
+    }
 }

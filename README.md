@@ -1,6 +1,6 @@
 # SingPass-Login
 
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Accredifysg_SingPass-Login&metric=coverage&token=11b8dd252687c701584068be55e47e5e432056c8)](https://sonarcloud.io/summary/new_code?id=Accredifysg_SingPass-Login)
+![badge.svg](coverage/badge.svg) ![](https://img.shields.io/badge/PHPStan-level%20max-brightgreen.svg?style=flat)
 
 PHP Laravel Package for **SingPass Login**, **MyInfo**, and **CorpPass**. The authorization flow follows **FAPI 2.0–style** integration: **Pushed Authorization Requests (PAR)** with **DPoP** on the PAR, token, and UserInfo calls, **PKCE**, and private-key **JWT client assertions**. Your OpenID Provider metadata (discovery) must expose a `pushed_authorization_request_endpoint`; the package validates this when caching discovery.
 
@@ -69,7 +69,7 @@ NDI_SIGNING_KID=
 NDI_JWKS=
 NDI_PRIVATE_JWKS=
 
-# FAPI 2.0 / DPoP (optional; default algorithm is ES256)
+# FAPI 2.0 / DPoP — ephemeral key algorithm for DPoP proofs (ES256, ES384, or ES512; default ES256)
 NDI_DPOP_SIGNING_ALGORITHM=ES256
 
 # Diagnostic logging (disabled by default)
@@ -155,8 +155,8 @@ The package registers the following routes under the `web` middleware group:
 | `GET /ndi/jwks` | `GetJwksEndpointController` | `singpass.jwks` | Expose your application's JWKS (always active) |
 | `GET /ndi/sp/login` | `SingPass\LoginController` | `singpass.login` | Initiate SingPass Login |
 | `GET /ndi/sp/callback` | `SingPass\LoginCallbackController` | `singpass.callback` | Handle SingPass Login callback |
-| `GET /ndi/mi/initiate` | `SingPass\MyInfoController` | `myinfo.login` | Initiate MyInfo flow |
-| `GET /ndi/mi/callback` | `SingPass\MyInfoCallbackController` | `myinfo.callback` | Handle MyInfo callback |
+| `GET /ndi/mi/initiate` | `MyInfo\MyInfoController` | `myinfo.login` | Initiate MyInfo flow |
+| `GET /ndi/mi/callback` | `MyInfo\MyInfoCallbackController` | `myinfo.callback` | Handle MyInfo callback |
 | `GET /ndi/cp/login` | `CorpPass\LoginController` | `corppass.login` | Initiate CorpPass Login |
 | `GET /ndi/cp/callback` | `CorpPass\LoginCallbackController` | `corppass.callback` | Handle CorpPass callback |
 
@@ -190,13 +190,13 @@ await startSingPassLogin(['openid', 'name', 'email', 'mobileno']);
 
 ### Listener
 
-If you published the default listener, edit it to map your user retrieval via NRIC:
+If you published the default listener, edit it to map your user retrieval via NRIC. Read the NRIC/FIN from the readonly **`nric`** property (populated from `sub_attributes.identity_number` when the **`user.identity`** scope is requested). **`SingPassUser::getNric()` is deprecated** and will be removed in a future major release; migrate listeners to `$singPassUser->nric`.
 
 ```php
 public function handle(SingPassSuccessfulLoginEvent $event): void
 {
     $singPassUser = $event->getSingPassUser();
-    $nric = $singPassUser->getNric();
+    $nric = $singPassUser->nric;
 
     if (! $nric) {
         // NRIC is only available when the 'user.identity' scope is requested.
@@ -239,6 +239,8 @@ await startMyInfo(['openid', 'name', 'email', 'mobileno', 'nationality', 'dob'])
 ### How It Works
 
 The MyInfo callback controller calls the UserInfo endpoint (with DPoP) to retrieve the requested data and emits `MyInfoDataRetrievedEvent`. Internally, `FapiCallbackService` uses `shouldCallUserInfo()` with the provider's `loginScopes` to determine the correct path: if the access token contains only login scopes, the ID token path is taken; otherwise the UserInfo endpoint is called.
+
+Scope comparison reads the access token as an unverified JWT and expects a standard three-part compact JWT whose payload JSON includes a string `scope` claim (space-separated scope values, per OIDC). If the token is not a JWT, the payload cannot be decoded, or `scope` is missing or not a string, `UserInfoRequestException` is thrown instead of assuming `openid` only, so malformed tokens fail visibly during callback processing.
 
 ### Handling MyInfo Data
 
@@ -418,6 +420,7 @@ This is particularly useful for diagnosing session issues (mismatched session ID
 - The old `SingPassLoginFacade` and `SingPassLoginInterface` have been removed. If you were calling `SingPassLogin::handleCallback()` directly, the logic is now internal to the callback controllers.
 - Exceptions have been renamed: `SingPassGetEndpointException` → `AuthFlowException`, `SingPassAuthenticationErrorException` → `AuthenticationErrorException`, `SingPassTokenException` → `TokenExchangeException`, `SingPassJwksException` → `JwksException`.
 - Services have been renamed: `SingPassJwtService` → `JwtService`, `GetSingPassTokenService` → `TokenExchangeService`, `GetSingPassJwksService` → `JwksService`.
+- **`SingPassUser::getNric()`** is deprecated; use the readonly **`nric`** property on `SingPassUser` instead.
 
 ## Exceptions
 
@@ -459,6 +462,6 @@ use Accredifysg\SingPassLogin\Exceptions\UserInfoVerificationException;
 
 ### UserInfo Exceptions
 
-- **`UserInfoRequestException`**: The UserInfo endpoint HTTP request failed.
+- **`UserInfoRequestException`**: The UserInfo HTTP request failed, **or** the access token could not be inspected for scopes before choosing the ID token vs UserInfo path (invalid JWT shape, undecodable payload, missing or non-string `scope` claim). Callback handling treats these as hard failures rather than silently defaulting scopes.
 - **`UserInfoDecryptionException`**: The UserInfo JWE token decryption failed.
 - **`UserInfoVerificationException`**: The UserInfo JWS token verification failed.

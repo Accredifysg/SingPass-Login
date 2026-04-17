@@ -152,6 +152,37 @@ class FapiCallbackServiceTest extends TestCase
         $this->service->validateAndRetrieveSession($request);
     }
 
+    public function test_validate_maps_non_string_error_to_unknown_error(): void
+    {
+        $request = new Request([
+            'error' => ['invalid'],
+        ]);
+
+        try {
+            $this->service->validateAndRetrieveSession($request);
+            $this->fail('Expected AuthenticationErrorException');
+        } catch (AuthenticationErrorException $e) {
+            $this->assertSame('unknown_error', $e->getErrorCode());
+            $this->assertNull($e->getErrorDescription());
+        }
+    }
+
+    public function test_validate_maps_non_string_error_description_to_null(): void
+    {
+        $request = new Request([
+            'error' => 'server_error',
+            'error_description' => 500,
+        ]);
+
+        try {
+            $this->service->validateAndRetrieveSession($request);
+            $this->fail('Expected AuthenticationErrorException');
+        } catch (AuthenticationErrorException $e) {
+            $this->assertSame('server_error', $e->getErrorCode());
+            $this->assertNull($e->getErrorDescription());
+        }
+    }
+
     public function test_validate_throws_on_missing_code(): void
     {
         $request = new Request(['state' => 'test-state']);

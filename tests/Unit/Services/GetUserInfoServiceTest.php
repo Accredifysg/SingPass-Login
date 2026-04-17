@@ -138,24 +138,48 @@ class GetUserInfoServiceTest extends TestCase
         $this->assertTrue($result);
     }
 
-    public function test_should_call_user_info_handles_malformed_token(): void
+    public function test_should_call_user_info_throws_for_malformed_token(): void
     {
-        $accessToken = 'invalid.token';
+        $this->expectException(UserInfoRequestException::class);
+        $this->expectExceptionMessage('Access token is not a valid JWT (expected 3 parts).');
 
-        $loginScopes = ['openid', 'user.identity', 'name', 'email', 'mobileno'];
-        $result = $this->service->shouldCallUserInfo($accessToken, $loginScopes);
-
-        $this->assertFalse($result);
+        $this->service->shouldCallUserInfo('invalid.token', ['openid']);
     }
 
-    public function test_should_call_user_info_handles_token_without_scope(): void
+    public function test_should_call_user_info_throws_for_token_without_scope(): void
     {
         $accessToken = $this->createAccessTokenWithoutScopes();
 
-        $loginScopes = ['openid', 'user.identity', 'name', 'email', 'mobileno'];
-        $result = $this->service->shouldCallUserInfo($accessToken, $loginScopes);
+        $this->expectException(UserInfoRequestException::class);
+        $this->expectExceptionMessage('Access token payload does not contain a scope claim.');
 
-        $this->assertFalse($result);
+        $this->service->shouldCallUserInfo($accessToken, ['openid']);
+    }
+
+    public function test_should_call_user_info_throws_for_undecodable_payload(): void
+    {
+        $header = base64_encode('{"alg":"RS256"}');
+        $payload = '!!!invalid-base64!!!';
+        $signature = base64_encode('sig');
+        $accessToken = "$header.$payload.$signature";
+
+        $this->expectException(UserInfoRequestException::class);
+        $this->expectExceptionMessage('Access token payload could not be base64-decoded.');
+
+        $this->service->shouldCallUserInfo($accessToken, ['openid']);
+    }
+
+    public function test_should_call_user_info_throws_when_scope_is_not_string(): void
+    {
+        $header = base64_encode('{"alg":"RS256"}');
+        $payload = base64_encode((string) json_encode(['scope' => 123]));
+        $signature = base64_encode('sig');
+        $accessToken = "$header.$payload.$signature";
+
+        $this->expectException(UserInfoRequestException::class);
+        $this->expectExceptionMessage('Access token scope claim is not a string.');
+
+        $this->service->shouldCallUserInfo($accessToken, ['openid']);
     }
 
     // ========== getUserInfo() Tests ==========
@@ -271,8 +295,12 @@ class GetUserInfoServiceTest extends TestCase
         $result = $this->service->getUserInfo($accessToken, $this->dpopKey, 'openId');
 
         $this->assertEquals($personInfo, $result);
-        $this->assertEquals('S9000001B', $result['uinfin']['value']);
-        $this->assertEquals('SOH HAO FENG', $result['name']['value']);
+        $uinfin = $result['uinfin'] ?? null;
+        $name = $result['name'] ?? null;
+        $this->assertIsArray($uinfin);
+        $this->assertIsArray($name);
+        $this->assertEquals('S9000001B', $uinfin['value']);
+        $this->assertEquals('SOH HAO FENG', $name['value']);
     }
 
     public function test_get_user_info_falls_back_to_full_payload_without_person_info(): void
@@ -309,6 +337,82 @@ class GetUserInfoServiceTest extends TestCase
         $result = $this->service->getUserInfo($accessToken, $this->dpopKey, 'openId');
 
         $this->assertEquals($expectedPayload, $result);
+    }
+
+    public function test_get_user_info_throws_when_openid_config_missing_from_cache(): void
+    {
+        Cache::forget('openId');
+
+        $accessToken = $this->createAccessTokenWithScopes(['openid', 'uinfin']);
+
+        $this->expectException(UserInfoRequestException::class);
+        $this->expectExceptionMessage('OpenID configuration not found in cache');
+
+        $this->service->getUserInfo($accessToken, $this->dpopKey, 'openId');
+    }
+
+    public function test_get_user_info_throws_when_person_info_is_not_an_object(): void
+    {
+        Http::fake([
+            'https://example.com/userinfo' => Http::response('encrypted-jwe-token', 200),
+        ]);
+
+        $this->singPassJwtServiceMock
+            ->shouldReceive('jweDecrypt')
+            ->once()
+            ->andReturn('decrypted-jwt-token');
+
+        $mockJwks = JWKSet::createFromKeyData([
+            'keys' => [['kty' => 'RSA', 'kid' => 'test-key', 'use' => 'sig', 'n' => 'xGOr-H7A', 'e' => 'AQAB']],
+        ]);
+        $this->getSingPassJwksServiceMock
+            ->shouldReceive('getJwks')
+            ->once()
+            ->andReturn($mockJwks);
+
+        $this->singPassJwtServiceMock
+            ->shouldReceive('jwtDecode')
+            ->once()
+            ->andReturn(['person_info' => 'unexpected-string']);
+
+        $accessToken = $this->createAccessTokenWithScopes(['openid', 'uinfin']);
+
+        $this->expectException(UserInfoVerificationException::class);
+        $this->expectExceptionMessage('UserInfo payload must be a JSON object.');
+
+        $this->service->getUserInfo($accessToken, $this->dpopKey, 'openId');
+    }
+
+    public function test_get_user_info_throws_when_result_has_non_string_keys(): void
+    {
+        Http::fake([
+            'https://example.com/userinfo' => Http::response('encrypted-jwe-token', 200),
+        ]);
+
+        $this->singPassJwtServiceMock
+            ->shouldReceive('jweDecrypt')
+            ->once()
+            ->andReturn('decrypted-jwt-token');
+
+        $mockJwks = JWKSet::createFromKeyData([
+            'keys' => [['kty' => 'RSA', 'kid' => 'test-key', 'use' => 'sig', 'n' => 'xGOr-H7A', 'e' => 'AQAB']],
+        ]);
+        $this->getSingPassJwksServiceMock
+            ->shouldReceive('getJwks')
+            ->once()
+            ->andReturn($mockJwks);
+
+        $this->singPassJwtServiceMock
+            ->shouldReceive('jwtDecode')
+            ->once()
+            ->andReturn(['sub' => 'x', 0 => 'invalid-key']);
+
+        $accessToken = $this->createAccessTokenWithScopes(['openid', 'uinfin']);
+
+        $this->expectException(UserInfoVerificationException::class);
+        $this->expectExceptionMessage('UserInfo payload keys must be strings.');
+
+        $this->service->getUserInfo($accessToken, $this->dpopKey, 'openId');
     }
 
     // ========== Helper Methods ==========

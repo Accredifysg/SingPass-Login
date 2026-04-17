@@ -24,21 +24,13 @@ readonly class ProviderConfig
 
     public static function singPassLogin(): self
     {
-        $required = [
-            'singpass-login.discovery_endpoint',
-            'singpass-login.client_id',
-            'singpass-login.redirect_uri',
-            'singpass-login.domain',
-        ];
-        self::validateRequired($required);
-
-        $loginScopes = config('singpass-login.login_scopes', []);
+        $loginScopes = self::stringListFromConfig('singpass-login.login_scopes');
 
         return new self(
-            discoveryEndpoint: config('singpass-login.discovery_endpoint'),
-            clientId: config('singpass-login.client_id'),
-            redirectUri: config('singpass-login.redirect_uri'),
-            domain: config('singpass-login.domain'),
+            discoveryEndpoint: self::nonEmptyStringFromConfig('singpass-login.discovery_endpoint'),
+            clientId: self::nonEmptyStringFromConfig('singpass-login.client_id'),
+            redirectUri: self::nonEmptyStringFromConfig('singpass-login.redirect_uri'),
+            domain: self::nonEmptyStringFromConfig('singpass-login.domain'),
             cacheKey: 'openId:singpass',
             availableScopes: $loginScopes,
             loginScopes: $loginScopes,
@@ -47,57 +39,65 @@ readonly class ProviderConfig
 
     public static function corpPass(): self
     {
-        $required = [
-            'corppass-login.discovery_endpoint',
-            'corppass-login.client_id',
-            'corppass-login.redirect_uri',
-            'corppass-login.domain',
-        ];
-        self::validateRequired($required);
-
         return new self(
-            discoveryEndpoint: config('corppass-login.discovery_endpoint'),
-            clientId: config('corppass-login.client_id'),
-            redirectUri: config('corppass-login.redirect_uri'),
-            domain: config('corppass-login.domain'),
+            discoveryEndpoint: self::nonEmptyStringFromConfig('corppass-login.discovery_endpoint'),
+            clientId: self::nonEmptyStringFromConfig('corppass-login.client_id'),
+            redirectUri: self::nonEmptyStringFromConfig('corppass-login.redirect_uri'),
+            domain: self::nonEmptyStringFromConfig('corppass-login.domain'),
             cacheKey: 'openId:corppass',
-            availableScopes: config('corppass-login.available_scopes', []),
-            loginScopes: config('corppass-login.login_scopes', []),
+            availableScopes: self::stringListFromConfig('corppass-login.available_scopes'),
+            loginScopes: self::stringListFromConfig('corppass-login.login_scopes'),
         );
     }
 
     public static function singPassMyInfo(): self
     {
-        $required = [
-            'myinfo.discovery_endpoint',
-            'myinfo.client_id',
-            'myinfo.redirect_uri',
-            'myinfo.domain',
-        ];
-        self::validateRequired($required);
-
         return new self(
-            discoveryEndpoint: config('myinfo.discovery_endpoint'),
-            clientId: config('myinfo.client_id'),
-            redirectUri: config('myinfo.redirect_uri'),
-            domain: config('myinfo.domain'),
+            discoveryEndpoint: self::nonEmptyStringFromConfig('myinfo.discovery_endpoint'),
+            clientId: self::nonEmptyStringFromConfig('myinfo.client_id'),
+            redirectUri: self::nonEmptyStringFromConfig('myinfo.redirect_uri'),
+            domain: self::nonEmptyStringFromConfig('myinfo.domain'),
             cacheKey: 'openId:myinfo',
-            availableScopes: config('myinfo.available_scopes', []),
-            loginScopes: config('myinfo.login_scopes', []),
+            availableScopes: self::stringListFromConfig('myinfo.available_scopes'),
+            loginScopes: self::stringListFromConfig('myinfo.login_scopes'),
         );
     }
 
     /**
-     * @param  array<int, string>  $keys
+     * @throws MissingConfigException
+     */
+    private static function nonEmptyStringFromConfig(string $key): string
+    {
+        $value = config($key);
+
+        return is_string($value) && $value !== ''
+            ? $value
+            : throw new MissingConfigException($key);
+    }
+
+    /**
+     * @return array<int, string>
      *
      * @throws MissingConfigException
      */
-    private static function validateRequired(array $keys): void
+    private static function stringListFromConfig(string $key): array
     {
-        foreach ($keys as $key) {
-            if (config($key) === null) {
+        $value = config($key, []);
+        if ($value === [] || $value === null) {
+            return [];
+        }
+        if (! is_array($value)) {
+            throw new MissingConfigException($key);
+        }
+
+        $out = [];
+        foreach ($value as $item) {
+            if (! is_string($item)) {
                 throw new MissingConfigException($key);
             }
+            $out[] = $item;
         }
+
+        return $out;
     }
 }

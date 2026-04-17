@@ -63,6 +63,21 @@ class DPoPServiceTest extends TestCase
         $this->assertEquals('ES384', $header['alg']);
     }
 
+    public function test_es512_key_and_proof_use_configured_algorithm(): void
+    {
+        config()->set('ndi.dpop_signing_algorithm', 'ES512');
+        $service = new DPoPService;
+        $key = $service->generateKeyPair();
+
+        $this->assertEquals('P-521', $key->get('crv'));
+
+        $proofJwt = $service->generateProofJwt($key, 'POST', 'https://example.com/token');
+        $serializer = new JwsCompactSerializer;
+        $header = $serializer->unserialize($proofJwt)->getSignature(0)->getProtectedHeader();
+
+        $this->assertEquals('ES512', $header['alg']);
+    }
+
     public function test_generate_key_pair_creates_unique_keys(): void
     {
         $key1 = $this->service->generateKeyPair();
@@ -81,14 +96,18 @@ class DPoPServiceTest extends TestCase
 
         // Verify header
         $header = $jws->getSignature(0)->getProtectedHeader();
+        $this->assertIsArray($header);
         $this->assertEquals('ES256', $header['alg']);
         $this->assertEquals('dpop+jwt', $header['typ']);
         $this->assertArrayHasKey('jwk', $header);
-        $this->assertEquals('EC', $header['jwk']['kty']);
-        $this->assertArrayNotHasKey('d', $header['jwk']);
+        $jwkHeader = $header['jwk'];
+        $this->assertIsArray($jwkHeader);
+        $this->assertEquals('EC', $jwkHeader['kty']);
+        $this->assertArrayNotHasKey('d', $jwkHeader);
 
         // Verify payload
         $payload = json_decode($jws->getPayload() ?: '{}', true);
+        $this->assertIsArray($payload);
         $this->assertEquals('POST', $payload['htm']);
         $this->assertEquals('https://example.com/token', $payload['htu']);
         $this->assertArrayHasKey('jti', $payload);
@@ -96,6 +115,8 @@ class DPoPServiceTest extends TestCase
         $this->assertArrayHasKey('exp', $payload);
         $this->assertArrayNotHasKey('ath', $payload);
 
+        $this->assertIsInt($payload['exp']);
+        $this->assertIsInt($payload['iat']);
         $this->assertLessThanOrEqual(120, $payload['exp'] - $payload['iat']);
     }
 
@@ -108,6 +129,7 @@ class DPoPServiceTest extends TestCase
         $jws = $serializer->unserialize($proofJwt);
 
         $payload = json_decode($jws->getPayload() ?: '{}', true);
+        $this->assertIsArray($payload);
         $this->assertEquals('GET', $payload['htm']);
         $this->assertEquals('https://example.com/userinfo', $payload['htu']);
         $this->assertEquals('test-ath-value', $payload['ath']);
@@ -122,6 +144,8 @@ class DPoPServiceTest extends TestCase
         $serializer = new JwsCompactSerializer;
         $payload1 = json_decode($serializer->unserialize($proof1)->getPayload() ?: '{}', true);
         $payload2 = json_decode($serializer->unserialize($proof2)->getPayload() ?: '{}', true);
+        $this->assertIsArray($payload1);
+        $this->assertIsArray($payload2);
 
         $this->assertNotEquals($payload1['jti'], $payload2['jti']);
     }
@@ -154,6 +178,22 @@ class DPoPServiceTest extends TestCase
         $result = $this->service->retrieveKeyForState('nonexistent-state');
 
         $this->assertNull($result);
+    }
+
+    public function test_retrieve_key_returns_null_when_session_value_is_not_string(): void
+    {
+        $state = 'test-state-'.uniqid();
+        session()->put("dpop_key_{$state}", ['kty' => 'EC']);
+
+        $this->assertNull($this->service->retrieveKeyForState($state));
+    }
+
+    public function test_retrieve_key_returns_null_when_json_does_not_decode_to_array(): void
+    {
+        $state = 'test-state-'.uniqid();
+        session()->put("dpop_key_{$state}", '123');
+
+        $this->assertNull($this->service->retrieveKeyForState($state));
     }
 
     public function test_clear_key_for_state(): void

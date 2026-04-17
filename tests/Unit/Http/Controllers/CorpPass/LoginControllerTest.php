@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Accredifysg\SingPassLogin\Tests\Unit\Http\Controllers\CorpPass;
 
+use Accredifysg\SingPassLogin\DTOs\ProviderConfig;
 use Accredifysg\SingPassLogin\Services\FapiAuthenticationService;
 use Accredifysg\SingPassLogin\SingPassLoginServiceProvider;
 use Accredifysg\SingPassLogin\Tests\TestCase;
@@ -58,7 +59,7 @@ class LoginControllerTest extends TestCase
         $fapiAuthMock = Mockery::mock(FapiAuthenticationService::class);
         $fapiAuthMock->shouldReceive('initiateAuth')
             ->once()
-            ->withArgs(function ($config, $scopes, $extra) {
+            ->withArgs(function (ProviderConfig $config, mixed $scopes, array $extra): bool {
                 return isset($extra['authentication_context_type'])
                     && $extra['authentication_context_type'] === 'APP_AUTHENTICATION_DEFAULT';
             })
@@ -83,7 +84,7 @@ class LoginControllerTest extends TestCase
         $fapiAuthMock = Mockery::mock(FapiAuthenticationService::class);
         $fapiAuthMock->shouldReceive('initiateAuth')
             ->once()
-            ->withArgs(function ($config, $scopes, $extra) {
+            ->withArgs(function (ProviderConfig $config, mixed $scopes, array $extra): bool {
                 return isset($extra['authentication_context_type'])
                     && $extra['authentication_context_type'] === 'CUSTOM_CONTEXT';
             })

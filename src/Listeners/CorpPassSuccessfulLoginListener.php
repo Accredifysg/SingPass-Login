@@ -15,8 +15,8 @@ class CorpPassSuccessfulLoginListener
     public function handle(CorpPassSuccessfulLoginEvent $event): void
     {
         $corpPassUser = $event->getCorpPassUser();
-        $entityId = $corpPassUser->getEntityId();
-        $nric = $corpPassUser->getIdentityNumber();
+        $entityId = $corpPassUser->entityId;
+        $nric = $corpPassUser->identityNumber;
 
         if ($nric === null || $nric === '') {
             throw new CorpPassLoginException;

@@ -13,6 +13,7 @@ use Accredifysg\SingPassLogin\Interfaces\GetUserInfoServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\JwksServiceInterface;
 use Accredifysg\SingPassLogin\Interfaces\JwtServiceInterface;
 use Accredifysg\SingPassLogin\Support\SingPassLog;
+use Accredifysg\SingPassLogin\Support\TypeNarrow;
 use Exception;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
@@ -45,31 +46,33 @@ final readonly class GetUserInfoService implements GetUserInfoServiceInterface
 
     /**
      * @return array<int, string>
+     *
+     * @throws UserInfoRequestException
      */
     private function extractScopesFromAccessToken(string $accessToken): array
     {
-        try {
-            // Decode the JWT without verification (we just need to read the payload)
-            // The access token is a JWT in the format: header.payload.signature
-            $parts = explode('.', $accessToken);
+        $parts = explode('.', $accessToken);
 
-            if (count($parts) !== 3) {
-                return ['openid'];
-            }
-
-            // Decode the payload (second part)
-            $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
-
-            if (! isset($payload['scope'])) {
-                return ['openid'];
-            }
-
-            // Scopes are space-separated in the JWT
-            return explode(' ', $payload['scope']);
-        } catch (Exception) {
-            // If we can't decode, default to openid only
-            return ['openid'];
+        if (count($parts) !== 3) {
+            throw new UserInfoRequestException(500, 'Access token is not a valid JWT (expected 3 parts).');
         }
+
+        $payloadJson = base64_decode(strtr($parts[1], '-_', '+/'), true);
+        if ($payloadJson === false) {
+            throw new UserInfoRequestException(500, 'Access token payload could not be base64-decoded.');
+        }
+
+        $payload = json_decode($payloadJson, true);
+        if (! is_array($payload) || ! isset($payload['scope'])) {
+            throw new UserInfoRequestException(500, 'Access token payload does not contain a scope claim.');
+        }
+
+        $scope = $payload['scope'];
+        if (! is_string($scope)) {
+            throw new UserInfoRequestException(500, 'Access token scope claim is not a string.');
+        }
+
+        return explode(' ', $scope);
     }
 
     /**
@@ -146,6 +149,12 @@ final readonly class GetUserInfoService implements GetUserInfoServiceInterface
 
         SingPassLog::info('UserInfo data retrieved successfully');
 
-        return $payload['person_info'] ?? $payload;
+        $result = $payload['person_info'] ?? $payload;
+        if (! is_array($result)) {
+            throw new UserInfoVerificationException(500, 'UserInfo payload must be a JSON object.');
+        }
+
+        return TypeNarrow::stringKeyedArray($result)
+            ?? throw new UserInfoVerificationException(500, 'UserInfo payload keys must be strings.');
     }
 }

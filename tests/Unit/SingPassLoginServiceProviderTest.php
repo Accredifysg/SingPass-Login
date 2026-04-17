@@ -39,7 +39,7 @@ class SingPassLoginServiceProviderTest extends TestCase
 
     public function test_routes_are_loaded(): void
     {
-        $routeCollection = app('router')->getRoutes();
+        $routeCollection = $this->routeCollection();
 
         $this->assertTrue($routeCollection->hasNamedRoute('singpass.login'));
         $this->assertTrue($routeCollection->hasNamedRoute('singpass.callback'));
@@ -52,13 +52,13 @@ class SingPassLoginServiceProviderTest extends TestCase
 
     protected function disableSingpassRoutes(Application $app): void
     {
-        $app['config']->set('singpass-login.enable_default_singpass_routes', false);
+        $this->appConfigSet($app, 'singpass-login.enable_default_singpass_routes', false);
     }
 
     #[DefineEnvironment('disableSingpassRoutes')]
     public function test_singpass_routes_can_be_disabled(): void
     {
-        $routeCollection = app('router')->getRoutes();
+        $routeCollection = $this->routeCollection();
 
         $this->assertFalse($routeCollection->hasNamedRoute('singpass.login'));
         $this->assertFalse($routeCollection->hasNamedRoute('singpass.callback'));
@@ -69,13 +69,13 @@ class SingPassLoginServiceProviderTest extends TestCase
 
     protected function disableMyinfoRoutes(Application $app): void
     {
-        $app['config']->set('myinfo.enable_default_myinfo_routes', false);
+        $this->appConfigSet($app, 'myinfo.enable_default_myinfo_routes', false);
     }
 
     #[DefineEnvironment('disableMyinfoRoutes')]
     public function test_myinfo_routes_can_be_disabled(): void
     {
-        $routeCollection = app('router')->getRoutes();
+        $routeCollection = $this->routeCollection();
 
         $this->assertTrue($routeCollection->hasNamedRoute('singpass.login'));
         $this->assertFalse($routeCollection->hasNamedRoute('myinfo.login'));
@@ -85,13 +85,13 @@ class SingPassLoginServiceProviderTest extends TestCase
 
     protected function disableCorppassRoutes(Application $app): void
     {
-        $app['config']->set('corppass-login.enable_default_corppass_routes', false);
+        $this->appConfigSet($app, 'corppass-login.enable_default_corppass_routes', false);
     }
 
     #[DefineEnvironment('disableCorppassRoutes')]
     public function test_corppass_routes_can_be_disabled(): void
     {
-        $routeCollection = app('router')->getRoutes();
+        $routeCollection = $this->routeCollection();
 
         $this->assertTrue($routeCollection->hasNamedRoute('singpass.login'));
         $this->assertTrue($routeCollection->hasNamedRoute('myinfo.login'));
@@ -113,63 +113,67 @@ class SingPassLoginServiceProviderTest extends TestCase
     {
         $this->assertNotNull(config('ndi'));
 
-        $this->assertArrayHasKey('signing_kid', config('ndi'));
-        $this->assertArrayHasKey('jwks', config('ndi'));
-        $this->assertArrayHasKey('private_jwks', config('ndi'));
-        $this->assertArrayHasKey('dpop_signing_algorithm', config('ndi'));
-        $this->assertArrayHasKey('enable_logging', config('ndi'));
-        $this->assertArrayHasKey('get_jwks_endpoint_url', config('ndi'));
-        $this->assertArrayHasKey('get_jwks_endpoint_controller', config('ndi'));
+        $ndi = $this->configArray('ndi');
+        $this->assertArrayHasKey('signing_kid', $ndi);
+        $this->assertArrayHasKey('jwks', $ndi);
+        $this->assertArrayHasKey('private_jwks', $ndi);
+        $this->assertArrayHasKey('dpop_signing_algorithm', $ndi);
+        $this->assertArrayHasKey('enable_logging', $ndi);
+        $this->assertArrayHasKey('get_jwks_endpoint_url', $ndi);
+        $this->assertArrayHasKey('get_jwks_endpoint_controller', $ndi);
     }
 
     public function test_singpass_config_is_merged(): void
     {
         $this->assertNotNull(config('singpass-login'));
 
-        $this->assertArrayHasKey('client_id', config('singpass-login'));
-        $this->assertArrayHasKey('redirect_uri', config('singpass-login'));
-        $this->assertArrayHasKey('domain', config('singpass-login'));
-        $this->assertArrayHasKey('discovery_endpoint', config('singpass-login'));
-        $this->assertArrayHasKey('enable_default_singpass_routes', config('singpass-login'));
-        $this->assertArrayHasKey('post_singpass_callback_url', config('singpass-login'));
-        $this->assertArrayHasKey('post_singpass_callback_controller', config('singpass-login'));
-        $this->assertArrayHasKey('use_default_listener', config('singpass-login'));
-        $this->assertArrayHasKey('listener_class', config('singpass-login'));
-        $this->assertArrayHasKey('authentication_context_type', config('singpass-login'));
-        $this->assertArrayHasKey('authentication_context_message', config('singpass-login'));
-        $this->assertArrayHasKey('login_scopes', config('singpass-login'));
+        $singpass = $this->configArray('singpass-login');
+        $this->assertArrayHasKey('client_id', $singpass);
+        $this->assertArrayHasKey('redirect_uri', $singpass);
+        $this->assertArrayHasKey('domain', $singpass);
+        $this->assertArrayHasKey('discovery_endpoint', $singpass);
+        $this->assertArrayHasKey('enable_default_singpass_routes', $singpass);
+        $this->assertArrayHasKey('post_singpass_callback_url', $singpass);
+        $this->assertArrayHasKey('post_singpass_callback_controller', $singpass);
+        $this->assertArrayHasKey('use_default_listener', $singpass);
+        $this->assertArrayHasKey('listener_class', $singpass);
+        $this->assertArrayHasKey('authentication_context_type', $singpass);
+        $this->assertArrayHasKey('authentication_context_message', $singpass);
+        $this->assertArrayHasKey('login_scopes', $singpass);
     }
 
     public function test_myinfo_config_is_merged(): void
     {
         $this->assertNotNull(config('myinfo'));
 
-        $this->assertArrayHasKey('client_id', config('myinfo'));
-        $this->assertArrayHasKey('redirect_uri', config('myinfo'));
-        $this->assertArrayHasKey('discovery_endpoint', config('myinfo'));
-        $this->assertArrayHasKey('domain', config('myinfo'));
-        $this->assertArrayHasKey('enable_default_myinfo_routes', config('myinfo'));
-        $this->assertArrayHasKey('get_myinfo_authentication_endpoint_url', config('myinfo'));
-        $this->assertArrayHasKey('get_myinfo_authentication_endpoint_controller', config('myinfo'));
-        $this->assertArrayHasKey('post_myinfo_callback_url', config('myinfo'));
-        $this->assertArrayHasKey('post_myinfo_callback_controller', config('myinfo'));
-        $this->assertArrayHasKey('available_scopes', config('myinfo'));
-        $this->assertArrayHasKey('login_scopes', config('myinfo'));
+        $myinfo = $this->configArray('myinfo');
+        $this->assertArrayHasKey('client_id', $myinfo);
+        $this->assertArrayHasKey('redirect_uri', $myinfo);
+        $this->assertArrayHasKey('discovery_endpoint', $myinfo);
+        $this->assertArrayHasKey('domain', $myinfo);
+        $this->assertArrayHasKey('enable_default_myinfo_routes', $myinfo);
+        $this->assertArrayHasKey('get_myinfo_authentication_endpoint_url', $myinfo);
+        $this->assertArrayHasKey('get_myinfo_authentication_endpoint_controller', $myinfo);
+        $this->assertArrayHasKey('post_myinfo_callback_url', $myinfo);
+        $this->assertArrayHasKey('post_myinfo_callback_controller', $myinfo);
+        $this->assertArrayHasKey('available_scopes', $myinfo);
+        $this->assertArrayHasKey('login_scopes', $myinfo);
     }
 
     public function test_corppass_config_is_merged(): void
     {
         $this->assertNotNull(config('corppass-login'));
 
-        $this->assertArrayHasKey('client_id', config('corppass-login'));
-        $this->assertArrayHasKey('redirect_uri', config('corppass-login'));
-        $this->assertArrayHasKey('domain', config('corppass-login'));
-        $this->assertArrayHasKey('discovery_endpoint', config('corppass-login'));
-        $this->assertArrayHasKey('enable_default_corppass_routes', config('corppass-login'));
-        $this->assertArrayHasKey('login_scopes', config('corppass-login'));
-        $this->assertArrayHasKey('available_scopes', config('corppass-login'));
-        $this->assertArrayHasKey('use_default_listener', config('corppass-login'));
-        $this->assertArrayHasKey('listener_class', config('corppass-login'));
+        $corppass = $this->configArray('corppass-login');
+        $this->assertArrayHasKey('client_id', $corppass);
+        $this->assertArrayHasKey('redirect_uri', $corppass);
+        $this->assertArrayHasKey('domain', $corppass);
+        $this->assertArrayHasKey('discovery_endpoint', $corppass);
+        $this->assertArrayHasKey('enable_default_corppass_routes', $corppass);
+        $this->assertArrayHasKey('login_scopes', $corppass);
+        $this->assertArrayHasKey('available_scopes', $corppass);
+        $this->assertArrayHasKey('use_default_listener', $corppass);
+        $this->assertArrayHasKey('listener_class', $corppass);
     }
 
     public function test_corppass_config_is_published(): void

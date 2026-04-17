@@ -150,7 +150,7 @@ The JWKS endpoint (`/ndi/jwks`) is always registered as it is shared across all 
 
 - **Login route returns JSON**: The authentication endpoint now returns `{ "redirect_url": "..." }` JSON instead of performing a server-side redirect. Clients must `fetch` the endpoint (with same-origin credentials) and navigate to the returned URL.
 - **Session-backed routes required**: All routes must be behind session middleware (`web` group) for DPoP key storage, PKCE verifiers, and CSRF state verification.
-- **`SingPassUser` model changes**: The `sub` claim is now a UUID (not a composite NRIC/UUID string). NRIC is available via `getNric()` only when the `user.identity` scope is requested; it returns `?string` instead of `string`.
+- **`SingPassUser` model changes**: The `sub` claim is now a UUID (not a composite NRIC/UUID string). NRIC/FIN is available on the readonly **`nric`** property (from `sub_attributes.identity_number`) when the `user.identity` scope is requested (`?string`). The accessor **`getNric()`** is deprecated in favour of **`$nric`**.
 - **MyInfo uses dedicated routes and config**: MyInfo flows use `/ndi/mi/initiate` and `/ndi/mi/callback` instead of sharing the SingPass login route. MyInfo has its own config file (`config/myinfo.php`) with separate client credentials (`MYINFO_CLIENT_ID` / `MYINFO_REDIRECT_URI`).
 - **Discovery must include PAR endpoint**: The OpenID discovery response must contain `pushed_authorization_request_endpoint`. Incomplete discovery responses throw `OpenIdDiscoveryException`.
 - **Config split**: Configuration has been split from a single `singpass-login.php` into four files (`ndi.php`, `singpass-login.php`, `myinfo.php`, `corppass-login.php`). Several environment variables have been renamed — see the "Config Split & Validation" section above. Re-publish config after upgrading.
@@ -162,7 +162,7 @@ The JWKS endpoint (`/ndi/jwks`) is always registered as it is shared across all 
 3. **Update client-side code**: Replace any server-side redirects to the login endpoint with `fetch` + `window.location.assign(redirect_url)`.
 4. **Update exception references**: Rename any caught exceptions per the table above.
 5. **Update service references**: If you injected `SingPassLogin`, `SingPassLoginInterface`, or the facade, switch to `FapiAuthenticationService` / `FapiCallbackService` via dependency injection.
-6. **Update listener**: If your listener accesses `getNric()`, add a null check — NRIC requires the `user.identity` scope and returns `?string`.
+6. **Update listener**: Use **`$event->getSingPassUser()->nric`** for NRIC/FIN (add a null check — requires the `user.identity` scope). Avoid **`getNric()`**; it is deprecated.
 7. **Review scopes**: Configure `login_scopes` in `singpass-login.php` and `available_scopes` in `myinfo.php` to match your application's needs.
 
 ---

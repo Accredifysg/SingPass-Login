@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Accredifysg\SingPassLogin\Http\Controllers\SingPass\MyInfoCallbackController;
-use Accredifysg\SingPassLogin\Http\Controllers\SingPass\MyInfoController;
+use Accredifysg\SingPassLogin\Http\Controllers\MyInfo\MyInfoCallbackController;
+use Accredifysg\SingPassLogin\Http\Controllers\MyInfo\MyInfoController;
 
 return [
     'client_id' => env('MYINFO_CLIENT_ID'),

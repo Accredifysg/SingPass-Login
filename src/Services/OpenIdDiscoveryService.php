@@ -45,9 +45,18 @@ final class OpenIdDiscoveryService implements OpenIdDiscoveryServiceInterface
                 throw new OpenIdDiscoveryException(500, 'Open ID Discovery response parse failure.');
             }
 
+            if (! is_object($decoded)) {
+                throw new OpenIdDiscoveryException(500, 'Open ID Discovery JSON must be an object.');
+            }
+
+            $issuer = isset($decoded->issuer) && is_string($decoded->issuer) ? $decoded->issuer : null;
+            $parEndpoint = isset($decoded->pushed_authorization_request_endpoint) && is_string($decoded->pushed_authorization_request_endpoint)
+                ? $decoded->pushed_authorization_request_endpoint
+                : null;
+
             SingPassLog::info('OpenID Discovery cached', [
-                'issuer' => $decoded->issuer ?? null,
-                'par_endpoint' => $decoded->pushed_authorization_request_endpoint ?? null,
+                'issuer' => $issuer,
+                'par_endpoint' => $parEndpoint,
             ]);
 
             return OpenIdConfigurationDto::fromDiscoveryResponse($decoded);

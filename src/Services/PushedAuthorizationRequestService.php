@@ -60,6 +60,13 @@ final class PushedAuthorizationRequestService implements PushedAuthorizationRequ
             );
         }
 
+        if (! is_object($responseData)) {
+            throw new PushedAuthorizationRequestException(
+                statusCode: 500,
+                message: 'PAR response JSON must be an object',
+            );
+        }
+
         if ($response->failed() || isset($responseData->error)) {
             SingPassLog::error('PAR request failed', [
                 'endpoint' => $parEndpoint,
@@ -68,11 +75,19 @@ final class PushedAuthorizationRequestService implements PushedAuthorizationRequ
                 'params_sent' => SingPassLog::redact($params),
             ]);
 
+            $errorCodeRaw = $responseData->error ?? 'server_error';
+            $errorCode = is_string($errorCodeRaw) ? $errorCodeRaw : 'server_error';
+            $errorDescription = null;
+            if (isset($responseData->error_description)) {
+                $ed = $responseData->error_description;
+                $errorDescription = is_string($ed) ? $ed : null;
+            }
+
             throw new PushedAuthorizationRequestException(
                 statusCode: $response->status(),
                 message: 'Pushed Authorization Request failed',
-                errorCode: $responseData->error ?? 'server_error',
-                errorDescription: $responseData->error_description ?? null,
+                errorCode: $errorCode,
+                errorDescription: $errorDescription,
             );
         }
 
@@ -88,10 +103,18 @@ final class PushedAuthorizationRequestService implements PushedAuthorizationRequ
             );
         }
 
+        $requestUri = $responseData->request_uri;
+        if (! is_string($requestUri)) {
+            throw new PushedAuthorizationRequestException(
+                statusCode: 500,
+                message: 'PAR response request_uri must be a string',
+            );
+        }
+
         SingPassLog::info('PAR request successful', [
-            'request_uri' => $responseData->request_uri,
+            'request_uri' => $requestUri,
         ]);
 
-        return $responseData->request_uri;
+        return $requestUri;
     }
 }

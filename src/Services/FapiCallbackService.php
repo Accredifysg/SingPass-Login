@@ -45,21 +45,26 @@ class FapiCallbackService
         ]);
 
         if ($request->has('error')) {
+            $errorInput = $request->input('error');
+            $errorDescriptionInput = $request->input('error_description');
+            $errorCode = is_string($errorInput) ? $errorInput : 'unknown_error';
+            $errorDescription = is_string($errorDescriptionInput) ? $errorDescriptionInput : null;
+
             SingPassLog::error('Callback returned error from provider', [
-                'error' => $request->input('error'),
-                'error_description' => $request->input('error_description'),
+                'error' => $errorCode,
+                'error_description' => $errorDescription,
             ]);
 
             throw new AuthenticationErrorException(
-                errorCode: $request->input('error'),
-                errorDescription: $request->input('error_description'),
+                errorCode: $errorCode,
+                errorDescription: $errorDescription,
             );
         }
 
         $code = $request->input('code');
         $state = $request->input('state');
 
-        if (! $code || ! $state || ! is_string($state)) {
+        if (! is_string($code) || $code === '' || ! is_string($state) || $state === '') {
             SingPassLog::error('Callback missing code or state', [
                 'has_code' => (bool) $code,
                 'has_state' => (bool) $state,
@@ -83,7 +88,10 @@ class FapiCallbackService
         $clientId = session()->get("auth_client_id_{$state}");
         $redirectUri = session()->get("auth_redirect_uri_{$state}");
 
-        if (! $dpopKey || ! $codeVerifier || ! $clientId || ! $redirectUri) {
+        if (! $dpopKey
+            || ! is_string($codeVerifier) || $codeVerifier === ''
+            || ! is_string($clientId) || $clientId === ''
+            || ! is_string($redirectUri) || $redirectUri === '') {
             SingPassLog::error('Session data incomplete for state', [
                 'state' => $state,
                 'has_dpop_key' => (bool) $dpopKey,

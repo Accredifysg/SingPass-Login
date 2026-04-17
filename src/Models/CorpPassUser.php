@@ -5,64 +5,25 @@ declare(strict_types=1);
 namespace Accredifysg\SingPassLogin\Models;
 
 use Accredifysg\SingPassLogin\Exceptions\JwtPayloadException;
+use Accredifysg\SingPassLogin\Support\TypeNarrow;
 
-class CorpPassUser
+readonly class CorpPassUser
 {
-    protected string $entityId;
-
-    protected ?string $entityType;
-
-    protected ?string $entityRegNumber;
-
-    protected ?string $entityCoi;
-
-    protected ?string $entityName;
-
-    protected ?string $entityUenStatus;
-
-    protected string $actorId;
-
-    protected ?string $accountType;
-
-    protected ?string $identityNumber;
-
-    protected ?string $identityCoi;
-
-    protected ?string $name;
-
-    protected ?string $corppassEmail;
-
-    protected ?bool $corppassEmailVerified;
-
     public function __construct(
-        string $entityId,
-        string $actorId,
-        ?string $entityType = null,
-        ?string $entityRegNumber = null,
-        ?string $entityCoi = null,
-        ?string $entityName = null,
-        ?string $entityUenStatus = null,
-        ?string $accountType = null,
-        ?string $identityNumber = null,
-        ?string $identityCoi = null,
-        ?string $name = null,
-        ?string $corppassEmail = null,
-        ?bool $corppassEmailVerified = null,
-    ) {
-        $this->entityId = $entityId;
-        $this->actorId = $actorId;
-        $this->entityType = $entityType;
-        $this->entityRegNumber = $entityRegNumber;
-        $this->entityCoi = $entityCoi;
-        $this->entityName = $entityName;
-        $this->entityUenStatus = $entityUenStatus;
-        $this->accountType = $accountType;
-        $this->identityNumber = $identityNumber;
-        $this->identityCoi = $identityCoi;
-        $this->name = $name;
-        $this->corppassEmail = $corppassEmail;
-        $this->corppassEmailVerified = $corppassEmailVerified;
-    }
+        public string $entityId,
+        public string $actorId,
+        public ?string $entityType = null,
+        public ?string $entityRegNumber = null,
+        public ?string $entityCoi = null,
+        public ?string $entityName = null,
+        public ?string $entityUenStatus = null,
+        public ?string $accountType = null,
+        public ?string $identityNumber = null,
+        public ?string $identityCoi = null,
+        public ?string $name = null,
+        public ?string $corppassEmail = null,
+        public ?bool $corppassEmailVerified = null,
+    ) {}
 
     /**
      * Create a CorpPassUser from a decoded ID token payload.
@@ -77,101 +38,41 @@ class CorpPassUser
      */
     public static function fromPayload(array $payload): self
     {
-        $entityId = $payload['sub'] ?? '';
-        if ($entityId === '') {
-            throw new JwtPayloadException(400, 'Sub (entity ID) is empty');
-        }
+        $entityId = TypeNarrow::nonEmptyString($payload, 'sub')
+            ?? throw new JwtPayloadException(400, 'Sub (entity ID) is empty or invalid');
 
         $act = $payload['act'] ?? [];
-        $actorId = $act['sub'] ?? '';
-        if ($actorId === '') {
-            throw new JwtPayloadException(400, 'Act sub (actor ID) is empty');
+        if (! is_array($act)) {
+            throw new JwtPayloadException(400, 'act claim must be an object');
         }
 
+        $actorId = TypeNarrow::nonEmptyString($act, 'sub')
+            ?? throw new JwtPayloadException(400, 'Act sub (actor ID) is empty or invalid');
+
         $entityAttributes = $payload['sub_attributes'] ?? [];
+        if (! is_array($entityAttributes)) {
+            throw new JwtPayloadException(400, 'sub_attributes must be an object');
+        }
+
         $actorAttributes = $act['sub_attributes'] ?? [];
+        if (! is_array($actorAttributes)) {
+            throw new JwtPayloadException(400, 'act.sub_attributes must be an object');
+        }
 
         return new self(
             entityId: $entityId,
             actorId: $actorId,
-            entityType: $entityAttributes['entity_type'] ?? null,
-            entityRegNumber: $entityAttributes['entity_reg_number'] ?? null,
-            entityCoi: $entityAttributes['entity_coi'] ?? null,
-            entityName: $entityAttributes['entity_name'] ?? null,
-            entityUenStatus: $entityAttributes['entity_uen_status'] ?? null,
-            accountType: $actorAttributes['account_type'] ?? null,
-            identityNumber: $actorAttributes['identity_number'] ?? null,
-            identityCoi: $actorAttributes['identity_coi'] ?? null,
-            name: $actorAttributes['name'] ?? null,
-            corppassEmail: $actorAttributes['corppass_email'] ?? null,
-            corppassEmailVerified: isset($actorAttributes['corppass_email_verified'])
-                ? (bool) $actorAttributes['corppass_email_verified']
-                : null,
+            entityType: TypeNarrow::optionalString($entityAttributes['entity_type'] ?? null),
+            entityRegNumber: TypeNarrow::optionalString($entityAttributes['entity_reg_number'] ?? null),
+            entityCoi: TypeNarrow::optionalString($entityAttributes['entity_coi'] ?? null),
+            entityName: TypeNarrow::optionalString($entityAttributes['entity_name'] ?? null),
+            entityUenStatus: TypeNarrow::optionalString($entityAttributes['entity_uen_status'] ?? null),
+            accountType: TypeNarrow::optionalString($actorAttributes['account_type'] ?? null),
+            identityNumber: TypeNarrow::optionalString($actorAttributes['identity_number'] ?? null),
+            identityCoi: TypeNarrow::optionalString($actorAttributes['identity_coi'] ?? null),
+            name: TypeNarrow::optionalString($actorAttributes['name'] ?? null),
+            corppassEmail: TypeNarrow::optionalString($actorAttributes['corppass_email'] ?? null),
+            corppassEmailVerified: TypeNarrow::optionalBool($actorAttributes['corppass_email_verified'] ?? null),
         );
-    }
-
-    public function getEntityId(): string
-    {
-        return $this->entityId;
-    }
-
-    public function getEntityType(): ?string
-    {
-        return $this->entityType;
-    }
-
-    public function getEntityRegNumber(): ?string
-    {
-        return $this->entityRegNumber;
-    }
-
-    public function getEntityCoi(): ?string
-    {
-        return $this->entityCoi;
-    }
-
-    public function getEntityName(): ?string
-    {
-        return $this->entityName;
-    }
-
-    public function getEntityUenStatus(): ?string
-    {
-        return $this->entityUenStatus;
-    }
-
-    public function getActorId(): string
-    {
-        return $this->actorId;
-    }
-
-    public function getAccountType(): ?string
-    {
-        return $this->accountType;
-    }
-
-    public function getIdentityNumber(): ?string
-    {
-        return $this->identityNumber;
-    }
-
-    public function getIdentityCoi(): ?string
-    {
-        return $this->identityCoi;
-    }
-
-    public function getName(): ?string
-    {
-        return $this->name;
-    }
-
-    public function getCorppassEmail(): ?string
-    {
-        return $this->corppassEmail;
-    }
-
-    public function getCorppassEmailVerified(): ?bool
-    {
-        return $this->corppassEmailVerified;
     }
 }
