@@ -82,10 +82,13 @@ jobs:
           name: coverage-report
           path: coverage/clover.xml
 
-      # SonarCloud Scan
-      - name: SonarCloud Scan
-        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/master')
-        uses: SonarSource/sonarqube-scan-action@v8.2.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  sonar:
+    name: SonarQube Analysis
+    needs: ci
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/master')
+    uses: Accredifysg/Accredify-Github-Workflows/.github/workflows/sonar-scan.yml@main
+    with:
+      backend-coverage-artifact-name: coverage-report
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: https://sonarcloud.io
