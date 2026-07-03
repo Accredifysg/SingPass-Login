@@ -78,7 +78,7 @@ jobs:
     name: SonarQube Analysis
     needs: ci
     if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/master')
-    uses: Accredifysg/Accredify-Github-Workflows/.github/workflows/sonar-scan.yml@main
+    uses: Accredifysg/Accredify-Github-Workflows/.github/workflows/sonar-scan.yml@v2.1.0
     with:
       backend-coverage-artifact-name: coverage-report
     secrets:
