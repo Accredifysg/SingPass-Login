@@ -1,10 +1,6 @@
 name: CI
 on:
   workflow_call:
-    outputs:
-      coverage:
-        description: "Code coverage value"
-        value: ${{ jobs.ci.outputs.coverage }}
     secrets:
       SONAR_TOKEN:
         required: false
@@ -18,9 +14,6 @@ jobs:
       # Give the default GITHUB_TOKEN write permission to commit and push the
       # added or changed files to the repository.
       contents: write
-
-    outputs:
-      coverage: ${{ steps.coverage.outputs.coverage }}
 
     steps:
       # Checkout Code (current branch)
@@ -59,7 +52,6 @@ jobs:
       # Check test coverage
       - name: Check test coverage
         uses: johanvanhelden/gha-clover-test-coverage-check@v1
-        id: coverage
         with:
           percentage: "80"
           filename: "coverage/clover.xml"
