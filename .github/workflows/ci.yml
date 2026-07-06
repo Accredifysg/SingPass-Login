@@ -1,6 +1,10 @@
 name: CI
 on:
   workflow_call:
+    outputs:
+      coverage:
+        description: "Code coverage value"
+        value: ${{ jobs.ci.outputs.coverage }}
     secrets:
       SONAR_TOKEN:
         required: false
@@ -14,6 +18,9 @@ jobs:
       # Give the default GITHUB_TOKEN write permission to commit and push the
       # added or changed files to the repository.
       contents: write
+
+    outputs:
+      coverage: ${{ steps.coverage.outputs.coverage }}
 
     steps:
       # Checkout Code (current branch)
@@ -52,6 +59,7 @@ jobs:
       # Check test coverage
       - name: Check test coverage
         uses: johanvanhelden/gha-clover-test-coverage-check@v1
+        id: coverage
         with:
           percentage: "80"
           filename: "coverage/clover.xml"
@@ -78,9 +86,23 @@ jobs:
     name: SonarQube Analysis
     needs: ci
     if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/master')
-    uses: Accredifysg/Accredify-Github-Workflows/.github/workflows/sonar-scan.yml@v2.1.0
-    with:
-      backend-coverage-artifact-name: coverage-report
-    secrets:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      SONAR_HOST_URL: https://sonarcloud.io
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # full history for SCM blame
+
+      - name: Download Backend Coverage Report
+        uses: actions/download-artifact@v8
+        with:
+          name: coverage-report
+          path: coverage_BE
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v8.2.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
