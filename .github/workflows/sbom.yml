@@ -1,0 +1,19 @@
+name: SBOM
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  sbom-app:
+    name: App SBOM
+    uses: Accredifysg/Accredify-Github-Workflows/.github/workflows/deptrack-app-sbom.yml@v2.1.1
+    with:
+      app-name: ${{ github.event.repository.name }}
+      version-prefix: release
+      project-version: ${{ github.ref_name }}
+    secrets:
+      DTRACK_URL: ${{ secrets.DTRACK_URL }}
+      DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
+      AWS_SBOM_S3_ROLE_ARN: ${{ secrets.AWS_SBOM_S3_ROLE_ARN }}
+      AWS_SBOM_S3_BUCKET_NAME: ${{ secrets.AWS_SBOM_S3_BUCKET_NAME }}
