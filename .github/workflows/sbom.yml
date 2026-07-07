@@ -1,10 +1,7 @@
 name: SBOM
 
-# TEMPORARY: pull_request trigger added to verify this job on the PR itself — remove after confirming it works
 on:
   release:
-    types: [published]
-  pull_request:
 
 jobs:
   sbom-app:
