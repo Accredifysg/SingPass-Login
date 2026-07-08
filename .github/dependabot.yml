@@ -8,9 +8,6 @@ updates:
       time: "09:00"
       timezone: Asia/Singapore
     open-pull-requests-limit: 10
-    reviewers:
-      - "Accredify/DevSecOps"
-      - "Accredifysg/saas-tech-leads"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -19,5 +16,7 @@ updates:
       time: "09:00"
       timezone: Asia/Singapore
     open-pull-requests-limit: 10
-    reviewers:
-      - "Accredify/DevSecOps"
+    groups:
+      accredify-shared-workflows:
+        patterns:
+          - "Accredifysg/Accredify-Github-Workflows*"
