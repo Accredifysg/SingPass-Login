@@ -20,6 +20,7 @@ jobs:
           format: cyclonedx-json
           output-file: source-bom.json
           upload-artifact: false
+          upload-release-assets: false
 
       - name: Upload source SBOM to Dependency-Track
         run: |
