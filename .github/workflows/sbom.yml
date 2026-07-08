@@ -1,0 +1,82 @@
+name: SBOM
+
+on:
+  release:
+
+jobs:
+  sbom-app:
+    name: App SBOM
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 #v7.0.0
+
+      - name: Generate source SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 #v0.24.0
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: source-bom.json
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Upload source SBOM to Dependency-Track
+        run: |
+          curl -vsf -X POST "${{ secrets.DTRACK_URL }}/api/v1/bom" \
+            -H "X-Api-Key: ${{ secrets.DTRACK_API_KEY }}" \
+            -F "autoCreate=true" \
+            -F "projectName=${{ github.event.repository.name }}-Source" \
+            -F "projectVersion=release-${{ github.ref_name }}" \
+            -F "parentName=${{ github.event.repository.name }}" \
+            -F "parentVersion=main" \
+            -F "isLatestProjectVersion=true" \
+            -F "bom=@source-bom.json"
+
+      - name: Deactivate old versions
+        env:
+          DTRACK_URL: ${{ secrets.DTRACK_URL }}
+          DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
+          CURRENT_VERSION: release-${{ github.ref_name }}
+          PROJECT_NAME: ${{ github.event.repository.name }}-Source
+          PREFIX: release-
+        run: |
+          echo "Fetching all versions for project: $PROJECT_NAME"
+          RESPONSE=$(curl -sf "$DTRACK_URL/api/v1/project?name=$PROJECT_NAME&excludeInactive=false&onlyRoot=false&pageSize=100" \
+            -H "X-Api-Key: $DTRACK_API_KEY")
+          TOTAL=$(echo "$RESPONSE" | jq 'length')
+          echo "Total versions found: $TOTAL"
+          echo "$RESPONSE" | jq -r '.[] | "  - \(.version) (uuid: \(.uuid), active: \(.active))"'
+          echo "Keeping current version: $CURRENT_VERSION"
+          echo "Deactivating versions with prefix '$PREFIX' (excluding current)..."
+          echo "$RESPONSE" | jq -r \
+              --arg prefix "$PREFIX" \
+              --arg current "$CURRENT_VERSION" \
+              '.[] | select(.version | startswith($prefix)) | select(.version != $current) | .uuid' \
+          | while read -r uuid; do
+              echo "Deactivating: $uuid"
+              PATCH_RESPONSE=$(curl -sf -X PATCH "$DTRACK_URL/api/v1/project/$uuid" \
+                -H "X-Api-Key: $DTRACK_API_KEY" \
+                -H "Content-Type: application/json" \
+                -d '{"active": false}' \
+                < /dev/null)
+              echo "Response: $PATCH_RESPONSE"
+            done
+          echo "Done deactivating old versions"
+
+      - name: Configure AWS credentials for S3
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b #v6.2.1
+        with:
+          role-to-assume: ${{ secrets.AWS_SBOM_S3_ROLE_ARN }}
+          aws-region: ap-southeast-1
+
+      - name: Compress SBOM
+        run: gzip -k source-bom.json
+
+      - name: Upload source SBOM to S3
+        run: |
+          YEAR=$(date +%Y)
+          MONTH=$(date +%m)
+          aws s3 cp source-bom.json.gz \
+            "s3://${{ secrets.AWS_SBOM_S3_BUCKET_NAME }}/${{ github.event.repository.name }}/${{ github.event.repository.name }}-Source/$YEAR/$MONTH/release-${{ github.ref_name }}.cdx.json.gz"
