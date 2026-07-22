@@ -18,7 +18,7 @@ jobs:
     steps:
       # Checkout Code (current branch)
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       # Use the output from the `coverage` step
       - name: Generate the badge SVG image
