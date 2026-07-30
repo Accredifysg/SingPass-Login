@@ -62,7 +62,7 @@ php artisan vendor:publish --provider="Accredifysg\SingPassLogin\SingPassLoginSe
 
 ### Shared NDI (`config/ndi.php`)
 
-JWKS, signing keys, DPoP algorithm, and logging — shared across all providers.
+JWKS, signing keys, DPoP algorithm, logging, and failure redirects — shared across all providers.
 
 ```.dotenv
 NDI_SIGNING_KID=
@@ -74,6 +74,10 @@ NDI_DPOP_SIGNING_ALGORITHM=ES256
 
 # Diagnostic logging (disabled by default)
 NDI_LOGS_ENABLED=false
+
+# Where to send the browser when a login/callback fails (see "Failure Redirects").
+# When unset, failures redirect to route('login') with session-flashed errors.
+NDI_FAILURE_REDIRECT_URL=
 ```
 
 ### SingPass Login (`config/singpass-login.php`)
@@ -441,6 +445,22 @@ use Accredifysg\SingPassLogin\Exceptions\UserInfoRequestException;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoDecryptionException;
 use Accredifysg\SingPassLogin\Exceptions\UserInfoVerificationException;
 ```
+
+### Failure Redirects
+
+Login/callback failures that the browser navigates through (`SingPassLoginException`, `CorpPassLoginException`, `AuthFlowException`, `AuthenticationErrorException`) render as a redirect:
+
+- **Default**: `redirect()->route('login')` with a session-flashed error bag (`singpass` or `corppass` key). This requires the host app to define a GET route named `login`. Beware: in a headless API where the `login` route name points at a POST endpoint, the browser's GET lands on a 405 — set the failure redirect URL instead.
+- **With `NDI_FAILURE_REDIRECT_URL` set**: the browser is redirected to that URL with `error` and `error_description` query parameters — suitable for a frontend on a different origin, which cannot read session-flashed errors.
+
+| Exception | `error` |
+| --- | --- |
+| `SingPassLoginException` | `singpass_no_account` |
+| `CorpPassLoginException` | `corppass_no_account` |
+| `AuthFlowException` | `auth_flow_error` |
+| `AuthenticationErrorException` | the provider's OAuth error code (e.g. `access_denied`) |
+
+All other exceptions render JSON responses and are unaffected.
 
 ### Configuration Exceptions
 

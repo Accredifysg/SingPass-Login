@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Accredifysg\SingPassLogin\Exceptions;
 
+use Accredifysg\SingPassLogin\Support\FailureRedirect;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -42,7 +43,7 @@ class AuthenticationErrorException extends HttpException
 
     public function render(): RedirectResponse
     {
-        return redirect()->route('login')->withErrors(
+        return FailureRedirect::make(
             [
                 'singpass' => [
                     [
@@ -51,7 +52,9 @@ class AuthenticationErrorException extends HttpException
                         'error_code' => $this->errorCode,
                     ],
                 ],
-            ]
+            ],
+            $this->errorCode,
+            $this->errorDescription ?? "An error occurred during authentication: {$this->errorCode}",
         );
     }
 }

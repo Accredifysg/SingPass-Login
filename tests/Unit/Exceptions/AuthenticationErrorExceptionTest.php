@@ -96,4 +96,19 @@ class AuthenticationErrorExceptionTest extends TestCase
             ],
         ], $bag->messages());
     }
+
+    public function test_render_redirects_to_configured_failure_url_with_provider_error_code(): void
+    {
+        config(['ndi.failure_redirect_url' => 'https://app.example.com/login']);
+
+        $exception = new AuthenticationErrorException('access_denied', 'Consent was not granted');
+
+        $response = $exception->render();
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertSame(
+            'https://app.example.com/login?error=access_denied&error_description=Consent+was+not+granted',
+            $response->getTargetUrl()
+        );
+    }
 }
