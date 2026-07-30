@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Accredifysg\SingPassLogin\Exceptions;
 
+use Accredifysg\SingPassLogin\Support\FailureRedirect;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -23,7 +24,7 @@ class CorpPassLoginException extends HttpException
      */
     public function render(): RedirectResponse
     {
-        return redirect()->route('login')->withErrors(
+        return FailureRedirect::make(
             [
                 'corppass' => [
                     [
@@ -31,7 +32,9 @@ class CorpPassLoginException extends HttpException
                         'description' => $this->message,
                     ],
                 ],
-            ]
+            ],
+            'corppass_no_account',
+            $this->message,
         );
     }
 }
