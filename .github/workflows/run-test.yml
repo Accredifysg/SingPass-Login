@@ -53,11 +53,8 @@ jobs:
       # resolution rather than a single pinned tree.
       - name: Install Composer dependencies
         run: |
-          composer require --dev --no-update --no-interaction \
-            "laravel/framework:${{ matrix.laravel }}" \
-            "orchestra/testbench:${{ matrix.testbench }}"
-          composer update --${{ matrix.dependency-version }} \
-            --prefer-dist --no-interaction --no-progress
+          composer require --dev --no-update --no-interaction "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}"
+          composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-progress
 
       # Run tests. --no-coverage is required because phpunit.xml declares a
       # clover report: with `coverage: none` above there is no driver to
