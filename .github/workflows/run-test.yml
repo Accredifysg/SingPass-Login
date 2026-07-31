@@ -59,6 +59,9 @@ jobs:
           composer update --${{ matrix.dependency-version }} \
             --prefer-dist --no-interaction --no-progress
 
-      # Run tests
+      # Run tests. --no-coverage is required because phpunit.xml declares a
+      # clover report: with `coverage: none` above there is no driver to
+      # satisfy it, and PHPUnit exits non-zero on that runner warning.
+      # Coverage stays owned by ci.yml, which runs with xdebug.
       - name: Execute tests
-        run: vendor/bin/phpunit
+        run: vendor/bin/phpunit --no-coverage
