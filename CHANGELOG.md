@@ -2,38 +2,35 @@
 
 ## v4.0.0
 
-### Minimum Laravel version is now 11.3
+Maintenance release. There are no functional changes to the package — this tidies up the dependency declarations in `composer.json` and adds a test matrix workflow.
 
-The Illuminate constraints narrow from `^10.0||^11.0||^12.0` to `^11.3||^12.0`.
+The version bump is a major one purely so existing installations are unaffected. Projects already using v3.x continue to resolve as before; only those that explicitly upgrade to v4 pick up the narrowed constraints below.
 
-**Laravel 10** was never actually installable: `web-token/jwt-framework ^4.0` requires Symfony 7, while Laravel 10 pins Symfony 6 — an unresolvable conflict. Applications on Laravel 10 previously received a confusing transitive Symfony error; they now get a clear refusal from Composer naming the real requirement.
+### composer.json tidy-up
 
-**Laravel 11.0 – 11.2** are excluded because `Http::createPendingRequest()`, used for JWKS retrieval and OpenID discovery, was only introduced in Laravel 11.3. Those versions previously installed successfully and then failed at runtime during the first JWKS fetch; Composer now rejects them at install time instead.
+**Illuminate constraints narrowed** from `^10.0||^11.0||^12.0` to `^11.3||^12.0`, so they describe what actually works:
 
-### Laravel 11 is not covered by CI against a released version
+- **Laravel 10** was never installable. `web-token/jwt-framework ^4.0` requires Symfony 7 while Laravel 10 pins Symfony 6 — an unresolvable conflict. Applications on Laravel 10 previously got a confusing transitive Symfony error; they now get a clear refusal naming the real requirement.
+- **Laravel 11.0 – 11.2** lack `Http::createPendingRequest()`, which was added in Laravel 11.3 and is used for JWKS retrieval and OpenID discovery. Those versions previously installed and then failed at runtime on the first JWKS fetch; Composer now rejects them at install time.
 
-Laravel 11 left security support in Mar 2026, and every tagged 11.x release is excluded by seven security advisories — three of which will never have a fixed version. Composer therefore refuses to install any tagged 11.x release under its default advisory policy.
+**Illuminate packages now declared explicitly.** Previously only `illuminate/contracts` was declared, covering 2 of the package's 67 Illuminate imports — the rest resolved implicitly because `laravel/framework` replaces that package. Added:
 
-The test matrix exercises Laravel 11 through the untagged `11.x-dev` branch tip, which is unreleased code that no application can install. A green Laravel 11 leg should not be read as verification of any installable Laravel 11 release.
+| Package | Covers |
+|---|---|
+| `illuminate/database` | Eloquent `Model`, `Builder`, `Factories\HasFactory` |
+| `illuminate/http` | `Request`, `JsonResponse`, `RedirectResponse`, `Client\ConnectionException` |
+| `illuminate/routing` | `Controller` |
+| `illuminate/support` | `ServiceProvider`, `Str`, and the `Http`/`Cache`/`Log`/`Event`/`Auth` facades |
 
-Applications wishing to install on Laravel 11 will need to allow the relevant advisories in their own Composer configuration.
+No behavioural change — `laravel/framework` satisfies all of them. `Illuminate\Foundation\Auth\User` (used by `Models\User`) stays implicit, as it ships only inside `laravel/framework` and has no installable standalone package.
 
-### Explicit Illuminate requirements
+**`minimum-stability` set to `dev` with `prefer-stable`**, matching the convention across the Laravel and Spatie package ecosystems. Stable releases are always preferred; dev branches enter the pool only when no stable candidate remains.
 
-The package previously declared only `illuminate/contracts`, which covered 2 of its 67 Illuminate imports — the rest resolved implicitly because `laravel/framework` replaces that package. Now declared directly:
+### Test matrix
 
-- `illuminate/database` — Eloquent `Model`, `Builder`, `Factories\HasFactory`
-- `illuminate/http` — `Request`, `JsonResponse`, `RedirectResponse`, `Client\ConnectionException`
-- `illuminate/routing` — `Controller`
-- `illuminate/support` — `ServiceProvider`, `Str`, and the `Http`/`Cache`/`Log`/`Event`/`Auth` facades
+Added a `Run Tests` workflow covering PHP 8.2, 8.3, 8.4 and 8.5 against Laravel 11 and 12. PHP 8.5 is excluded for Laravel 11, which predates it. The existing `CI` workflow is unchanged and still owns the coverage gate, Pint and the Sonar scan.
 
-No behavioural change; `laravel/framework` satisfies all of them. `Illuminate\Foundation\Auth\User` (used by `Models\User`) remains implicit, as it ships only inside `laravel/framework` and has no installable standalone package.
-
-### Continuous integration
-
-Added a `Run Tests` workflow covering PHP 8.2, 8.3, 8.4 and 8.5 against Laravel 11 and 12, with both `prefer-lowest` and `prefer-stable` dependency resolution. `prefer-lowest` exercises the published constraint floors, which had never been tested.
-
-`minimum-stability` is set to `dev` with `prefer-stable` enabled, matching the convention used across the Laravel and Spatie package ecosystems. Stable releases are always preferred; dev branches enter the pool only when no stable candidate remains — which is what allows the Laravel 11 legs to resolve at all.
+One limitation worth recording: **Laravel 11 is not covered against a released version.** Laravel 11 left security support in Mar 2026 and every tagged 11.x release is excluded by seven security advisories, three of which will never have a fixed version, so Composer refuses to install any of them under its default advisory policy. The matrix therefore exercises Laravel 11 through the untagged `11.x-dev` branch tip — unreleased code no application can install. A green Laravel 11 leg should not be read as verification of an installable Laravel 11 release, and applications wanting to install on Laravel 11 will need to allow those advisories in their own Composer configuration.
 
 ## v3.0.0
 
