@@ -55,14 +55,6 @@ jobs:
           echo "::add-matcher::${{ runner.tool_cache }}/php.json"
           echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
 
-      # Laravel 11 left security support in Mar 2026 and every 11.x release is
-      # affected by three unpatched advisories (CVE-2026-48019 among them), so
-      # Composer's default policy refuses to install it at all. Scoped to the
-      # L11 legs so the L12 legs keep advisory protection intact.
-      - name: Allow unpatched advisories on end-of-life Laravel
-        if: matrix.laravel == '11.*'
-        run: composer config --no-plugins policy.advisories.block false
-
       # Resolve a fresh dependency tree for this matrix leg. The committed
       # composer.lock is deliberately bypassed so each leg tests real
       # resolution rather than a single pinned tree.
