@@ -62,6 +62,13 @@
             "@php vendor/bin/phpunit"
         ]
     },
+    "config": {
+        "policy": {
+            "advisories": {
+                "block": false
+            }
+        }
+    },
     "minimum-stability": "dev",
     "prefer-stable": true
 }
