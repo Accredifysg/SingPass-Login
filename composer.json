@@ -57,5 +57,7 @@
         "test": [
             "@php vendor/bin/phpunit"
         ]
-    }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
