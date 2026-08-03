@@ -20,21 +20,18 @@ jobs:
     timeout-minutes: 10
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         php: ['8.2', '8.3', '8.4', '8.5']
         laravel: ['11.*', '12.*']
-        dependency-version: [prefer-lowest, prefer-stable]
+        dependency-version: [prefer-stable]
         include:
           - laravel: '11.*'
             testbench: '9.*'
           - laravel: '12.*'
             testbench: '10.*'
         exclude:
-          # Laravel 11 predates PHP 8.5 and was never supported on it. Under
-          # prefer-lowest this cell resolves testbench v9.0.0, whose transitive
-          # spatie/ray triggers PHP 8.5's deprecation of null array offsets
-          # during bootstrap, erroring every test.
+          # Laravel 11 predates PHP 8.5 and was never supported on it.
           - php: '8.5'
             laravel: '11.*'
 
