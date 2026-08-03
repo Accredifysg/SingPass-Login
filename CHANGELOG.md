@@ -1,5 +1,33 @@
 # Changelog
 
+## v4.0.0
+
+### Laravel 12 only
+
+`illuminate/contracts` narrows from `^10.0||^11.0||^12.0` to `^12.0`. Neither of the dropped versions was actually usable:
+
+| Version | Why it was never supported |
+|---|---|
+| Laravel 10 | `web-token/jwt-framework ^4.0` requires Symfony 7; Laravel 10 pins Symfony 6. Unresolvable conflict — this combination could never install. |
+| Laravel 11 | Left security support in Mar 2026. Every tagged 11.x release is excluded by seven security advisories, three of which have no fixed version, so Composer refuses to install it. Additionally, `Http::createPendingRequest()` (used for JWKS and OpenID discovery) does not exist before Laravel 11.3. |
+
+Applications on Laravel 10 or 11 now receive a clear refusal from Composer at install time, naming the real requirement, instead of a confusing transitive Symfony conflict or a runtime failure during the JWKS fetch.
+
+### Explicit Illuminate requirements
+
+The package previously declared only `illuminate/contracts`, which covered 2 of its 67 Illuminate imports — the rest resolved implicitly because `laravel/framework` replaces that package. Now declared directly:
+
+- `illuminate/database` — Eloquent `Model`, `Builder`, `Factories\HasFactory`
+- `illuminate/http` — `Request`, `JsonResponse`, `RedirectResponse`, `Client\ConnectionException`
+- `illuminate/routing` — `Controller`
+- `illuminate/support` — `ServiceProvider`, `Str`, and the `Http`/`Cache`/`Log`/`Event`/`Auth` facades
+
+No behavioural change; `laravel/framework` satisfies all of them. `Illuminate\Foundation\Auth\User` (used by `Models\User`) remains implicit, as it ships only inside `laravel/framework` and has no installable standalone package.
+
+### Continuous integration
+
+Added a `Run Tests` workflow covering PHP 8.2, 8.3, 8.4 and 8.5 against Laravel 12, with both `prefer-lowest` and `prefer-stable` dependency resolution. `prefer-lowest` exercises the published constraint floors, which had never been tested.
+
 ## v3.0.0
 
 ### Config Split & Validation
