@@ -30,6 +30,13 @@ jobs:
             testbench: '9.*'
           - laravel: '12.*'
             testbench: '10.*'
+        exclude:
+          # Laravel 11 predates PHP 8.5 and was never supported on it. Under
+          # prefer-lowest this cell resolves testbench v9.0.0, whose transitive
+          # spatie/ray triggers PHP 8.5's deprecation of null array offsets
+          # during bootstrap, erroring every test.
+          - php: '8.5'
+            laravel: '11.*'
 
     steps:
       # Checkout Code (current branch)
