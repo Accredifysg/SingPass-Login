@@ -6,6 +6,7 @@ namespace Accredifysg\SingPassLogin\Tests\Unit\Services;
 
 use Accredifysg\SingPassLogin\DTOs\OpenIdConfigurationDto;
 use Accredifysg\SingPassLogin\Exceptions\OpenIdDiscoveryException;
+use Accredifysg\SingPassLogin\Services\JwksService;
 use Accredifysg\SingPassLogin\Services\OpenIdDiscoveryService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Support\Facades\Cache;
@@ -133,6 +134,44 @@ class OpenIdDiscoveryServiceTest extends TestCase
         (new OpenIdDiscoveryService)->cacheOpenIdDiscovery('https://example.com/discovery', 'openId:warm');
 
         Http::assertNothingSent();
+    }
+
+    /**
+     * Regression test for the Laravel 13 cache break, written entirely against the
+     * public API so it is meaningful against any version of this package.
+     *
+     * Caching the DTO object made this fail: the round trip below is what a
+     * serializing store does under `cache.serializable_classes => false`, and an
+     * object payload comes back as `__PHP_Incomplete_Class`, so every consumer of
+     * the discovery cache threw "OpenID configuration not found in cache".
+     *
+     * The simulation is explicit rather than relying on framework config, so the
+     * guard holds on Laravel 11 and 12 too, where the option does not yet exist.
+     */
+    public function test_discovery_consumers_work_when_the_store_forbids_unserializing_classes(): void
+    {
+        Http::fake([
+            'https://example.com/discovery' => Http::response((string) json_encode([
+                'issuer' => 'https://example.com',
+                'authorization_endpoint' => 'https://example.com/auth',
+                'token_endpoint' => 'https://example.com/token',
+                'userinfo_endpoint' => 'https://example.com/userinfo',
+                'jwks_uri' => 'https://example.com/jwks',
+                'pushed_authorization_request_endpoint' => 'https://example.com/par',
+            ]), 200),
+            'https://example.com/jwks' => Http::response((string) json_encode(['keys' => []]), 200),
+        ]);
+
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery('https://example.com/discovery', 'openId:restricted-store');
+
+        Cache::put(
+            'openId:restricted-store',
+            unserialize(serialize(Cache::get('openId:restricted-store')), ['allowed_classes' => false]),
+            now()->addHour(),
+        );
+
+        // No exception here is the whole point — this is what broke on Laravel 13.
+        $this->assertCount(0, (new JwksService)->getJwks('openId:restricted-store'));
     }
 
     public function test_cache_open_id_discovery_missing_required_fields(): void
