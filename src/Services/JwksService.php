@@ -20,7 +20,7 @@ final class JwksService implements JwksServiceInterface
      */
     public function getJwks(string $cacheKey): JWKSet
     {
-        $openIdConfig = Cache::get($cacheKey);
+        $openIdConfig = OpenIdConfigurationDto::fromCache(Cache::get($cacheKey));
 
         if (! $openIdConfig instanceof OpenIdConfigurationDto) {
             throw new JwksException(500, 'OpenID configuration not found in cache');

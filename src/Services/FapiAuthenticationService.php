@@ -62,7 +62,7 @@ class FapiAuthenticationService
 
         $dpopKey = $this->dpopService->generateKeyPair();
 
-        $openIdConfig = Cache::get($config->cacheKey);
+        $openIdConfig = OpenIdConfigurationDto::fromCache(Cache::get($config->cacheKey));
 
         if (! $openIdConfig instanceof OpenIdConfigurationDto) {
             throw new AuthFlowException(500, 'OpenID configuration not found in cache');

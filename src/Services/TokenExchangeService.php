@@ -32,7 +32,7 @@ final class TokenExchangeService implements TokenExchangeServiceInterface
     {
         $jwk = JwtService::getSigningJwk();
 
-        $openIdConfig = Cache::get($cacheKey);
+        $openIdConfig = OpenIdConfigurationDto::fromCache(Cache::get($cacheKey));
 
         if (! $openIdConfig instanceof OpenIdConfigurationDto) {
             throw new TokenExchangeException(500, 'OpenID configuration not found in cache');

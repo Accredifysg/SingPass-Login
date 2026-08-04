@@ -32,13 +32,107 @@ class OpenIdDiscoveryServiceTest extends TestCase
 
         $cached = Cache::get('openId:singpass');
 
-        $this->assertInstanceOf(OpenIdConfigurationDto::class, $cached);
-        $this->assertEquals('https://example.com', $cached->issuer);
-        $this->assertEquals('https://example.com/auth', $cached->authorizationEndpoint);
-        $this->assertEquals('https://example.com/token', $cached->tokenEndpoint);
-        $this->assertEquals('https://example.com/userinfo', $cached->userinfoEndpoint);
-        $this->assertEquals('https://example.com/jwks', $cached->jwksUri);
-        $this->assertEquals('https://example.com/par', $cached->pushedAuthorizationRequestEndpoint);
+        // Must be a plain array, not a serialized DTO: Laravel 13 defaults
+        // cache.serializable_classes to false, so an object payload would return as
+        // __PHP_Incomplete_Class on every serializing store.
+        $this->assertIsArray($cached);
+
+        $config = OpenIdConfigurationDto::fromCache($cached);
+
+        $this->assertInstanceOf(OpenIdConfigurationDto::class, $config);
+        $this->assertEquals('https://example.com', $config->issuer);
+        $this->assertEquals('https://example.com/auth', $config->authorizationEndpoint);
+        $this->assertEquals('https://example.com/token', $config->tokenEndpoint);
+        $this->assertEquals('https://example.com/userinfo', $config->userinfoEndpoint);
+        $this->assertEquals('https://example.com/jwks', $config->jwksUri);
+        $this->assertEquals('https://example.com/par', $config->pushedAuthorizationRequestEndpoint);
+    }
+
+    public function test_cached_payload_survives_restricted_unserialization(): void
+    {
+        $mockResponse = (string) json_encode([
+            'issuer' => 'https://example.com',
+            'authorization_endpoint' => 'https://example.com/auth',
+            'token_endpoint' => 'https://example.com/token',
+            'userinfo_endpoint' => 'https://example.com/userinfo',
+            'jwks_uri' => 'https://example.com/jwks',
+            'pushed_authorization_request_endpoint' => 'https://example.com/par',
+        ]);
+
+        Http::fake([
+            'https://example.com/discovery' => Http::response($mockResponse, 200),
+        ]);
+
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery('https://example.com/discovery', 'openId:restricted');
+
+        // Mirror what Laravel 13's cache stores do when serializable_classes is false.
+        $roundTripped = unserialize(
+            serialize(Cache::get('openId:restricted')),
+            ['allowed_classes' => false],
+        );
+
+        $config = OpenIdConfigurationDto::fromCache($roundTripped);
+
+        $this->assertInstanceOf(OpenIdConfigurationDto::class, $config);
+        $this->assertEquals('https://example.com/jwks', $config->jwksUri);
+    }
+
+    public function test_unreadable_cache_entry_is_replaced_rather_than_reused(): void
+    {
+        // A serialized DTO written by an older release, read back under Laravel 13's
+        // restricted unserialize: non-null, but unusable. Cache::remember() would keep
+        // returning it until the TTL expired, breaking logins for up to an hour.
+        $poisoned = unserialize(
+            serialize(new OpenIdConfigurationDto(
+                issuer: 'https://stale.example.com',
+                authorizationEndpoint: 'https://stale.example.com/auth',
+                tokenEndpoint: 'https://stale.example.com/token',
+                userinfoEndpoint: 'https://stale.example.com/userinfo',
+                jwksUri: 'https://stale.example.com/jwks',
+                pushedAuthorizationRequestEndpoint: 'https://stale.example.com/par',
+            )),
+            ['allowed_classes' => false],
+        );
+
+        Cache::put('openId:poisoned', $poisoned, now()->addHour());
+
+        $mockResponse = (string) json_encode([
+            'issuer' => 'https://fresh.example.com',
+            'authorization_endpoint' => 'https://fresh.example.com/auth',
+            'token_endpoint' => 'https://fresh.example.com/token',
+            'userinfo_endpoint' => 'https://fresh.example.com/userinfo',
+            'jwks_uri' => 'https://fresh.example.com/jwks',
+            'pushed_authorization_request_endpoint' => 'https://fresh.example.com/par',
+        ]);
+
+        Http::fake([
+            'https://example.com/discovery' => Http::response($mockResponse, 200),
+        ]);
+
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery('https://example.com/discovery', 'openId:poisoned');
+
+        $config = OpenIdConfigurationDto::fromCache(Cache::get('openId:poisoned'));
+
+        $this->assertInstanceOf(OpenIdConfigurationDto::class, $config);
+        $this->assertEquals('https://fresh.example.com', $config->issuer);
+    }
+
+    public function test_valid_cache_entry_is_not_refetched(): void
+    {
+        Cache::put('openId:warm', [
+            'issuer' => 'https://warm.example.com',
+            'authorization_endpoint' => 'https://warm.example.com/auth',
+            'token_endpoint' => 'https://warm.example.com/token',
+            'userinfo_endpoint' => 'https://warm.example.com/userinfo',
+            'jwks_uri' => 'https://warm.example.com/jwks',
+            'pushed_authorization_request_endpoint' => 'https://warm.example.com/par',
+        ], now()->addHour());
+
+        Http::fake();
+
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery('https://example.com/discovery', 'openId:warm');
+
+        Http::assertNothingSent();
     }
 
     public function test_cache_open_id_discovery_missing_required_fields(): void

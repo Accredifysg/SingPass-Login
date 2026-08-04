@@ -23,7 +23,7 @@ final class PushedAuthorizationRequestService implements PushedAuthorizationRequ
      */
     public function sendRequest(array $params, string $dpopProofJwt, string $cacheKey): string
     {
-        $openIdConfig = Cache::get($cacheKey);
+        $openIdConfig = OpenIdConfigurationDto::fromCache(Cache::get($cacheKey));
 
         if (! $openIdConfig instanceof OpenIdConfigurationDto) {
             throw new PushedAuthorizationRequestException(

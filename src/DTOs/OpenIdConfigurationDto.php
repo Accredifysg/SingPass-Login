@@ -19,6 +19,55 @@ readonly class OpenIdConfigurationDto
     ) {}
 
     /**
+     * The cache payload for this DTO.
+     *
+     * Stored as a plain array rather than a serialized object: Laravel 13 ships
+     * `cache.serializable_classes => false` by default, which unserializes cache
+     * payloads with `allowed_classes: false`. A serialized DTO would come back as
+     * `__PHP_Incomplete_Class` on any serializing store (file, redis, database).
+     *
+     * @return array<string, string>
+     */
+    public function toArray(): array
+    {
+        return [
+            'issuer' => $this->issuer,
+            'authorization_endpoint' => $this->authorizationEndpoint,
+            'token_endpoint' => $this->tokenEndpoint,
+            'userinfo_endpoint' => $this->userinfoEndpoint,
+            'jwks_uri' => $this->jwksUri,
+            'pushed_authorization_request_endpoint' => $this->pushedAuthorizationRequestEndpoint,
+        ];
+    }
+
+    /**
+     * Rehydrate a cached OpenID configuration, returning null when the payload is
+     * absent or unusable.
+     *
+     * Accepts a self instance so that non-serializing stores (such as the array
+     * store) and cache entries written by earlier versions of this package keep
+     * working. Anything else — including the `__PHP_Incomplete_Class` produced by
+     * a restricted unserialize — yields null so callers re-run discovery instead
+     * of failing on a partially readable payload.
+     */
+    public static function fromCache(mixed $cached): ?self
+    {
+        if ($cached instanceof self) {
+            return $cached;
+        }
+
+        if (! is_array($cached)) {
+            return null;
+        }
+
+        try {
+            return self::fromDiscoveryResponse((object) $cached);
+        } catch (OpenIdDiscoveryException) {
+            return null;
+        }
+    }
+
+    /**
      * Build from a decoded OpenID Connect discovery response, validating that
      * all required fields are present.
      *

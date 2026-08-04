@@ -21,45 +21,59 @@ final class OpenIdDiscoveryService implements OpenIdDiscoveryServiceInterface
      */
     public function cacheOpenIdDiscovery(string $discoveryEndpoint, string $cacheKey): void
     {
-        Cache::remember($cacheKey, now()->addHour(), static function () use ($discoveryEndpoint) {
-            SingPassLog::info('OpenID Discovery request', ['endpoint' => $discoveryEndpoint]);
+        // Deliberately not Cache::remember(): a payload left by an older version of
+        // this package (a serialized DTO) is non-null but unusable under Laravel 13's
+        // restricted unserialize, and remember() would keep returning it until the TTL
+        // expired. Hydrating first lets an unreadable entry be replaced immediately.
+        if (OpenIdConfigurationDto::fromCache(Cache::get($cacheKey)) instanceof OpenIdConfigurationDto) {
+            return;
+        }
 
-            $response = Http::createPendingRequest()->get($discoveryEndpoint);
+        Cache::put($cacheKey, $this->fetchOpenIdConfiguration($discoveryEndpoint)->toArray(), now()->addHour());
+    }
 
-            if ($response->failed()) {
-                SingPassLog::error('OpenID Discovery request failed', [
-                    'endpoint' => $discoveryEndpoint,
-                    'http_status' => $response->status(),
-                ]);
+    /**
+     * @throws OpenIdDiscoveryException
+     */
+    private function fetchOpenIdConfiguration(string $discoveryEndpoint): OpenIdConfigurationDto
+    {
+        SingPassLog::info('OpenID Discovery request', ['endpoint' => $discoveryEndpoint]);
 
-                throw new OpenIdDiscoveryException($response->status());
-            }
+        $response = Http::createPendingRequest()->get($discoveryEndpoint);
 
-            try {
-                $decoded = json_decode($response->body(), false, 512, JSON_THROW_ON_ERROR);
-            } catch (Exception) {
-                SingPassLog::error('OpenID Discovery response parse failure', [
-                    'endpoint' => $discoveryEndpoint,
-                ]);
-
-                throw new OpenIdDiscoveryException(500, 'Open ID Discovery response parse failure.');
-            }
-
-            if (! is_object($decoded)) {
-                throw new OpenIdDiscoveryException(500, 'Open ID Discovery JSON must be an object.');
-            }
-
-            $issuer = isset($decoded->issuer) && is_string($decoded->issuer) ? $decoded->issuer : null;
-            $parEndpoint = isset($decoded->pushed_authorization_request_endpoint) && is_string($decoded->pushed_authorization_request_endpoint)
-                ? $decoded->pushed_authorization_request_endpoint
-                : null;
-
-            SingPassLog::info('OpenID Discovery cached', [
-                'issuer' => $issuer,
-                'par_endpoint' => $parEndpoint,
+        if ($response->failed()) {
+            SingPassLog::error('OpenID Discovery request failed', [
+                'endpoint' => $discoveryEndpoint,
+                'http_status' => $response->status(),
             ]);
 
-            return OpenIdConfigurationDto::fromDiscoveryResponse($decoded);
-        });
+            throw new OpenIdDiscoveryException($response->status());
+        }
+
+        try {
+            $decoded = json_decode($response->body(), false, 512, JSON_THROW_ON_ERROR);
+        } catch (Exception) {
+            SingPassLog::error('OpenID Discovery response parse failure', [
+                'endpoint' => $discoveryEndpoint,
+            ]);
+
+            throw new OpenIdDiscoveryException(500, 'Open ID Discovery response parse failure.');
+        }
+
+        if (! is_object($decoded)) {
+            throw new OpenIdDiscoveryException(500, 'Open ID Discovery JSON must be an object.');
+        }
+
+        $issuer = isset($decoded->issuer) && is_string($decoded->issuer) ? $decoded->issuer : null;
+        $parEndpoint = isset($decoded->pushed_authorization_request_endpoint) && is_string($decoded->pushed_authorization_request_endpoint)
+            ? $decoded->pushed_authorization_request_endpoint
+            : null;
+
+        SingPassLog::info('OpenID Discovery cached', [
+            'issuer' => $issuer,
+            'par_endpoint' => $parEndpoint,
+        ]);
+
+        return OpenIdConfigurationDto::fromDiscoveryResponse($decoded);
     }
 }
