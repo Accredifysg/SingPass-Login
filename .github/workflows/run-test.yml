@@ -36,7 +36,7 @@ jobs:
           # Laravel 11 predates PHP 8.5 and was never supported on it.
           - php: '8.5'
             laravel: '11.*'
-          # orchestra/testbench 11 (Laravel 13) requires php ^8.3.
+          # Laravel 13 requires php ^8.3, so there is no 8.2 leg to test.
           - php: '8.2'
             laravel: '13.*'
 

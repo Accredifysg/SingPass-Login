@@ -2,15 +2,29 @@
 
 ## v4.0.0
 
-Maintenance release, with three changes:
+Maintenance release, with four changes:
 
 - **Laravel 13 is now supported.**
 - **Laravel 10 support is dropped.**
+- **The OpenID discovery cache payload changed** so it survives Laravel 13's hardened cache unserialization. This is the one functional change in `src/`.
 - **CI matrix testing is introduced**, covering every supported PHP and Laravel combination.
 
-There are no functional changes to the package — `src/` is untouched.
-
 The version bump is a major one purely so existing installations are unaffected. Projects already using v3.x continue to resolve as before; only those that explicitly upgrade to v4 pick up the narrowed constraints below.
+
+### OpenID discovery is now cached as an array, not a serialized object
+
+**This was a real break on Laravel 13, not a precaution.**
+
+Laravel 13 adds a `cache.serializable_classes` option and new applications ship it set to `false`, which unserializes every cache payload with `allowed_classes: false`. The package previously cached the `OpenIdConfigurationDto` object itself, so on any serializing store — file, redis, database — it read back as `__PHP_Incomplete_Class`. Laravel returns that silently rather than throwing, so all five readers failed their `instanceof` check and every login died with a 500 `OpenID configuration not found in cache`.
+
+The array cache store keeps live PHP objects, so a test suite on the default store could not detect this.
+
+The discovery payload is now a plain array, hydrated on read via `OpenIdConfigurationDto::fromCache()`. **Consumers need to take no action** — in particular you do *not* need to add anything to `cache.serializable_classes`.
+
+Two details worth noting:
+
+- `fromCache()` still accepts a `self` instance, so cache entries written by v3.x and non-serializing stores keep working.
+- `OpenIdDiscoveryService::cacheOpenIdDiscovery()` no longer uses `Cache::remember()`. A serialized DTO left behind by v3.x is non-null but unusable, and `remember()` would have kept returning it until the hour-long TTL expired — an hour of failed logins immediately after upgrading. The value is now hydrated first, so an unreadable entry is replaced on the next request.
 
 ### Laravel 13 support, Laravel 10 dropped
 
@@ -23,9 +37,9 @@ Laravel 13 was added with no other constraint changes required. The lower bound 
 
 ### CI matrix testing
 
-Added a `Run Tests` workflow covering PHP 8.2 – 8.5 against Laravel 11, 12 and 13, each resolved twice — once with `--prefer-lowest` and once with `--prefer-stable` — for 20 legs in total. The existing `CI` workflow is unchanged and still owns the coverage gate, Pint and the Sonar scan.
+Added a `Run Tests` workflow covering PHP 8.2 – 8.5 against Laravel 11, 12 and 13, resolved with `--prefer-stable`, for 10 legs in total. The existing `CI` workflow is unchanged and still owns the coverage gate, Pint and the Sonar scan.
 
-The `--prefer-lowest` axis immediately earned its keep: it caught a fatal `Error` in `web-token/jwt-framework` 4.0.1, whose floor is now raised to `^4.0.2`.
+Resolving against constraint floors is not part of the matrix, so a declared floor is an argued claim rather than a tested one. One floor did move during this work: `web-token/jwt-framework` is now `^4.0.2`, because 4.0.1 raises a fatal `Error` that no `prefer-stable` leg ever surfaced.
 
 One limitation worth recording here: **Laravel 11 is not covered against a released version.** Every tagged 11.x release is excluded by security advisories, so those legs resolve the untagged `11.x-dev` branch tip, which no application can install.
 
@@ -45,6 +59,15 @@ See [`docs/ci-test-matrix.md`](docs/ci-test-matrix.md) for the full matrix, the 
 No behavioural change — `laravel/framework` satisfies all of them. `Illuminate\Foundation\Auth\User` (used by `Models\User`) stays implicit, as it ships only inside `laravel/framework` and has no installable standalone package.
 
 **`minimum-stability` set to `dev` with `prefer-stable`**, matching the convention across the Laravel and Spatie package ecosystems. Stable releases are always preferred; dev branches enter the pool only when no stable candidate remains.
+
+**`symfony/clock` widened** from `^7.0` to `^7.0||^8.0`. Laravel 13 accepts Symfony `^7.4||^8.0`, so the old ceiling would have held this one component at 7.x in an otherwise Symfony 8 application for no reason. Composer still picks 7.x below PHP 8.4.1, which is the floor `symfony/clock` 8 declares.
+
+**Dev dependencies widened** so a Laravel 13 tree is resolvable locally, not just in CI:
+
+| Package | Was | Now | Why |
+|---|---|---|---|
+| `orchestra/testbench` | `^10.4` | `^10.4||^11.0` | testbench 10 pins `laravel/framework ^12.55`, so `composer update` could never produce a Laravel 13 tree. The matrix overrode this per leg, which hid it locally. |
+| `phpunit/phpunit` | `^11.2` | `^11.5.50||^12.5.8` | The Laravel 13 upgrade guide moves to PHPUnit 12; `^11.5.50` is testbench 11's floor. Not a blocker on its own — `^11.2` did resolve — so this is alignment rather than a fix. |
 
 ## v3.0.0
 
