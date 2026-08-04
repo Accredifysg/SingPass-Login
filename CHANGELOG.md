@@ -2,16 +2,36 @@
 
 ## v4.0.0
 
-Maintenance release. There are no functional changes to the package — this tidies up the dependency declarations in `composer.json` and adds a test matrix workflow.
+Maintenance release, with three changes:
+
+- **Laravel 13 is now supported.**
+- **Laravel 10 support is dropped.**
+- **CI matrix testing is introduced**, covering every supported PHP and Laravel combination.
+
+There are no functional changes to the package — `src/` is untouched.
 
 The version bump is a major one purely so existing installations are unaffected. Projects already using v3.x continue to resolve as before; only those that explicitly upgrade to v4 pick up the narrowed constraints below.
 
-### composer.json tidy-up
+### Laravel 13 support, Laravel 10 dropped
 
-**Illuminate constraints changed** from `^10.0||^11.0||^12.0` to `^11.3||^12.0||^13.0` — adding Laravel 13 support, and narrowing the lower bound so it describes what actually works:
+**Illuminate constraints changed** from `^10.0||^11.0||^12.0` to `^11.3||^12.0||^13.0`.
+
+Laravel 13 was added with no other constraint changes required. The lower bound was narrowed so it describes what actually works:
 
 - **Laravel 10** was never installable. `web-token/jwt-framework ^4.0` requires Symfony 7 while Laravel 10 pins Symfony 6 — an unresolvable conflict. Applications on Laravel 10 previously got a confusing transitive Symfony error; they now get a clear refusal naming the real requirement.
 - **Laravel 11.0 – 11.2** lack `Http::createPendingRequest()`, which was added in Laravel 11.3 and is used for JWKS retrieval and OpenID discovery. Those versions previously installed and then failed at runtime on the first JWKS fetch; Composer now rejects them at install time.
+
+### CI matrix testing
+
+Added a `Run Tests` workflow covering PHP 8.2 – 8.5 against Laravel 11, 12 and 13, each resolved twice — once with `--prefer-lowest` and once with `--prefer-stable` — for 20 legs in total. The existing `CI` workflow is unchanged and still owns the coverage gate, Pint and the Sonar scan.
+
+The `--prefer-lowest` axis immediately earned its keep: it caught a fatal `Error` in `web-token/jwt-framework` 4.0.1, whose floor is now raised to `^4.0.2`.
+
+One limitation worth recording here: **Laravel 11 is not covered against a released version.** Every tagged 11.x release is excluded by security advisories, so those legs resolve the untagged `11.x-dev` branch tip, which no application can install.
+
+See [`docs/ci-test-matrix.md`](docs/ci-test-matrix.md) for the full matrix, the reasoning behind each exclusion, the advisory policy and how to reproduce a leg locally.
+
+### composer.json tidy-up
 
 **Illuminate packages now declared explicitly.** Previously only `illuminate/contracts` was declared, covering 2 of the package's 67 Illuminate imports — the rest resolved implicitly because `laravel/framework` replaces that package. Added:
 
@@ -25,12 +45,6 @@ The version bump is a major one purely so existing installations are unaffected.
 No behavioural change — `laravel/framework` satisfies all of them. `Illuminate\Foundation\Auth\User` (used by `Models\User`) stays implicit, as it ships only inside `laravel/framework` and has no installable standalone package.
 
 **`minimum-stability` set to `dev` with `prefer-stable`**, matching the convention across the Laravel and Spatie package ecosystems. Stable releases are always preferred; dev branches enter the pool only when no stable candidate remains.
-
-### Test matrix
-
-Added a `Run Tests` workflow covering PHP 8.2, 8.3, 8.4 and 8.5 against Laravel 11, 12 and 13. Two combinations are excluded: PHP 8.5 for Laravel 11, which predates it, and PHP 8.2 for Laravel 13, since `orchestra/testbench` 11 requires PHP 8.3 or later. The existing `CI` workflow is unchanged and still owns the coverage gate, Pint and the Sonar scan.
-
-One limitation worth recording: **Laravel 11 is not covered against a released version.** Laravel 11 left security support in Mar 2026 and every tagged 11.x release is excluded by seven security advisories, three of which will never have a fixed version, so Composer refuses to install any of them under its default advisory policy. The matrix therefore exercises Laravel 11 through the untagged `11.x-dev` branch tip — unreleased code no application can install. A green Laravel 11 leg should not be read as verification of an installable Laravel 11 release, and applications wanting to install on Laravel 11 will need to allow those advisories in their own Composer configuration.
 
 ## v3.0.0
 
