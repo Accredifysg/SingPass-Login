@@ -44,9 +44,7 @@ jobs:
           extensions: gmp, mbstring, openssl, sqlite, pdo_sqlite
           coverage: none
 
-      # Registers regexes (written by setup-php) so PHP and PHPUnit output from
-      # later steps becomes inline PR annotations. Cosmetic — cannot affect
-      # pass/fail, and silently does nothing if a path is wrong.
+      # Filters the error output so it is more readable.
       - name: Setup problem matchers
         run: |
           echo "::add-matcher::${{ runner.tool_cache }}/php.json"
