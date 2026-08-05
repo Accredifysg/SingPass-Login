@@ -22,14 +22,20 @@ The one exclusion is a hard constraint rather than a preference: **PHP 8.5 × La
 ## How the matrix is wired
 
 `run-test.yml` is a `workflow_call` workflow, not a standalone one. It is invoked from
-both entry points, in each case behind `needs: ci`:
+both entry points:
 
 - `feature.yml` — pull requests and pushes to master
 - `merge_to_master.yml` — pushes to master
 
-Gating on `ci` means a failing basic suite reports before the matrix spends seven
-runners. In `feature.yml` the `badge` job needs `[ci, matrix]`, so a committed
-coverage badge only ever reflects a commit that passed every leg.
+The matrix runs **in parallel with `ci`**, not behind it. The seven legs together take
+around 90 seconds while `ci` takes closer to two and a half minutes, so running them
+concurrently hides the matrix inside `ci`'s runtime instead of adding to the critical
+path — roughly a third off the total wall clock. The trade is that a failing `ci` still
+spends the matrix runners.
+
+In `feature.yml` the `badge` job needs `[ci, matrix]`, so a committed coverage badge
+only ever reflects a commit that passed every leg. That ordering is what the dependency
+is for; gating the matrix itself on `ci` is not needed to get it.
 
 Note that `feature.yml` and `merge_to_master.yml` both trigger on pushes to master, so
 `ci` and the matrix each run twice on a master push. That duplication predates the

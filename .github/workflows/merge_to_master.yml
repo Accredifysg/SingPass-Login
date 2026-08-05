@@ -15,7 +15,7 @@ jobs:
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+  # Deliberately not `needs: ci` — see the note in feature.yml.
   matrix:
-    needs: ci
     name: Run Tests
     uses: ./.github/workflows/run-test.yml

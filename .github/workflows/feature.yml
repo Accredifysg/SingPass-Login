@@ -16,8 +16,10 @@ jobs:
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+  # Deliberately not `needs: ci`. The matrix is faster than ci, so running it in
+  # parallel hides it entirely inside ci's runtime rather than adding to the
+  # critical path. The trade is that a failing ci still spends the matrix runners.
   matrix:
-    needs: ci
     name: Run Tests
     uses: ./.github/workflows/run-test.yml
 

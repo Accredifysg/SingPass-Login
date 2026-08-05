@@ -20,7 +20,7 @@ The version bump is a major one because Laravel 10 is dropped. Projects already 
 
 ### CI matrix testing
 
-Added a `Run Tests` workflow covering PHP 8.2 – 8.5 against Laravel 11 and 12, resolved with `--prefer-stable`, for 7 legs in total. It is a reusable workflow called from `feature.yml` and `merge_to_master.yml` behind `needs: ci`, and the coverage badge now waits on the matrix as well, so a committed badge always reflects a commit that passed every leg.
+Added a `Run Tests` workflow covering PHP 8.2 – 8.5 against Laravel 11 and 12, resolved with `--prefer-stable`, for 7 legs in total. It is a reusable workflow called from `feature.yml` and `merge_to_master.yml`, running in parallel with `ci` so it stays off the critical path. The coverage badge now waits on the matrix as well as `ci`, so a committed badge always reflects a commit that passed every leg.
 
 Resolving against constraint floors is not part of the matrix, so a declared floor is an argued claim rather than a tested one. One floor did move during this work: `web-token/jwt-framework` is now `^4.0.2`, because 4.0.1 raises a fatal `Error` that no `prefer-stable` leg ever surfaced.
 
