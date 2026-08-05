@@ -16,8 +16,16 @@ jobs:
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  badge:
+  matrix:
     needs: ci
+    name: Run Tests
+    uses: ./.github/workflows/run-test.yml
+
+  # Needs the matrix as well as ci, so the committed badge only ever reflects a
+  # commit that passed every supported PHP and Laravel combination. `ci` stays in
+  # `needs` because its coverage output is read below.
+  badge:
+    needs: [ci, matrix]
     name: Generate Coverage Badge
     uses: ./.github/workflows/badge.yml
     with:
