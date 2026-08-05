@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 10
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         php: ['8.2', '8.3', '8.4', '8.5']
         laravel: ['11.*', '12.*']
@@ -44,12 +44,9 @@ jobs:
           extensions: gmp, mbstring, openssl, sqlite, pdo_sqlite
           coverage: none
 
-      # ::add-matcher:: is a GitHub Actions workflow command: it hands the runner
-      # a file of regexes, and any line printed by a LATER step that matches one
-      # becomes an inline PR annotation (file + line) instead of plain log text.
-      # The two JSON files are written into the tool cache by setup-php, not by
-      # GitHub. Convenience only — it cannot affect pass/fail, and if a path is
-      # wrong the runner registers nothing and says nothing.
+      # Registers regexes (written by setup-php) so PHP and PHPUnit output from
+      # later steps becomes inline PR annotations. Cosmetic — cannot affect
+      # pass/fail, and silently does nothing if a path is wrong.
       - name: Setup problem matchers
         run: |
           echo "::add-matcher::${{ runner.tool_cache }}/php.json"
