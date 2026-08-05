@@ -1,5 +1,48 @@
 # Changelog
 
+## v4.0.0
+
+Maintenance release, with two changes:
+
+- **Laravel 10 support is dropped.**
+- **CI matrix testing is introduced**, covering every supported PHP and Laravel combination.
+
+There are no functional changes to the package — `src/` is untouched. Laravel 13 support is not part of this release; it follows separately.
+
+The version bump is a major one because Laravel 10 is dropped. Projects already on v3.x continue to resolve as before; only those that explicitly upgrade to v4 pick up the narrowed constraints below.
+
+### Laravel 10 dropped
+
+**Illuminate constraints changed** from `^10.0||^11.0||^12.0` to `^11.3||^12.0`. The bound was narrowed so it describes what actually works:
+
+- **Laravel 10** was never installable. `web-token/jwt-framework ^4.0` requires Symfony 7 while Laravel 10 pins Symfony 6 — an unresolvable conflict. Applications on Laravel 10 previously got a confusing transitive Symfony error; they now get a clear refusal naming the real requirement.
+- **Laravel 11.0 – 11.2** lack `Http::createPendingRequest()`, which was added in Laravel 11.3 and is used for JWKS retrieval and OpenID discovery. Those versions previously installed and then failed at runtime on the first JWKS fetch; Composer now rejects them at install time.
+
+### CI matrix testing
+
+Added a `Run Tests` workflow covering PHP 8.2 – 8.5 against Laravel 11 and 12, resolved with `--prefer-stable`, for 7 legs in total. It is a reusable workflow called from `feature.yml` and `merge_to_master.yml` behind `needs: ci`, and the coverage badge now waits on the matrix as well, so a committed badge always reflects a commit that passed every leg.
+
+Resolving against constraint floors is not part of the matrix, so a declared floor is an argued claim rather than a tested one. One floor did move during this work: `web-token/jwt-framework` is now `^4.0.2`, because 4.0.1 raises a fatal `Error` that no `prefer-stable` leg ever surfaced.
+
+One limitation worth recording here: **Laravel 11 is not covered against a released version.** Every tagged 11.x release is excluded by security advisories, so those legs resolve the untagged `11.x-dev` branch tip, which no application can install.
+
+See [`docs/ci-test-matrix.md`](docs/ci-test-matrix.md) for the full matrix, the reasoning behind each exclusion, the advisory policy and how to reproduce a leg locally.
+
+### composer.json tidy-up
+
+**Illuminate packages now declared explicitly.** Previously only `illuminate/contracts` was declared, covering 2 of the package's 67 Illuminate imports — the rest resolved implicitly because `laravel/framework` replaces that package. Added:
+
+| Package | Covers |
+|---|---|
+| `illuminate/database` | Eloquent `Model`, `Builder`, `Factories\HasFactory` |
+| `illuminate/http` | `Request`, `JsonResponse`, `RedirectResponse`, `Client\ConnectionException` |
+| `illuminate/routing` | `Controller` |
+| `illuminate/support` | `ServiceProvider`, `Str`, and the `Http`/`Cache`/`Log`/`Event`/`Auth` facades |
+
+No behavioural change — `laravel/framework` satisfies all of them. `Illuminate\Foundation\Auth\User` (used by `Models\User`) stays implicit, as it ships only inside `laravel/framework` and has no installable standalone package.
+
+**`minimum-stability` set to `dev` with `prefer-stable`**, matching the convention across the Laravel and Spatie package ecosystems. Stable releases are always preferred; dev branches enter the pool only when no stable candidate remains. This is also what lets the Laravel 11 matrix legs resolve at all, given the advisory situation described above.
+
 ## v3.0.0
 
 ### Config Split & Validation
