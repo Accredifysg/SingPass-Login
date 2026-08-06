@@ -77,8 +77,8 @@ class OpenIdDiscoveryServiceTest extends TestCase
     }
 
     /**
-     * The v4 → v5 upgrade scenario: production caches still hold the DTO object
-     * that v4 serialized. Cache::remember alone would keep returning it until the
+     * The v3 → v4 upgrade scenario: production caches still hold the DTO object
+     * that v3 serialized. Cache::remember alone would keep returning it until the
      * TTL expired, failing every read in the meantime; the writer must discard it
      * and re-run discovery instead. (An entry rejected by a Laravel 13
      * cache.serializable_classes allowlist deserializes to __PHP_Incomplete_Class
