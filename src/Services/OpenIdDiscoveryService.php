@@ -21,6 +21,17 @@ final class OpenIdDiscoveryService implements OpenIdDiscoveryServiceInterface
      */
     public function cacheOpenIdDiscovery(string $discoveryEndpoint, string $cacheKey): void
     {
+        // An unusable entry — a serialized DTO written by an older version of the
+        // package, or any other stale shape — would otherwise be kept by
+        // Cache::remember until its TTL expires, failing every read in the meantime.
+        $existing = Cache::get($cacheKey);
+
+        if ($existing !== null && OpenIdConfigurationDto::fromCache($existing) === null) {
+            SingPassLog::info('Discarding unusable cached OpenID configuration', ['cache_key' => $cacheKey]);
+
+            Cache::forget($cacheKey);
+        }
+
         Cache::remember($cacheKey, now()->addHour(), static function () use ($discoveryEndpoint) {
             SingPassLog::info('OpenID Discovery request', ['endpoint' => $discoveryEndpoint]);
 
@@ -59,7 +70,7 @@ final class OpenIdDiscoveryService implements OpenIdDiscoveryServiceInterface
                 'par_endpoint' => $parEndpoint,
             ]);
 
-            return OpenIdConfigurationDto::fromDiscoveryResponse($decoded);
+            return OpenIdConfigurationDto::fromDiscoveryResponse($decoded)->toArray();
         });
     }
 }

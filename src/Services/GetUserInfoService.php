@@ -82,9 +82,9 @@ final readonly class GetUserInfoService implements GetUserInfoServiceInterface
      */
     public function getUserInfo(string $accessToken, JWK $dpopKey, string $cacheKey): array
     {
-        $openIdConfig = Cache::get($cacheKey);
+        $openIdConfig = OpenIdConfigurationDto::fromCache(Cache::get($cacheKey));
 
-        if (! $openIdConfig instanceof OpenIdConfigurationDto) {
+        if ($openIdConfig === null) {
             throw new UserInfoRequestException(500, 'OpenID configuration not found in cache');
         }
 

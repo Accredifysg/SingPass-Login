@@ -21,14 +21,14 @@ class PushedAuthorizationRequestServiceTest extends TestCase
 
         $this->service = new PushedAuthorizationRequestService;
 
-        Cache::put('openId:test', new OpenIdConfigurationDto(
+        Cache::put('openId:test', (new OpenIdConfigurationDto(
             issuer: 'https://example.com',
             authorizationEndpoint: 'https://example.com/auth',
             tokenEndpoint: 'https://example.com/token',
             userinfoEndpoint: 'https://example.com/userinfo',
             jwksUri: 'https://example.com/jwks',
             pushedAuthorizationRequestEndpoint: 'https://example.com/fapi/par',
-        ));
+        ))->toArray());
     }
 
     public function test_send_request_success(): void

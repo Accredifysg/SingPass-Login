@@ -2,14 +2,28 @@
 
 ## v4.0.0
 
-Maintenance release, with two changes:
+Maintenance release, with three changes:
 
 - **Laravel 10 support is dropped.**
 - **CI matrix testing is introduced**, covering every supported PHP and Laravel combination.
+- **The OpenID configuration is now cached as a plain array**, as groundwork for Laravel 13.
 
-There are no functional changes to the package — `src/` is untouched. Laravel 13 support is not part of this release; it follows separately.
+Laravel 13 support is not part of this release; it follows separately.
 
 The version bump is a major one because Laravel 10 is dropped. Projects already on v3.x continue to resolve as before; only those that explicitly upgrade to v4 pick up the narrowed constraints below.
+
+### OpenID configuration is now cached as a plain array
+
+The OpenID discovery configuration is now stored in the cache as a plain array instead of a serialized `OpenIdConfigurationDto` object. This is groundwork for Laravel 13, whose [`cache.serializable_classes` configuration](https://laravel.com/docs/13.x/upgrade#cache-serializable_classes-configuration) restricts which classes the cache will deserialize — with a plain array payload, applications never need to add this package's DTO to their allowlist. (Laravel 13 support itself follows in a separate release.)
+
+Reads go through the new `OpenIdConfigurationDto::fromCache()`, which rehydrates the array via the same validation as the discovery response and returns `null` for anything unusable.
+
+**The discovery writer is now self-healing.** If the cache holds an entry that cannot be read back — a serialized DTO written by a previous version of this package, an entry rejected by a `serializable_classes` allowlist, or any other stale shape — `cacheOpenIdDiscovery()` discards it and re-runs discovery instead of keeping it until the TTL expires.
+
+### Upgrade notes
+
+- **No action required for the cache transition.** Entries written by the previous version are discarded and refreshed automatically the next time an authentication flow runs discovery.
+- **If you read the OpenID cache key directly**, note the payload is now an array whose keys match the discovery response (`issuer`, `authorization_endpoint`, `token_endpoint`, `userinfo_endpoint`, `jwks_uri`, `pushed_authorization_request_endpoint`), not a DTO instance. Rehydrate with `OpenIdConfigurationDto::fromCache()` if you want the object.
 
 ### Laravel 10 dropped
 
