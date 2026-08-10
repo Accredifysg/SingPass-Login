@@ -1,5 +1,44 @@
 # Changelog
 
+## v4.0.0
+
+Maintenance release, with two changes:
+
+- **Laravel 10 support is dropped.**
+- **CI matrix testing is introduced**, covering every supported PHP and Laravel combination.
+
+There are no functional changes to the package — `src/` is untouched. Laravel 13 support is not part of this release; it follows separately.
+
+The version bump is a major one because Laravel 10 is dropped. Projects already on v3.x continue to resolve as before; only those that explicitly upgrade to v4 pick up the narrowed constraints below.
+
+### Laravel 10 dropped
+
+**Illuminate constraints changed** from `^10.0||^11.0||^12.0` to `^11.3||^12.0`. The bound was narrowed so it describes what actually works:
+
+- **Laravel 10** was not installable. `web-token/jwt-framework ^4.0` requires Symfony 7 while Laravel 10 pins Symfony 6 — an unresolvable conflict. Applications on Laravel 10 previously got a confusing transitive Symfony error; they now get a clear refusal naming the real requirement.
+- **Laravel 11.0 – 11.2** lack `Http::createPendingRequest()`, which was added in Laravel 11.3 and is used for JWKS retrieval and OpenID discovery. Those versions previously installed and then failed at runtime on the first JWKS fetch; Composer now rejects them at install time.
+
+### CI matrix testing
+
+Added `Run Tests` workflow covering PHP 8.2 – 8.5 against Laravel 11 and 12, resolved with `--prefer-stable`. It is a reusable workflow called from `feature.yml` and `merge_to_master.yml`, running in parallel with `ci` so it stays off the critical path. The coverage badge now waits on the matrix as well as `ci`, so a committed badge always reflects a commit that passed every leg.
+
+See [`docs/ci-test-matrix.md`](docs/ci-test-matrix.md) for the full matrix, the reasoning behind each exclusion, the advisory policy and how to reproduce a leg locally.
+
+### composer.json tidy-up
+
+**Illuminate packages now declared explicitly.** Previously only `illuminate/contracts` was declared, covering 2 of the package's 67 Illuminate imports — the rest resolved implicitly because `laravel/framework` replaces that package. Added:
+
+| Package | Covers |
+|---|---|
+| `illuminate/database` | Eloquent `Model`, `Builder`, `Factories\HasFactory` |
+| `illuminate/http` | `Request`, `JsonResponse`, `RedirectResponse`, `Client\ConnectionException` |
+| `illuminate/routing` | `Controller` |
+| `illuminate/support` | `ServiceProvider`, `Str`, and the `Http`/`Cache`/`Log`/`Event`/`Auth` facades |
+
+No behavioural change — `laravel/framework` satisfies all of them. `Illuminate\Foundation\Auth\User` (used by `Models\User`) stays implicit, as it ships only inside `laravel/framework` and has no installable standalone package.
+
+**`minimum-stability` set to `dev` with `prefer-stable`**, matching the convention across the Laravel package ecosystems. Stable releases are always preferred; dev branches enter the pool only when no stable candidate remains. This is also what lets the Laravel 11 matrix legs resolve at all, given the advisory situation described above.
+
 ## v3.0.0
 
 ### Config Split & Validation
