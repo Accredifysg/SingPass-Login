@@ -60,14 +60,14 @@ class GetUserInfoServiceTest extends TestCase
 
         $this->dpopKey = JWKFactory::createECKey('P-256');
 
-        Cache::put('openId', new OpenIdConfigurationDto(
+        Cache::put('openId', (new OpenIdConfigurationDto(
             issuer: 'https://example.com',
             authorizationEndpoint: 'https://example.com/auth',
             tokenEndpoint: 'https://example.com/token',
             userinfoEndpoint: 'https://example.com/userinfo',
             jwksUri: 'https://example.com/jwks',
             pushedAuthorizationRequestEndpoint: 'https://example.com/par',
-        ));
+        ))->toArray());
     }
 
     protected function tearDown(): void

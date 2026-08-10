@@ -21,6 +21,8 @@ final class OpenIdDiscoveryService implements OpenIdDiscoveryServiceInterface
      */
     public function cacheOpenIdDiscovery(string $discoveryEndpoint, string $cacheKey): void
     {
+        $this->forgetUnusableCacheEntry($cacheKey);
+
         Cache::remember($cacheKey, now()->addHour(), static function () use ($discoveryEndpoint) {
             SingPassLog::info('OpenID Discovery request', ['endpoint' => $discoveryEndpoint]);
 
@@ -59,7 +61,26 @@ final class OpenIdDiscoveryService implements OpenIdDiscoveryServiceInterface
                 'par_endpoint' => $parEndpoint,
             ]);
 
-            return OpenIdConfigurationDto::fromDiscoveryResponse($decoded);
+            return OpenIdConfigurationDto::fromDiscoveryResponse($decoded)->toArray();
         });
+    }
+
+    /**
+     * Drop a cached entry that cannot be read back — a serialized DTO written by
+     * an older version of the package, or any other stale shape. Left in place,
+     * Cache::remember would keep returning it until its TTL expired, failing
+     * every read in the meantime.
+     */
+    private function forgetUnusableCacheEntry(string $cacheKey): void
+    {
+        $existing = Cache::get($cacheKey);
+
+        if ($existing === null || OpenIdConfigurationDto::fromCache($existing) !== null) {
+            return;
+        }
+
+        SingPassLog::info('Discarding unusable cached OpenID configuration', ['cache_key' => $cacheKey]);
+
+        Cache::forget($cacheKey);
     }
 }

@@ -2,31 +2,69 @@
 
 ## v4.0.0
 
-Maintenance release, with two changes:
+Maintenance release with three changes:
 
-- **Laravel 10 support is dropped.**
-- **CI matrix testing is introduced**, covering every supported PHP and Laravel combination.
+- Laravel 10 support is removed.
+- A CI test matrix is added. It does tests of each supported PHP and Laravel combination.
+- The OpenID configuration is now cached as a plain array. This prepares the package for Laravel 13.
 
-There are no functional changes to the package — `src/` is untouched. Laravel 13 support is not part of this release; it follows separately.
+Notes:
 
-The version bump is a major one because Laravel 10 is dropped. Projects already on v3.x continue to resolve as before; only those that explicitly upgrade to v4 pick up the narrowed constraints below.
+- Laravel 13 support is not part of this release. It comes in a later release.
+- The version increase is major because Laravel 10 support is removed.
+- Projects on v3.x resolve as before. Only an explicit upgrade to v4 gets the new constraints.
 
-### Laravel 10 dropped
+### OpenID configuration cached as a plain array
 
-**Illuminate constraints changed** from `^10.0||^11.0||^12.0` to `^11.3||^12.0`. The bound was narrowed so it describes what actually works:
+- The cache now holds the OpenID discovery configuration as a plain array, not a serialized DTO.
+- Laravel 13 [`cache.serializable_classes`][l13] restricts the classes that the cache can deserialize.
+- With a plain array, applications do not add this package's DTO to their allowlist.
+- Reads use the new `OpenIdConfigurationDto::fromCache()` method:
+    - It validates the array with the same rules as the discovery response.
+    - It returns `null` for data that is not usable.
+- **The discovery writer is self-healing:**
+    - `cacheOpenIdDiscovery()` discards a cache entry that it cannot read back. It then does discovery again.
+    - It does not keep a bad entry until the TTL expires.
+    - Examples of bad entries: a serialized DTO from a previous version, an entry that an allowlist rejects.
 
-- **Laravel 10** was not installable. `web-token/jwt-framework ^4.0` requires Symfony 7 while Laravel 10 pins Symfony 6 — an unresolvable conflict. Applications on Laravel 10 previously got a confusing transitive Symfony error; they now get a clear refusal naming the real requirement.
-- **Laravel 11.0 – 11.2** lack `Http::createPendingRequest()`, which was added in Laravel 11.3 and is used for JWKS retrieval and OpenID discovery. Those versions previously installed and then failed at runtime on the first JWKS fetch; Composer now rejects them at install time.
+[l13]: https://laravel.com/docs/13.x/upgrade#cache-serializable_classes-configuration
+
+### Upgrade notes
+
+- No action is necessary for the cache transition.
+- The next authentication flow that does discovery discards and refreshes the old entries automatically.
+- If you read the OpenID cache key directly: the payload is now an array, not a DTO instance.
+- The array keys are the same as the keys of the discovery response:
+    - `issuer`, `authorization_endpoint`, `token_endpoint`, `userinfo_endpoint`, `jwks_uri`
+    - `pushed_authorization_request_endpoint`
+- To get the object, use `OpenIdConfigurationDto::fromCache()`.
+
+### Laravel 10 support removed
+
+- The Illuminate constraints changed from `^10.0||^11.0||^12.0` to `^11.3||^12.0`.
+- The narrower bound describes the versions that operate correctly.
+- **Laravel 10** was not installable:
+    - `web-token/jwt-framework ^4.0` needs Symfony 7, but Laravel 10 pins Symfony 6. No solution exists.
+    - Before, applications on Laravel 10 got an unclear transitive Symfony error.
+    - Now, Composer refuses with a message that gives the real requirement.
+- **Laravel 11.0 – 11.2** do not have `Http::createPendingRequest()`:
+    - Laravel 11.3 added this method. The package uses it for JWKS retrieval and OpenID discovery.
+    - Before, these versions installed, then failed at runtime on the first JWKS fetch.
+    - Now, Composer rejects them at installation time.
 
 ### CI matrix testing
 
-Added `Run Tests` workflow covering PHP 8.2 – 8.5 against Laravel 11 and 12, resolved with `--prefer-stable`. It is a reusable workflow called from `feature.yml` and `merge_to_master.yml`, running in parallel with `ci` so it stays off the critical path. The coverage badge now waits on the matrix as well as `ci`, so a committed badge always reflects a commit that passed every leg.
-
-See [`docs/ci-test-matrix.md`](docs/ci-test-matrix.md) for the full matrix, the reasoning behind each exclusion, the advisory policy and how to reproduce a leg locally.
+- A new `Run Tests` workflow does tests of PHP 8.2 – 8.5 with Laravel 11 and 12, resolved with `--prefer-stable`.
+- It is a reusable workflow. `feature.yml` and `merge_to_master.yml` start it.
+- It runs in parallel with `ci`. Thus it does not increase the critical path.
+- The coverage badge waits for `ci` and the matrix. Thus the badge shows a commit that passed each leg.
+- Refer to [`docs/ci-test-matrix.md`](docs/ci-test-matrix.md) for the matrix, the exclusions, and the advisory policy.
 
 ### composer.json tidy-up
 
-**Illuminate packages now declared explicitly.** Previously only `illuminate/contracts` was declared, covering 2 of the package's 67 Illuminate imports — the rest resolved implicitly because `laravel/framework` replaces that package. Added:
+- **The Illuminate packages are now declared explicitly:**
+    - Before, only `illuminate/contracts` was declared. It covered 2 of the 67 Illuminate imports.
+    - The other imports resolved implicitly, because `laravel/framework` replaces the Illuminate packages.
 
 | Package | Covers |
 |---|---|
@@ -35,9 +73,13 @@ See [`docs/ci-test-matrix.md`](docs/ci-test-matrix.md) for the full matrix, the 
 | `illuminate/routing` | `Controller` |
 | `illuminate/support` | `ServiceProvider`, `Str`, and the `Http`/`Cache`/`Log`/`Event`/`Auth` facades |
 
-No behavioural change — `laravel/framework` satisfies all of them. `Illuminate\Foundation\Auth\User` (used by `Models\User`) stays implicit, as it ships only inside `laravel/framework` and has no installable standalone package.
-
-**`minimum-stability` set to `dev` with `prefer-stable`**, matching the convention across the Laravel package ecosystems. Stable releases are always preferred; dev branches enter the pool only when no stable candidate remains. This is also what lets the Laravel 11 matrix legs resolve at all, given the advisory situation described above.
+- There is no change in behavior — `laravel/framework` satisfies all of them.
+- `Illuminate\Foundation\Auth\User` (used by `Models\User`) stays implicit.
+- It ships only in `laravel/framework`. No standalone package contains it.
+- **`minimum-stability` is set to `dev`, with `prefer-stable: true`:**
+    - This agrees with the convention in the Laravel package ecosystem.
+    - The resolver always prefers stable releases. Dev branches apply only when no stable candidate stays.
+    - This also lets the Laravel 11 matrix legs resolve (refer to `docs/ci-test-matrix.md`).
 
 ## v3.0.0
 

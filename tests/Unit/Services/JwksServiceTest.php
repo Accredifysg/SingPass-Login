@@ -7,6 +7,7 @@ namespace Accredifysg\SingPassLogin\Tests\Unit\Services;
 use Accredifysg\SingPassLogin\DTOs\OpenIdConfigurationDto;
 use Accredifysg\SingPassLogin\Exceptions\JwksException;
 use Accredifysg\SingPassLogin\Services\JwksService;
+use Accredifysg\SingPassLogin\Services\OpenIdDiscoveryService;
 use Accredifysg\SingPassLogin\Tests\TestCase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -18,14 +19,54 @@ class JwksServiceTest extends TestCase
     {
         parent::setUp();
         // Set up the cache with a mock OpenId configuration
-        Cache::put('openId', new OpenIdConfigurationDto(
+        Cache::put('openId', (new OpenIdConfigurationDto(
             issuer: 'https://example.com',
             authorizationEndpoint: 'https://example.com/auth',
             tokenEndpoint: 'https://example.com/token',
             userinfoEndpoint: 'https://example.com/userinfo',
             jwksUri: 'https://example.com/jwks',
             pushedAuthorizationRequestEndpoint: 'https://example.com/par',
-        ));
+        ))->toArray());
+    }
+
+    /**
+     * Every other test in this file seeds the cache by hand, so none of them would
+     * notice if the discovery service started writing a shape the reader rejects.
+     * This one goes through the real writer.
+     */
+    public function test_get_jwks_reads_what_the_discovery_service_actually_wrote(): void
+    {
+        Cache::forget('openId');
+
+        $mockDiscovery = (string) json_encode([
+            'issuer' => 'https://example.com',
+            'authorization_endpoint' => 'https://example.com/auth',
+            'token_endpoint' => 'https://example.com/token',
+            'userinfo_endpoint' => 'https://example.com/userinfo',
+            'jwks_uri' => 'https://example.com/jwks',
+            'pushed_authorization_request_endpoint' => 'https://example.com/par',
+        ]);
+
+        $mockJwks = (string) json_encode([
+            'keys' => [
+                [
+                    'kty' => 'RSA',
+                    'kid' => '1b94c',
+                    'use' => 'sig',
+                    'n' => '...',
+                    'e' => 'AQAB',
+                ],
+            ],
+        ]);
+
+        Http::fake([
+            'https://example.com/discovery' => Http::response($mockDiscovery, 200),
+            'https://example.com/jwks' => Http::response($mockJwks, 200),
+        ]);
+
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery('https://example.com/discovery', 'openId');
+
+        $this->assertInstanceOf(JWKSet::class, (new JwksService)->getJwks('openId'));
     }
 
     public function test_get_jwks_success(): void

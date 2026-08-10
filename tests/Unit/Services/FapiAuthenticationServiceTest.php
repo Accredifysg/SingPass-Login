@@ -67,14 +67,14 @@ class FapiAuthenticationServiceTest extends TestCase
 
     private function seedCache(string $cacheKey = 'openId:test'): void
     {
-        Cache::put($cacheKey, new OpenIdConfigurationDto(
+        Cache::put($cacheKey, (new OpenIdConfigurationDto(
             issuer: 'https://example.com',
             authorizationEndpoint: 'https://example.com/auth',
             tokenEndpoint: 'https://example.com/token',
             userinfoEndpoint: 'https://example.com/userinfo',
             jwksUri: 'https://example.com/jwks',
             pushedAuthorizationRequestEndpoint: 'https://example.com/par',
-        ));
+        ))->toArray());
     }
 
     public function test_initiate_auth_returns_redirect_url(): void

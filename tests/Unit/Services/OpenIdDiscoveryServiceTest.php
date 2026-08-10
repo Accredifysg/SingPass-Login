@@ -32,13 +32,128 @@ class OpenIdDiscoveryServiceTest extends TestCase
 
         $cached = Cache::get('openId:singpass');
 
-        $this->assertInstanceOf(OpenIdConfigurationDto::class, $cached);
-        $this->assertEquals('https://example.com', $cached->issuer);
-        $this->assertEquals('https://example.com/auth', $cached->authorizationEndpoint);
-        $this->assertEquals('https://example.com/token', $cached->tokenEndpoint);
-        $this->assertEquals('https://example.com/userinfo', $cached->userinfoEndpoint);
-        $this->assertEquals('https://example.com/jwks', $cached->jwksUri);
-        $this->assertEquals('https://example.com/par', $cached->pushedAuthorizationRequestEndpoint);
+        $config = OpenIdConfigurationDto::fromCache($cached);
+
+        $this->assertInstanceOf(OpenIdConfigurationDto::class, $config);
+        $this->assertEquals('https://example.com', $config->issuer);
+        $this->assertEquals('https://example.com/auth', $config->authorizationEndpoint);
+        $this->assertEquals('https://example.com/token', $config->tokenEndpoint);
+        $this->assertEquals('https://example.com/userinfo', $config->userinfoEndpoint);
+        $this->assertEquals('https://example.com/jwks', $config->jwksUri);
+        $this->assertEquals('https://example.com/par', $config->pushedAuthorizationRequestEndpoint);
+    }
+
+    public function test_cache_open_id_discovery_stores_a_plain_array(): void
+    {
+        $mockResponse = (string) json_encode([
+            'issuer' => 'https://example.com',
+            'authorization_endpoint' => 'https://example.com/auth',
+            'token_endpoint' => 'https://example.com/token',
+            'userinfo_endpoint' => 'https://example.com/userinfo',
+            'jwks_uri' => 'https://example.com/jwks',
+            'pushed_authorization_request_endpoint' => 'https://example.com/par',
+        ]);
+
+        Http::fake([
+            'https://example.com/discovery' => Http::response($mockResponse, 200),
+        ]);
+
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery('https://example.com/discovery', 'openId:plain-array-test');
+
+        $cached = Cache::get('openId:plain-array-test');
+
+        $this->assertIsArray($cached);
+
+        // Round-tripping through JSON unchanged proves there is no object anywhere in the
+        // payload, whatever the cache driver happens to do with serialisation.
+        $this->assertSame($cached, json_decode((string) json_encode($cached), true));
+
+        $this->assertSame('https://example.com', $cached['issuer']);
+        $this->assertSame('https://example.com/auth', $cached['authorization_endpoint']);
+        $this->assertSame('https://example.com/token', $cached['token_endpoint']);
+        $this->assertSame('https://example.com/userinfo', $cached['userinfo_endpoint']);
+        $this->assertSame('https://example.com/jwks', $cached['jwks_uri']);
+        $this->assertSame('https://example.com/par', $cached['pushed_authorization_request_endpoint']);
+    }
+
+    /**
+     * The v3 → v4 upgrade scenario: production caches still hold the DTO object
+     * that v3 serialized. Cache::remember alone would keep returning it until the
+     * TTL expired, failing every read in the meantime; the writer must discard it
+     * and re-run discovery instead. (An entry rejected by a Laravel 13
+     * cache.serializable_classes allowlist deserializes to __PHP_Incomplete_Class
+     * and takes the same not-an-array path.)
+     */
+    public function test_cache_open_id_discovery_replaces_a_stale_serialized_dto_entry(): void
+    {
+        Cache::put('openId:stale-dto', new OpenIdConfigurationDto(
+            issuer: 'https://stale.example.com',
+            authorizationEndpoint: 'https://stale.example.com/auth',
+            tokenEndpoint: 'https://stale.example.com/token',
+            userinfoEndpoint: 'https://stale.example.com/userinfo',
+            jwksUri: 'https://stale.example.com/jwks',
+            pushedAuthorizationRequestEndpoint: 'https://stale.example.com/par',
+        ));
+
+        Http::fake([
+            'https://example.com/discovery' => Http::response($this->validDiscoveryResponse(), 200),
+        ]);
+
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery('https://example.com/discovery', 'openId:stale-dto');
+
+        $cached = Cache::get('openId:stale-dto');
+
+        $this->assertIsArray($cached);
+        $this->assertSame('https://example.com', $cached['issuer']);
+    }
+
+    public function test_cache_open_id_discovery_replaces_a_malformed_array_entry(): void
+    {
+        Cache::put('openId:malformed', ['issuer' => 'https://stale.example.com']);
+
+        Http::fake([
+            'https://example.com/discovery' => Http::response($this->validDiscoveryResponse(), 200),
+        ]);
+
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery('https://example.com/discovery', 'openId:malformed');
+
+        $cached = Cache::get('openId:malformed');
+
+        $this->assertIsArray($cached);
+        $this->assertSame('https://example.com/jwks', $cached['jwks_uri']);
+    }
+
+    public function test_cache_open_id_discovery_keeps_a_valid_cached_entry(): void
+    {
+        $existing = (new OpenIdConfigurationDto(
+            issuer: 'https://cached.example.com',
+            authorizationEndpoint: 'https://cached.example.com/auth',
+            tokenEndpoint: 'https://cached.example.com/token',
+            userinfoEndpoint: 'https://cached.example.com/userinfo',
+            jwksUri: 'https://cached.example.com/jwks',
+            pushedAuthorizationRequestEndpoint: 'https://cached.example.com/par',
+        ))->toArray();
+
+        Cache::put('openId:valid', $existing);
+
+        Http::fake();
+
+        (new OpenIdDiscoveryService)->cacheOpenIdDiscovery('https://example.com/discovery', 'openId:valid');
+
+        Http::assertNothingSent();
+        $this->assertSame($existing, Cache::get('openId:valid'));
+    }
+
+    private function validDiscoveryResponse(): string
+    {
+        return (string) json_encode([
+            'issuer' => 'https://example.com',
+            'authorization_endpoint' => 'https://example.com/auth',
+            'token_endpoint' => 'https://example.com/token',
+            'userinfo_endpoint' => 'https://example.com/userinfo',
+            'jwks_uri' => 'https://example.com/jwks',
+            'pushed_authorization_request_endpoint' => 'https://example.com/par',
+        ]);
     }
 
     public function test_cache_open_id_discovery_missing_required_fields(): void

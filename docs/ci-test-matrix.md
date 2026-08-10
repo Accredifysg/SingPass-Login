@@ -1,133 +1,96 @@
 # CI test matrix
 
-This package is tested across every supported PHP and Laravel combination by the
-`Run Tests` workflow (`.github/workflows/run-test.yml`). This document explains what
-the matrix covers, why each exclusion exists, and the known limitation around
-Laravel 11.
+The `Run Tests` workflow (`.github/workflows/run-test.yml`) does tests of this package on each supported combination of
+PHP and Laravel.
 
 ## Coverage
 
-Two axes — PHP version and Laravel version — producing **7 legs**:
+Two axes (PHP version, Laravel version) make **7 legs**:
 
-|  | PHP 8.2 | PHP 8.3 | PHP 8.4 | PHP 8.5 |
-|---|---|---|---|---|
-| **Laravel 11** (testbench 9) | ✅ | ✅ | ✅ | excluded |
-| **Laravel 12** (testbench 10) | ✅ | ✅ | ✅ | ✅ |
+|                               | PHP 8.2 | PHP 8.3 | PHP 8.4 | PHP 8.5  |
+|-------------------------------|---------|---------|---------|----------|
+| **Laravel 11** (testbench 9)  | ✅       | ✅       | ✅       | excluded |
+| **Laravel 12** (testbench 10) | ✅       | ✅       | ✅       | ✅        |
 
-Every leg resolves with a single `dependency-version`, `prefer-stable`.
+- Each leg resolves with one `dependency-version` value: `prefer-stable`.
+- The one exclusion (**PHP 8.5 × Laravel 11**) is a hard constraint: Laravel 11 does not operate on PHP 8.5.
 
-The one exclusion is a hard constraint rather than a preference: **PHP 8.5 × Laravel
-11** — Laravel 11 predates PHP 8.5 and was never supported on it.
+## Workflow structure
 
-## How the matrix is wired
-
-`run-test.yml` is a `workflow_call` workflow, not a standalone one. It is invoked from
-both entry points:
-
-- `feature.yml` — pull requests and pushes to master
-- `merge_to_master.yml` — pushes to master
-
-The matrix runs **in parallel with `ci`**, not behind it. The seven legs together take
-around 90 seconds while `ci` takes closer to two and a half minutes, so running them
-concurrently hides the matrix inside `ci`'s runtime instead of adding to the critical
-path — roughly a third off the total wall clock. The trade is that a failing `ci` still
-spends the matrix runners.
-
-In `feature.yml` the `badge` job needs `[ci, matrix]`, so a committed coverage badge
-only ever reflects a commit that passed every leg. That ordering is what the dependency
-is for; gating the matrix itself on `ci` is not needed to get it.
-
-Note that `feature.yml` and `merge_to_master.yml` both trigger on pushes to master, so
-`ci` and the matrix each run twice on a master push. That duplication predates the
-matrix and is left alone deliberately.
+- `run-test.yml` is a `workflow_call` workflow, not a standalone workflow.
+- Two workflows start it:
+    - `feature.yml` — pull requests and pushes to master
+    - `merge_to_master.yml` — pushes to master
 
 ## Resolution strategy
 
-The matrix runs `prefer-stable` only, which answers "does the package work against
-current releases?" The floors of the declared constraints are therefore **not**
-exercised in CI — a floor such as `illuminate/support: ^11.3` or
-`web-token/jwt-framework: ^4.0.2` is an argued claim, not a tested one. If you change a
-floor, reason about it explicitly or resolve it by hand (see
-[Reproducing a leg locally](#reproducing-a-leg-locally)).
+- The matrix uses `prefer-stable` only. This does a test with the current releases.
+- CI does **not** do tests of the constraint floors.
+- A floor such as `illuminate/support: ^11.3` or `web-token/jwt-framework: ^4.0.2` is a claim without a test.
+- If you change a floor, examine the effect, or do a [local test](#do-a-test-of-one-leg-locally).
+- Example of the gap — the `jwt-framework` floor:
+    - The declared constraint was `^4.0.1`.
+    - Version 4.0.1 refers to `RangeException` without a namespace in `Jose\Component\Core\Util`.
+    - Thus PHP causes a fatal `Error`, not an exception.
+    - The `catch (Exception)` in `generateClientAssertion()` did not catch it. `GenerateClientAssertionTest` failed.
+    - Each `prefer-stable` leg stayed green. Only a lowest-resolution run found the defect.
+    - The floor is now `^4.0.2`, the first release that has the import.
 
-That gap is worth stating plainly, because the current `jwt-framework` floor exists
-precisely because a lowest-resolution run once caught something. `web-token/jwt-framework`
-was declared as `^4.0.1`, and 4.0.1 references `RangeException` unqualified inside
-`Jose\Component\Core\Util`, so PHP resolves it to the non-existent
-`Jose\Component\Core\Util\RangeException` and raises a fatal `Error` instead of an
-exception. That `Error` is not an `Exception`, so it slipped past the `catch (Exception)`
-in `JwtService::generateClientAssertion()` and broke `GenerateClientAssertionTest`. Every
-`prefer-stable` leg was green throughout. The floor is now `^4.0.2`, the first upstream
-release carrying the import.
-
-## How each leg resolves dependencies
+## How dependency is resolved for each leg
 
 ```yaml
-composer require --dev --no-update --no-interaction \
-  "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}"
+composer require --dev --no-update --no-interaction "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}"
 composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-progress
 ```
 
-The committed `composer.lock` is deliberately bypassed. Installing the lock would test one
-pinned tree 7 times; resolving fresh exercises the constraints that are actually published
-to consumers.
+- The workflow does not use the committed `composer.lock`.
+- The first command writes a new `composer.json` in the runner.
+- Thus each leg replaces the `orchestra/testbench` constraint, and CI does not do a test of it.
+- The `require` constraints and the other `require-dev` entries stay applicable.
+- PHPUnit gets `--no-coverage` because `phpunit.xml` declares a clover report and the matrix has `coverage: none`.
+- Without the flag, PHPUnit stops with a non-zero code.
+- `ci.yml` keeps the ownership of coverage (Xdebug).
 
-Because that first command rewrites `composer.json` in the runner, the `orchestra/testbench`
-constraint declared in the repository is overridden per leg and is not what CI tests. The
-`require` constraints and the remaining `require-dev` entries do still apply.
+## Relation to `ci.yml`
 
-`--no-coverage` is passed to PHPUnit because `phpunit.xml` declares a clover report and the
-matrix runs with `coverage: none`. Without the flag there is no driver to satisfy the report
-and PHPUnit exits non-zero on that runner warning. Coverage stays owned by `ci.yml`, which
-runs with Xdebug.
-
-## Relationship to `ci.yml`
-
-`ci.yml` owns the coverage gate, the Pint auto-commit and the Sonar scan, and runs a single
-tree: PHP 8.3 against the committed `composer.lock`. The matrix runs fresh resolutions across
-PHP and Laravel versions. Neither implies the other — a green `ci` does not predict a green
-matrix, and vice versa.
-
-Keeping the two separate also avoids two concrete problems:
-
-1. Matrix jobs cannot produce a reliable workflow output, and `ci.yml` exports `coverage`
-   to `badge.yml`.
-2. Multiple legs would race on `git-auto-commit-action`.
+- `ci.yml`: coverage gate, automatic Pint commit, Sonar scan. One tree — PHP 8.3 with the committed `composer.lock`.
+- The matrix: new resolutions across the PHP and Laravel versions.
+- The two results are independent: a green `ci` does not show a green matrix, and the opposite is also true.
+- The two stay separate to prevent two problems:
+    1. Matrix jobs cannot supply a reliable workflow output; `ci.yml` sends `coverage` to `badge.yml`.
+    2. More than one leg on `git-auto-commit-action` causes a race condition.
+- Future considerations to refactor the two.
 
 ## Security advisory policy
 
-No advisory suppression is configured in this repository — there is no
-`policy.advisories.block`, no `ignore-id`, and no `audit.ignore`. Composer's default
-policy therefore applies.
+- This repository has no advisory suppression (`policy.advisories.block`, `ignore-id`, `audit.ignore`).
+- Thus the default Composer policy is applicable.
+- From Composer 2.10, the **resolver** applies this policy, not an audit after the installation:
+    - The resolver removes each version that has a known advisory from the candidate pool.
+- Thus a leg can degrade or fail at resolution — this is different from a test failure:
+    - If a clean tagged version stays in the range, the resolver installs it. This is the usual result.
+    - If not, `minimum-stability: dev` lets the resolver use a matching dev branch (refer to the Laravel 11 section).
+    - If no matching branch exists, the resolution fails. Consumer projects have no dev fallback and fail at once.
+- Correction: increase the floor in `composer.json`. Do not suppress the advisory.
 
-Since Composer 2.10 that policy is enforced **in the resolver**, not as a post-install
-audit: versions affected by a known advisory are removed from the candidate pool entirely,
-and resolution fails if nothing clean remains in range. The practical consequence for this
-matrix is that a leg can fail to *resolve* — distinct from failing tests — when a
-dependency's range is fully covered by advisories. Fix that by raising the floor in
-`composer.json`, not by suppressing the advisory.
+## Known limitation: the tests do not include a released Laravel 11 version
 
-## Known limitation: Laravel 11 is not covered against a released version
+- The security support for Laravel 11 stopped in March 2026.
+- Seven security advisories remove each tagged 11.x release. Three will not get a corrected version.
+- Composer will not install one of these releases.
+- Thus the Laravel 11 legs resolve the untagged `11.x-dev` branch tip. An application cannot install this code.
+- The CI logs show this: `Installing laravel/framework (11.x-dev c0f062f)`.
+- **A green Laravel 11 leg is not verification of a Laravel 11 release that an application can install.**
+- The Laravel 12 legs give the important coverage.
+- This is the only reason for the `composer.json` pair `minimum-stability: dev` and `prefer-stable: true`:
+    - `minimum-stability: dev` permits the fallback to `11.x-dev`. Without it, the Laravel 11 resolution fails.
+    - `prefer-stable: true` keeps the other dependencies on tagged releases. The dev stability does not spread.
+- An application that must use Laravel 11 must permit those advisories in its own Composer configuration.
 
-Laravel 11 left security support in Mar 2026, and every tagged 11.x release is excluded by
-seven security advisories — three of which will never have a fixed version. Under the
-default policy above, Composer will not install any of them.
+## Doing a test of one leg locally
 
-The Laravel 11 legs therefore resolve the untagged `11.x-dev` branch tip (verified in CI
-logs: `Installing laravel/framework (11.x-dev c0f062f)`), which is unreleased code no
-application can install. **A green Laravel 11 leg is not verification of an installable
-Laravel 11 release.** The Laravel 12 legs resolve real tagged releases and are the
-meaningful coverage.
-
-This is also the only reason `minimum-stability: dev` matters to the matrix: without it the
-Laravel 11 legs fail to resolve outright rather than falling back to the branch tip.
-
-Applications wanting to install this package on Laravel 11 will need to allow those
-advisories in their own Composer configuration.
-
-## Reproducing a leg locally
-
-Work on a scratch clone — this overwrites `composer.json` and `composer.lock`:
+Do this if you wish to test locally for a specific laravel version.
+Use a temporary clone. This procedure writes new `composer.json` and `composer.lock` files.
 
 ```bash
 composer require --dev --no-update "laravel/framework:12.*" "orchestra/testbench:10.*"
@@ -135,10 +98,8 @@ composer update --prefer-stable --prefer-dist
 vendor/bin/phpunit --no-coverage
 ```
 
-Change the two version constraints to match whichever leg you are chasing. The `testbench`
-version must be paired correctly: Laravel 11 → testbench 9, Laravel 12 → testbench 10.
-
-Swapping in `--prefer-lowest` is how you check a constraint floor by hand, since no CI leg
-covers that. Expect to reason about the result: `prefer-lowest` resolves the lowest
-*mutually compatible* set rather than the literal floor of every constraint, so the version
-installed varies per leg.
+- Change the two version constraints to the values of the applicable leg.
+- Use the correct pair: Laravel 11 → testbench 9, Laravel 12 → testbench 10.
+- To do a test of a constraint floor, use `--prefer-lowest`. No CI leg does this test.
+- Note: `prefer-lowest` resolves the lowest set of compatible versions, not the literal floor of each constraint.
+- Thus the installed versions are different for each leg.

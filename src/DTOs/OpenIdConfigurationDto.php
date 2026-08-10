@@ -71,4 +71,40 @@ readonly class OpenIdConfigurationDto
                 ?? throw new OpenIdDiscoveryException(500, 'OpenID discovery response has invalid non-string field: pushed_authorization_request_endpoint'),
         );
     }
+
+    /**
+     * Flatten to a plain array for caching. Keys match the discovery response so
+     * the payload can be fed straight back through fromDiscoveryResponse().
+     *
+     * @return array{issuer: string, authorization_endpoint: string, token_endpoint: string, userinfo_endpoint: string, jwks_uri: string, pushed_authorization_request_endpoint: string}
+     */
+    public function toArray(): array
+    {
+        return [
+            'issuer' => $this->issuer,
+            'authorization_endpoint' => $this->authorizationEndpoint,
+            'token_endpoint' => $this->tokenEndpoint,
+            'userinfo_endpoint' => $this->userinfoEndpoint,
+            'jwks_uri' => $this->jwksUri,
+            'pushed_authorization_request_endpoint' => $this->pushedAuthorizationRequestEndpoint,
+        ];
+    }
+
+    /**
+     * Rehydrate from a cached payload, returning null for anything unusable — a
+     * miss, a stale shape, or a value left by an older version of the package.
+     * Callers throw their own service-specific exception on null.
+     */
+    public static function fromCache(mixed $cached): ?self
+    {
+        if (! is_array($cached)) {
+            return null;
+        }
+
+        try {
+            return self::fromDiscoveryResponse((object) $cached);
+        } catch (OpenIdDiscoveryException) {
+            return null;
+        }
+    }
 }
