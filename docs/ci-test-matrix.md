@@ -5,15 +5,17 @@ PHP and Laravel.
 
 ## Coverage
 
-Two axes (PHP version, Laravel version) make **7 legs**:
+Two axes (PHP version, Laravel version) make **10 legs**:
 
-|                               | PHP 8.2 | PHP 8.3 | PHP 8.4 | PHP 8.5  |
-|-------------------------------|---------|---------|---------|----------|
-| **Laravel 11** (testbench 9)  | ✅       | ✅       | ✅       | excluded |
-| **Laravel 12** (testbench 10) | ✅       | ✅       | ✅       | ✅        |
+|                               | PHP 8.2  | PHP 8.3 | PHP 8.4 | PHP 8.5  |
+|-------------------------------|----------|---------|---------|----------|
+| **Laravel 11** (testbench 9)  | ✅        | ✅       | ✅       | excluded |
+| **Laravel 12** (testbench 10) | ✅        | ✅       | ✅       | ✅        |
+| **Laravel 13** (testbench 11) | excluded | ✅       | ✅       | ✅        |
 
 - Each leg resolves with one `dependency-version` value: `prefer-stable`.
-- The one exclusion (**PHP 8.5 × Laravel 11**) is a hard constraint: Laravel 11 does not operate on PHP 8.5.
+- Exclusion **PHP 8.5 × Laravel 11**: Laravel 11 does not operate on PHP 8.5.
+- Exclusion **PHP 8.2 × Laravel 13**: Laravel 13 and testbench 11 require PHP 8.3 or later.
 
 ## Workflow structure
 
@@ -99,7 +101,7 @@ vendor/bin/phpunit --no-coverage
 ```
 
 - Change the two version constraints to the values of the applicable leg.
-- Use the correct pair: Laravel 11 → testbench 9, Laravel 12 → testbench 10.
+- Use the correct pair: Laravel 11 → testbench 9, Laravel 12 → testbench 10, Laravel 13 → testbench 11.
 - To do a test of a constraint floor, use `--prefer-lowest`. No CI leg does this test.
 - Note: `prefer-lowest` resolves the lowest set of compatible versions, not the literal floor of each constraint.
 - Thus the installed versions are different for each leg.

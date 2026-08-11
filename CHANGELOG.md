@@ -1,5 +1,12 @@
 # Changelog
 
+## v4.1.0
+
+- Add Laravel 13 support: `illuminate/*` constraints now accept `^13.0`
+- Add Laravel 13 CI legs (testbench 11) on PHP 8.3, 8.4 and 8.5
+- Dev deps: allow testbench `^11.0`, raise phpunit floor to `^11.5.50` (testbench 11 requirement)
+- No code changes needed; the v4.0.0 cache work already prepared for Laravel 13
+
 ## v4.0.0
 
 Maintenance release with three changes:
