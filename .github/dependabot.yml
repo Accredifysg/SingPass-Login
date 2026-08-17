@@ -20,6 +20,8 @@ updates:
     open-pull-requests-limit: 10
     cooldown:
       default-days: 5
+      exclude:
+        - "Accredifysg/Accredify-Github-Workflows*"
     groups:
       accredify-shared-workflows:
         patterns:
