@@ -10,10 +10,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint-actions:
-    name: Lint GitHub Actions Workflows
-    uses: Accredifysg/Accredify-Github-Workflows/.github/workflows/lint-actions.yml@236229089b518f5ccc8ad5f0251ea187879cc10f # v2.1.7
-
   ci:
     name: Continuous Integration
     uses: ./.github/workflows/ci.yml
