@@ -18,11 +18,11 @@ jobs:
     steps:
       # Checkout Code (current branch)
       - name: Checkout
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Use the output from the `coverage` step
       - name: Generate the badge SVG image
-        uses: emibcn/badge-action@v2.0.4
+        uses: emibcn/badge-action@f9150fde070fcca0c4e832437611b44838fcd325 # v2.0.4
         id: badge
         with:
           label: 'Test coverage'
@@ -41,7 +41,7 @@ jobs:
 
       # Upload badge as artifact
       - name: Upload badge as artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: badge
           path: "coverage/badge.svg"
@@ -49,7 +49,7 @@ jobs:
 
       # Commit badge
       - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v7
+        uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d # v7.2.0
         with:
           commit_message: 'ci: update coverage & badge'
           commit_options: '--no-verify'

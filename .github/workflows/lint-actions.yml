@@ -1,0 +1,119 @@
+name: Lint GitHub Actions Workflows
+
+on:
+  pull_request:
+
+# Default configs live here (not in a committed file) because actionlint/zizmor
+# auto-discover config from the *repo being scanned* — a file committed here
+# would never reach callers. Keeping them as named env vars pulls the blobs out
+# of the run scripts below, which just write them to disk when no caller config
+# is supplied.
+env:
+  ACTIONLINT_DEFAULT_CONFIG: |
+    self-hosted-runner:
+      # Custom runner labels for self-hosted runners (e.g. Actions Runner Controller).
+      labels:
+        - arc-runner-set
+    paths:
+      .github/workflows/**/*.{yml,yaml}:
+        # List of regular expressions to filter errors by the error messages.
+        ignore:
+          # Ignore the specific error from shellcheck
+          - 'input "aws-profile" is not defined in action "aws-actions/configure-aws-credentials@v6"'
+          - 'input "aws-profile" is not defined in action "aws-actions/configure-aws-credentials@v6.1.0"'
+  ZIZMOR_DEFAULT_CONFIG: |
+    rules:
+      adhoc-packages: { disable: true }
+      anonymous-definition: { disable: true }
+      archived-uses: { disable: true }
+      artipacked: { disable: true }
+      bot-conditions: { disable: true }
+      cache-poisoning: { disable: true }
+      concurrency-limits: { disable: true }
+      dangerous-triggers: { disable: true }
+      dependabot-cooldown: { disable: true }
+      dependabot-execution: { disable: true }
+      excessive-permissions: { disable: true }
+      forbidden-uses: { disable: true }
+      github-app: { disable: true }
+      github-env: { disable: true }
+      hardcoded-container-credentials: { disable: true }
+      impostor-commit: { disable: true }
+      insecure-commands: { disable: true }
+      known-vulnerable-actions: { disable: true }
+      misfeature: { disable: true }
+      obfuscation: { disable: true }
+      overprovisioned-secrets: { disable: true }
+      ref-confusion: { disable: true }
+      ref-version-mismatch: { disable: true }
+      secrets-inherit: { disable: true }
+      secrets-outside-env: { disable: true }
+      self-hosted-runner: { disable: true }
+      stale-action-refs: { disable: true }
+      superfluous-actions: { disable: true }
+      template-injection: { disable: true }
+      typosquat-uses: { disable: true }
+      undocumented-permissions: { disable: true }
+      unpinned-images: { disable: true }
+      unpinned-tools: { disable: true }
+      unredacted-secrets: { disable: true }
+      unsound-condition: { disable: true }
+      unsound-contains: { disable: true }
+      unsound-ternary: { disable: true }
+      use-trusted-publishing: { disable: true }
+
+jobs:
+  actionlint:
+    name: Actionlint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+
+      - name: Download actionlint
+        id: get_actionlint
+        run: bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+        shell: bash
+
+      # Write ACTIONLINT_DEFAULT_CONFIG to disk (see the env block at the top of
+      # this file for why).
+      - name: Resolve actionlint config
+        id: config
+        shell: bash
+        run: |
+          printf '%s' "$ACTIONLINT_DEFAULT_CONFIG" > actionlint.generated.yml
+          echo "path=actionlint.generated.yml" >> "$GITHUB_OUTPUT"
+
+      - name: Check workflow files
+        run: ${{ steps.get_actionlint.outputs.executable }} -color -config-file "${{ steps.config.outputs.path }}"
+        shell: bash
+
+  zizmor:
+    name: Zizmor
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+        with:
+          persist-credentials: false
+
+      # Write ZIZMOR_DEFAULT_CONFIG to disk (see the env block at the top of
+      # this file for why).
+      - name: Resolve zizmor config
+        id: config
+        shell: bash
+        run: |
+          printf '%s' "$ZIZMOR_DEFAULT_CONFIG" > zizmor.generated.yml
+          echo "path=zizmor.generated.yml" >> "$GITHUB_OUTPUT"
+
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@3dc1ecc9bcb9e94e9b2c709687979e1298497054 # v0.6.2
+        with:
+          inputs: .github/workflows/
+          advanced-security: false
+          config: ${{ steps.config.outputs.path }}
