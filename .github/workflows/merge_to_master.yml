@@ -11,11 +11,11 @@ concurrency:
 jobs:
   ci:
     name: Continuous Integration
-    uses: $/.github/workflows/ci.yml
+    uses: ./.github/workflows/ci.yml
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   # Deliberately not `needs: ci` — see the note in feature.yml.
   matrix:
     name: Run Tests
-    uses: $/.github/workflows/run-test.yml
+    uses: ./.github/workflows/run-test.yml
