@@ -49,6 +49,14 @@ env:
       secrets-inherit: { disable: true }
       secrets-outside-env: { disable: true }
       self-hosted-runner: { disable: true }
+      # New in zizmor 1.30.x (pulled in by zizmor-action 0.6.4). Its fix
+      # (uses: $/...) is not valid syntax for reusable *workflow* calls per
+      # GitHub's docs/actionlint (only "owner/repo/path@ref" or "./path" are
+      # supported there) — only composite *actions* support "$/". Disable
+      # until GitHub Actions/actionlint support the self-repository form for
+      # workflow calls, or the repo's ./.github/workflows/*.yml uses are
+      # rewritten to a supported alternative.
+      self-repository: { disable: true }
       stale-action-refs: { disable: true }
       superfluous-actions: { disable: true }
       template-injection: { disable: true }
