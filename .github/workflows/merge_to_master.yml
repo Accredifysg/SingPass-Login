@@ -13,16 +13,36 @@ jobs:
     name: Continuous Integration
     uses: ./.github/workflows/ci.yml
 
-  # Self-hosted SonarQube (Community Build) only analyses the main branch, so the
-  # scan runs on pushes to master only — not on pull requests.
   sonar:
     needs: ci
     name: SonarQube Analysis
-    uses: Accredifysg/Accredify-Github-Workflows/.github/workflows/sonar-scan.yml@f5b8cd1851e8c5087a260a51af59aa60e14cbb61 # v2.1.9
-    with:
-      backend-coverage-artifact-name: ${{ needs.ci.outputs.backend-coverage-artifact-name }}
-      backend-junit-artifact-name: ${{ needs.ci.outputs.backend-junit-artifact-name }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # full history for SCM blame
+          persist-credentials: false
+
+      - name: Download Coverage Report
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.ci.outputs.backend-coverage-artifact-name }}
+          path: coverage_BE
+
+      - name: Download JUnit Report
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.ci.outputs.backend-junit-artifact-name }}
+          path: junit_BE
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@ba9859eae8dd6bd29e412f25ddbbef3d032000f4 # v8.2.2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
   # Deliberately not `needs: ci` — see the note in feature.yml.
   matrix:
