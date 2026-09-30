@@ -1,9 +1,9 @@
 name: CI
+# Pull requests only. Pushes to master are handled by merge_to_master.yml,
+# which also runs the SonarQube scan (self-hosted SonarQube does not support
+# pull request analysis).
 on:
   pull_request:
-  push:
-    branches:
-      - master
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -13,8 +13,6 @@ jobs:
   ci:
     name: Continuous Integration
     uses: ./.github/workflows/ci.yml
-    secrets:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   # Deliberately not `needs: ci`. The matrix is faster than ci, so running it in
   # parallel hides it entirely inside ci's runtime rather than adding to the

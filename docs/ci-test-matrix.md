@@ -55,8 +55,9 @@ composer update --${{ matrix.dependency-version }} --prefer-dist --no-interactio
 
 ## Relation to `ci.yml`
 
-- `ci.yml`: coverage gate, automatic Pint commit, Sonar scan. One tree — PHP 8.3 with the committed `composer.lock`.
+- `ci.yml`: coverage gate, automatic Pint commit, coverage and JUnit report artifacts. One tree — PHP 8.3 with the committed `composer.lock`.
 - The matrix: new resolutions across the PHP and Laravel versions.
+- `merge_to_master.yml`: runs the self-hosted SonarQube scan (shared `sonar-scan.yml`) from the `ci.yml` report artifacts, on pushes to `master` only. Self-hosted SonarQube does not support pull request analysis.
 - The two results are independent: a green `ci` does not show a green matrix, and the opposite is also true.
 - The two stay separate to prevent two problems:
     1. Matrix jobs cannot supply a reliable workflow output; `ci.yml` sends `coverage` to `badge.yml`.
