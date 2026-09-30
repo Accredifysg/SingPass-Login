@@ -12,8 +12,17 @@ jobs:
   ci:
     name: Continuous Integration
     uses: ./.github/workflows/ci.yml
-    secrets:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # Self-hosted SonarQube (Community Build) only analyses the main branch, so the
+  # scan runs on pushes to master only — not on pull requests.
+  sonar:
+    needs: ci
+    name: SonarQube Analysis
+    uses: Accredifysg/Accredify-Github-Workflows/.github/workflows/sonar-scan.yml@f5b8cd1851e8c5087a260a51af59aa60e14cbb61 # v2.1.9
+    with:
+      backend-coverage-artifact-name: ${{ needs.ci.outputs.backend-coverage-artifact-name }}
+      backend-junit-artifact-name: ${{ needs.ci.outputs.backend-junit-artifact-name }}
+    secrets: inherit
 
   # Deliberately not `needs: ci` — see the note in feature.yml.
   matrix:
